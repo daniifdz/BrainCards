@@ -11,7 +11,7 @@ interface DecksRepository{
     suspend fun deleteDeck (deck: Deck)
     suspend fun updateDeck (deck: Deck)
     fun getAllDecks(): Flow<List<Deck>>
-    suspend fun getDeckById(id: String): Deck?
+    suspend fun getDeckById(id: Int): Deck?
 }
 
 
