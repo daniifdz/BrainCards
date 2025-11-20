@@ -7,6 +7,16 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
+    //---------------------------------------
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+
+repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+
 }
 
 kotlin {
@@ -33,6 +43,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
+            //---------------------------------------------------------
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -73,6 +86,10 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    add("kspCommonMainMetadata", libs.androidx.room.compiler)
+}
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 compose.desktop {
