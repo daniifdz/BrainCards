@@ -1,7 +1,7 @@
 package org.braincards.app.domain.models
 
 data class Flashcard(
-    val id: String,
+    val id: Int,
     val deckId: String,
     val createdAt: Long,
     val updatedAt: Long,

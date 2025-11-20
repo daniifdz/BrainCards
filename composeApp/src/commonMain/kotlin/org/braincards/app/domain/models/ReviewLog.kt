@@ -1,7 +1,7 @@
 package org.braincards.app.domain.models
 
 data class ReviewLog(
-    val id: String,
+    val id: Int,
     val cardId: String,
     val timestamp: Long,
     val grade: Int,
