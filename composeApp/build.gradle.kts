@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
     //---------------------------------------
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
@@ -23,6 +22,9 @@ kotlin {
     androidTarget {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+        }
+        compilerOptions {
+            freeCompilerArgs.add("-Xexpect-actual-classes")
         }
     }
     
@@ -52,7 +54,8 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
-
+            implementation(compose.materialIconsExtended)
+            implementation(libs.androidx.savedstate)
 
 
 
@@ -98,6 +101,8 @@ android {
 dependencies {
     debugImplementation(compose.uiTooling)
     add("kspCommonMainMetadata", libs.androidx.room.compiler)
+    add("kspJvm", libs.androidx.room.compiler)
+    add("kspAndroid", libs.androidx.room.compiler)
 }
 room {
     schemaDirectory("$projectDir/schemas")

@@ -2,13 +2,11 @@ package org.braincards.app.domain.usecase
 
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.repository.DecksRepository
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+import kotlinx.datetime.Clock
 
 class AddDeckUseCase(private val repository: DecksRepository){
 
     //uso de clase como funcion
-    @OptIn(ExperimentalTime::class)
     suspend operator fun invoke(name: String, description: String?) {
 
         val now = Clock.System.now()
