@@ -4,9 +4,8 @@ package org.braincards.app.data.local.entity
 
  import androidx.room.Entity
  import androidx.room.PrimaryKey
- import javax.management.Descriptor
  import kotlin.time.ExperimentalTime
- import kotlin.time.Instant
+ import kotlinx.datetime.Instant
 
 @Entity(tableName = "decks")
  data class DeckEntity @OptIn(ExperimentalTime::class) constructor(
