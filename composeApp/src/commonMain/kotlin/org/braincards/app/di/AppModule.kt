@@ -17,6 +17,7 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
         databaseBuilder
             .setDriver(BundledSQLiteDriver()) //necesario para el funcionamineto con KMP
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.IO)
+            .fallbackToDestructiveMigrationOnDowngrade(true)
             .build()
     }
 
