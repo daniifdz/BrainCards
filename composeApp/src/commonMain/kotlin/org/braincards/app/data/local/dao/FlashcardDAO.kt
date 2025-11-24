@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 import org.braincards.app.data.local.entity.FlashcardEntity
 
 @Dao
@@ -28,5 +29,7 @@ interface FlashcardDao {
 
     @Query("DELETE FROM flashcards WHERE id = :id")
     suspend fun deleteFlashcardById(id: Int)
-}
+
+    @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND nextReview <= :now ORDER BY nextReview ASC")
+    suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<FlashcardEntity>}
 

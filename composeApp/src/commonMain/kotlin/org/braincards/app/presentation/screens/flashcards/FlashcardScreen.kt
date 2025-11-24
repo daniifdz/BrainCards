@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun FlashcardScreen(
     deckId: Int,
     onBackClick: () -> Unit,
+    onStudyClick: (Int) -> Unit,
     viewModel: FlashCardViewModel = koinViewModel()
 ) {
     LaunchedEffect(deckId) {
@@ -36,6 +38,13 @@ fun FlashcardScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    if (flashcards.isNotEmpty()) { // Solo mostramos si hay cartas
+                        IconButton(onClick = { onStudyClick(deckId) }) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Study Deck")
+                        }
+                    }
                 }
             )
         },
@@ -45,7 +54,7 @@ fun FlashcardScreen(
             }
         }
     ) { paddingValues ->
-        
+
         if (flashcards.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
                 Text("No cards yet. Add one!", style = MaterialTheme.typography.bodyLarge)

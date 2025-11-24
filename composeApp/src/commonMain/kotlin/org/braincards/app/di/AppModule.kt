@@ -10,9 +10,12 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.usecase.AddDeckUseCase
 import org.braincards.app.domain.usecase.AddFlashcardUseCase
 import org.braincards.app.domain.usecase.GetDeckUseCase
+import org.braincards.app.domain.usecase.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.ReviewFlashcardUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
+import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.koin.dsl.module
 
 fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) = module {
@@ -50,10 +53,23 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
     factory { AddFlashcardUseCase(repository = get()) }
     factory { GetFlashcardUseCase(repository = get()) }
 
+
     viewModel {
         FlashCardViewModel(
             addFlashcardUseCase = get(),
             getFlashcardUseCase = get()
+
+
+        )
+    }
+
+    //stdy
+    factory { GetDueFlashcardsUseCase(repository = get()) }
+    factory { ReviewFlashcardUseCase(repository = get()) }
+    viewModel {
+        StudyViewModel(
+            getDueFlashcardsUseCase = get(),
+            reviewFlashcardUseCase = get()
         )
     }
 }

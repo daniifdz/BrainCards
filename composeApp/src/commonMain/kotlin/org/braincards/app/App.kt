@@ -28,8 +28,20 @@ fun App() {
                 is Screen.FlashcardsList -> {
                     FlashcardScreen(
                         deckId = screen.deckId,
+                        onBackClick = { currentScreen = Screen.DecksList },
+                        onStudyClick = { deckId -> // <-- Callback nuevo
+                            currentScreen = Screen.StudySession(deckId)
+                        }
+                    )
+                }
+                is Screen.StudySession -> { // <-- Nueva pantalla
+                    // Necesitamos importar StudyScreen
+                    org.braincards.app.presentation.screens.study.StudyScreen(
+                        deckId = screen.deckId,
                         onBackClick = {
-                            currentScreen = Screen.DecksList
+                            // Al volver de estudiar, ¿a dónde vamos?
+                            // Generalmente a la lista de cartas de ese mazo.
+                            currentScreen = Screen.FlashcardsList(screen.deckId)
                         }
                     )
                 }

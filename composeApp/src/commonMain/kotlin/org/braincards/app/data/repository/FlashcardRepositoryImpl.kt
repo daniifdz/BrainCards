@@ -2,6 +2,7 @@ package org.braincards.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.data.mapper.toDomain
@@ -31,5 +32,12 @@ class FlashcardRepositoryImpl(
         flashcardDao.deleteFlashcard(flashcard.toEntity())
     }
 
+    override suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<Flashcard> {
+        return flashcardDao.getDueFlashcardsByDeck(deckId, now).map { it.toDomain() }
+    }
+    
+    override suspend fun updateFlashcard(flashcard: Flashcard) {
+        flashcardDao.updateFlashcard(flashcard.toEntity())
+    }
 
 }
