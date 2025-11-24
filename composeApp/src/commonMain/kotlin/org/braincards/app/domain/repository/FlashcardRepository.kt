@@ -1,0 +1,11 @@
+package org.braincards.app.domain.repository
+
+import kotlinx.coroutines.flow.Flow
+import org.braincards.app.domain.models.Flashcard
+
+interface FlashcardRepository {
+    suspend fun addFlashcard(flashcard: Flashcard)
+    suspend fun getFlashcardById(id: Int): Flashcard?
+    fun getFlashcardsByDeckId(deckId: Int): Flow<List<Flashcard>>
+    suspend fun deleteFlashcard(flashcard: Flashcard)
+}

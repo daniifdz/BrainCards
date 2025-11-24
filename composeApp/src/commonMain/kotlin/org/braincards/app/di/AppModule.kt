@@ -4,10 +4,15 @@ import org.koin.core.module.dsl.viewModel
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.repository.DeckRepositoryImpl
+import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.domain.repository.DecksRepository
+import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.usecase.AddDeckUseCase
+import org.braincards.app.domain.usecase.AddFlashcardUseCase
 import org.braincards.app.domain.usecase.GetDeckUseCase
+import org.braincards.app.domain.usecase.GetFlashcardUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
+import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.koin.dsl.module
 
 fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) = module {
@@ -23,14 +28,15 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
 
     // Proveer el DAO
     single { get<AppDatabase>().deckDao() }
+    single { get<AppDatabase>().flashcardDao() }
 
     // Proveer el Repositorio
     single<DecksRepository> { DeckRepositoryImpl(deckDao = get()) }
+    single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
 
-    //usecasess
+    //usecasess deck
     factory { AddDeckUseCase(repository = get()) }
     factory { GetDeckUseCase(repository = get()) }
-
 
     viewModel {
         DecksViewModel(
@@ -39,4 +45,14 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
         )
     }
 
+    //usecases flashcard
+    factory { AddFlashcardUseCase(repository = get()) }
+    factory { GetFlashcardUseCase(repository = get()) }
+
+    viewModel {
+        FlashCardViewModel(
+            addFlashcardUseCase = get(),
+            getFlashcardUseCase = get()
+        )
+    }
 }
