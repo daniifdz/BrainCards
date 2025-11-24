@@ -21,7 +21,6 @@ fun StudyScreen(
     onBackClick: () -> Unit,
     viewModel: StudyViewModel = koinViewModel()
 ) {
-    // Iniciamos la sesión al entrar
     LaunchedEffect(deckId) {
         viewModel.initSession(deckId)
     }
@@ -31,7 +30,7 @@ fun StudyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Study Session") },
+                title = { Text("Sesión de estudio") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -60,17 +59,27 @@ fun StudyScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            "All caught up!",
+                            "Estamos al día!",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "No cards due for review right now.",
+                            "No hay flashcards pendientes para repasar ahora mismo.",
                             style = MaterialTheme.typography.bodyLarge
                         )
+
+
                         Spacer(modifier = Modifier.height(32.dp))
+
+
                         Button(onClick = onBackClick) {
-                            Text("Back to Decks")
+                            Text("Volver a los mazos")
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(onClick = { viewModel.reviewAllCards(deckId) }) {
+                            Text("Repasar todo de todas formas")
                         }
                     }
                 }
@@ -95,9 +104,9 @@ fun ReviewCard(
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.SpaceBetween // Contenido arriba, botones abajo
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Tarjeta (Pregunta / Respuesta)
+
         Card(
             modifier = Modifier
                 .weight(1f)
@@ -113,7 +122,7 @@ fun ReviewCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Question",
+                    text = "Pregunta",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -128,7 +137,7 @@ fun ReviewCard(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
 
                     Text(
-                        text = "Answer",
+                        text = "Respuesta",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.secondary
                     )
@@ -143,13 +152,12 @@ fun ReviewCard(
             }
         }
 
-        // Controles (Botones)
         if (!state.isAnswerVisible) {
             Button(
                 onClick = onShowAnswer,
                 modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
-                Text("SHOW ANSWER")
+                Text("VER RESPUESTA")
             }
         } else {
             Row(
@@ -157,26 +165,26 @@ fun ReviewCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 DifficultyButton(
-                    text = "Again",
-                    color = Color(0xFFFF5252), // Rojo
+                    text = "Otra vez",
+                    color = Color(0xFFFF5252),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.AGAIN) }
                 )
                 DifficultyButton(
-                    text = "Hard",
-                    color = Color(0xFFFFC107), // Ambar
+                    text = "Dificil",
+                    color = Color(0xFFFFC107),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.HARD) }
                 )
                 DifficultyButton(
-                    text = "Good",
-                    color = Color(0xFF4CAF50), // Verde
+                    text = "Bien",
+                    color = Color(0xFF4CAF50),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.GOOD) }
                 )
                 DifficultyButton(
-                    text = "Easy",
-                    color = Color(0xFF2196F3), // Azul
+                    text = "Muy facil",
+                    color = Color(0xFF2196F3),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.EASY) }
                 )
@@ -185,7 +193,7 @@ fun ReviewCard(
 
         // Contador restante
         Text(
-            text = "${state.remainingCount} cards left",
+            text = "${state.remainingCount} flashcards restantes",
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             textAlign = TextAlign.Center

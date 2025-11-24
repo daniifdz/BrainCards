@@ -69,7 +69,8 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
     viewModel {
         StudyViewModel(
             getDueFlashcardsUseCase = get(),
-            reviewFlashcardUseCase = get()
+            reviewFlashcardUseCase = get(),
+            getFlashcardUseCase = get()
         )
     }
 }

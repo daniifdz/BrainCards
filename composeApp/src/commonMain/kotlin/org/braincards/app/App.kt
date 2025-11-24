@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import org.braincards.app.presentation.screens.decks.DecksScreen
 import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
 import org.braincards.app.presentation.screens.navigation.Screen
+import org.braincards.app.presentation.screens.study.StudyScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -29,18 +30,15 @@ fun App() {
                     FlashcardScreen(
                         deckId = screen.deckId,
                         onBackClick = { currentScreen = Screen.DecksList },
-                        onStudyClick = { deckId -> // <-- Callback nuevo
+                        onStudyClick = { deckId ->
                             currentScreen = Screen.StudySession(deckId)
                         }
                     )
                 }
-                is Screen.StudySession -> { // <-- Nueva pantalla
-                    // Necesitamos importar StudyScreen
-                    org.braincards.app.presentation.screens.study.StudyScreen(
+                is Screen.StudySession -> {
+                    StudyScreen(
                         deckId = screen.deckId,
                         onBackClick = {
-                            // Al volver de estudiar, ¿a dónde vamos?
-                            // Generalmente a la lista de cartas de ese mazo.
                             currentScreen = Screen.FlashcardsList(screen.deckId)
                         }
                     )

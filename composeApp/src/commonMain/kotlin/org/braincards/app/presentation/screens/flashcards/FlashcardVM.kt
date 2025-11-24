@@ -2,6 +2,7 @@ package org.braincards.app.presentation.screens.flashcards
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,11 +22,16 @@ class FlashCardViewModel(
     private val _flashcards = MutableStateFlow<List<Flashcard>>(emptyList())
     val flashcards: StateFlow<List<Flashcard>> = _flashcards.asStateFlow()
 
+    private var loadJob: Job? = null
+
+
     fun loadFlashcards(deckId: Int) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+
+        loadJob = viewModelScope.launch {
             getFlashcardUseCase(deckId)
                 .catch { e ->
-                    println("Error loading flashcards: ${e.message}")
+                    println("Error al cargar las flashcards: ${e.message}")
                 }
                 .collectLatest { list ->
                     _flashcards.value = list
@@ -54,7 +60,7 @@ class FlashCardViewModel(
             try {
                 addFlashcardUseCase(newCard)
             } catch (e: Exception) {
-                println("Error adding flashcard: ${e.message}")
+                println("Error al añadir flashcard: ${e.message}")
             }
         }
     }

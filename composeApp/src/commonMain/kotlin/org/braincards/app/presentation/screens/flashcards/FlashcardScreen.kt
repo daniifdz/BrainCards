@@ -36,13 +36,13 @@ fun FlashcardScreen(
                 title = { Text("Flashcards") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
                     }
                 },
                 actions = {
-                    if (flashcards.isNotEmpty()) { // Solo mostramos si hay cartas
+                    if (flashcards.isNotEmpty()) {
                         IconButton(onClick = { onStudyClick(deckId) }) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Study Deck")
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Estudiar mazo")
                         }
                     }
                 }
@@ -50,14 +50,14 @@ fun FlashcardScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Flashcard")
+                Icon(Icons.Default.Add, contentDescription = "Añade una Flashcard")
             }
         }
     ) { paddingValues ->
 
         if (flashcards.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("No cards yet. Add one!", style = MaterialTheme.typography.bodyLarge)
+                Text("No hay Flashcards todavía. Agregue una!", style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             LazyColumn(
@@ -105,18 +105,18 @@ fun AddFlashcardDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Uni
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Flashcard") },
+        title = { Text("Nueva Flashcard") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = question,
                     onValueChange = { question = it },
-                    label = { Text("Question") }
+                    label = { Text("Pregunta") }
                 )
                 OutlinedTextField(
                     value = answer,
                     onValueChange = { answer = it },
-                    label = { Text("Answer") }
+                    label = { Text("Respuesta") }
                 )
             }
         },
@@ -124,12 +124,12 @@ fun AddFlashcardDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Uni
             TextButton(
                 onClick = { if (question.isNotBlank() && answer.isNotBlank()) onConfirm(question, answer) }
             ) {
-                Text("Add")
+                Text("Añadir")
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancelar")
             }
         }
     )
