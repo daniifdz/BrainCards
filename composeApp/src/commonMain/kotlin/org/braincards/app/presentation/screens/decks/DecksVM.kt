@@ -6,16 +6,21 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Deck
-import org.braincards.app.domain.usecase.AddDeckUseCase
-import org.braincards.app.domain.usecase.GetDeckUseCase
+import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
+import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
+import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
+import org.braincards.app.domain.usecase.DeleteDeckUseCase
 
 class DecksViewModel(
     private val addDeckUseCase: AddDeckUseCase,
-    getDecksUseCase: GetDeckUseCase
+    getDecksUseCase: GetDeckUseCase,
+    private val updateDeckUseCase: UpdateDeckUseCase,
+    private val deleteDeckUseCase: DeleteDeckUseCase
 ) : ViewModel() {
 
-    //lista de mazos actualizada
+    // Lista de mazos actualizada
     val decks: StateFlow<List<Deck>> = getDecksUseCase()
         .stateIn(
             scope = viewModelScope,
@@ -23,10 +28,29 @@ class DecksViewModel(
             initialValue = emptyList()
         )
 
-    //crear mazo desde ui
+    // Crear mazo
     fun createDeck(name: String, description: String?) {
         viewModelScope.launch {
             addDeckUseCase(name, description)
+        }
+    }
+
+    // Borrar mazo
+    fun deleteDeck(deck: Deck) {
+        viewModelScope.launch {
+            deleteDeckUseCase(deck)
+        }
+    }
+
+    // Editar mazo
+    fun updateDeck(deck: Deck, newName: String, newDescription: String?) {
+        viewModelScope.launch {
+            val updatedDeck = deck.copy(
+                name = newName,
+                description = newDescription,
+                updatedAt = Clock.System.now()
+            )
+            updateDeckUseCase(updatedDeck)
         }
     }
 }

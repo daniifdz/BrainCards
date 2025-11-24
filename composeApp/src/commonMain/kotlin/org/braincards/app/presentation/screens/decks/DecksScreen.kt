@@ -6,6 +6,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -21,14 +24,13 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 fun DecksScreen(onDeckClick: (Int) -> Unit) {
-    // 1. Pedimos el ViewModel a Koin automáticamente
     val viewModel = koinViewModel<DecksViewModel>()
-
-    // 2. Observamos la lista de mazos. Cada vez que la DB cambie, esto se actualiza solo.
     val decks by viewModel.decks.collectAsState()
 
-    // Estado para mostrar/ocultar el diálogo de crear mazo
+    // Estados para controlar los diálogos
     var showAddDialog by remember { mutableStateOf(false) }
+    var deckToDelete by remember { mutableStateOf<Deck?>(null) }
+    var deckToEdit by remember { mutableStateOf<Deck?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -40,9 +42,7 @@ fun DecksScreen(onDeckClick: (Int) -> Unit) {
             }
         }
     ) { padding ->
-        // 3. Contenido principal
         if (decks.isEmpty()) {
-            // Pantalla vacía
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
@@ -54,25 +54,63 @@ fun DecksScreen(onDeckClick: (Int) -> Unit) {
                 )
             }
         } else {
-            // Lista de mazos
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(decks) { deck ->
-                    DeckItem(deck = deck, onClick = {onDeckClick(deck.id)})
+                    DeckItem(
+                        deck = deck,
+                        onClick = { onDeckClick(deck.id) },
+                        onEditClick = { deckToEdit = deck },
+                        onDeleteClick = { deckToDelete = deck }
+                    )
                 }
             }
         }
 
-        // 4. El Diálogo emergente
         if (showAddDialog) {
             AddDeckDialog(
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, description ->
-                    viewModel.createDeck(name, description)
+                onConfirm = { name, desc ->
+                    viewModel.createDeck(name, desc)
                     showAddDialog = false
+                }
+            )
+        }
+
+        deckToEdit?.let { deck ->
+            EditDeckDialog(
+                deck = deck,
+                onDismiss = { deckToEdit = null },
+                onConfirm = { name, desc ->
+                    viewModel.updateDeck(deck, name, desc)
+                    deckToEdit = null
+                }
+            )
+        }
+
+        deckToDelete?.let { deck ->
+            AlertDialog(
+                onDismissRequest = { deckToDelete = null },
+                title = { Text("¿Borrar mazo?") },
+                text = { Text("Se borrará el mazo '${deck.name}' y todas sus cartas. Esta acción no se puede deshacer.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteDeck(deck)
+                            deckToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Borrar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deckToDelete = null }) {
+                        Text("Cancelar")
+                    }
                 }
             )
         }
@@ -80,23 +118,63 @@ fun DecksScreen(onDeckClick: (Int) -> Unit) {
 }
 
 @Composable
-fun DeckItem(deck: Deck, onClick: () -> Unit) {
+fun DeckItem(
+    deck: Deck,
+    onClick: () -> Unit,
+    onEditClick: (Deck) -> Unit,
+    onDeleteClick: (Deck) -> Unit
+) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = deck.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            if (!deck.description.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = deck.description,
-                    style = MaterialTheme.typography.bodyMedium
+                    text = deck.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
+                if (!deck.description.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = deck.description,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Editar") },
+                        onClick = {
+                            showMenu = false
+                            onEditClick(deck)
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Borrar") },
+                        onClick = {
+                            showMenu = false
+                            onDeleteClick(deck)
+                        },
+                        leadingIcon = { Icon(Icons.Default.Delete, null) }
+                    )
+                }
             }
         }
     }
@@ -137,6 +215,45 @@ fun AddDeckDialog(onDismiss: () -> Unit, onConfirm: (String, String?) -> Unit) {
             TextButton(onClick = onDismiss) {
                 Text("Cancelar")
             }
+        }
+    )
+}
+
+@Composable
+fun EditDeckDialog(
+    deck: Deck,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String?) -> Unit
+) {
+    var name by remember { mutableStateOf(deck.name) }
+    var description by remember { mutableStateOf(deck.description ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Mazo") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nombre") },
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Descripción") }
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { if (name.isNotBlank()) onConfirm(name, description) }) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
     )
 }

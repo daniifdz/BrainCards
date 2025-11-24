@@ -1,4 +1,4 @@
-package org.braincards.app.domain.usecase
+package org.braincards.app.domain.usecase.Flashcards
 
 import kotlinx.coroutines.flow.Flow
 import org.braincards.app.domain.models.Flashcard

@@ -1,4 +1,4 @@
-package org.braincards.app.domain.usecase
+package org.braincards.app.domain.usecase.Decks
 
 import kotlinx.coroutines.flow.Flow
 import org.braincards.app.domain.models.Deck

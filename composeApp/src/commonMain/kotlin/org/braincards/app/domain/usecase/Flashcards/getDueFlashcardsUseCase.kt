@@ -1,4 +1,4 @@
-package org.braincards.app.domain.usecase
+package org.braincards.app.domain.usecase.Flashcards
 
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.Flashcard

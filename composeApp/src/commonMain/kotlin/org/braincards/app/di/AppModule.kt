@@ -7,12 +7,16 @@ import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
-import org.braincards.app.domain.usecase.AddDeckUseCase
-import org.braincards.app.domain.usecase.AddFlashcardUseCase
-import org.braincards.app.domain.usecase.GetDeckUseCase
-import org.braincards.app.domain.usecase.GetDueFlashcardsUseCase
-import org.braincards.app.domain.usecase.GetFlashcardUseCase
-import org.braincards.app.domain.usecase.ReviewFlashcardUseCase
+import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
+import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
+import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
+import org.braincards.app.domain.usecase.DeleteDeckUseCase
+import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.study.StudyViewModel
@@ -41,25 +45,30 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
     //usecasess deck
     factory { AddDeckUseCase(repository = get()) }
     factory { GetDeckUseCase(repository = get()) }
+    factory { UpdateDeckUseCase(repository = get()) }
+    factory { DeleteDeckUseCase(repository = get()) }
 
     viewModel {
         DecksViewModel(
             addDeckUseCase = get(),
-            getDecksUseCase = get()
+            getDecksUseCase = get(),
+            updateDeckUseCase = get(),
+            deleteDeckUseCase = get()
         )
     }
 
     //usecases flashcard
     factory { AddFlashcardUseCase(repository = get()) }
     factory { GetFlashcardUseCase(repository = get()) }
-
+    factory { UpdateFlashcardUseCase(repository = get()) }
+    factory { DeleteFlashcardUseCase(repository = get()) }
 
     viewModel {
         FlashCardViewModel(
             addFlashcardUseCase = get(),
-            getFlashcardUseCase = get()
-
-
+            getFlashcardUseCase = get(),
+            updateFlashcardUseCase = get(),
+            deleteFlashcardUseCase = get()
         )
     }
 

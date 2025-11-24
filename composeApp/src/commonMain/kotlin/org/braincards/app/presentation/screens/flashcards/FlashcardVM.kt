@@ -11,12 +11,16 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
-import org.braincards.app.domain.usecase.AddFlashcardUseCase
-import org.braincards.app.domain.usecase.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 
 class FlashCardViewModel(
     private val addFlashcardUseCase: AddFlashcardUseCase,
-    private val getFlashcardUseCase: GetFlashcardUseCase
+    private val getFlashcardUseCase: GetFlashcardUseCase,
+    private val updateFlashcardUseCase: UpdateFlashcardUseCase,
+    private val deleteFlashcardUseCase: DeleteFlashcardUseCase
 ) : ViewModel() {
 
     private val _flashcards = MutableStateFlow<List<Flashcard>>(emptyList())
@@ -64,4 +68,32 @@ class FlashCardViewModel(
             }
         }
     }
+
+    fun updateFlashcard(flashcard: Flashcard, newQuestion: String, newAnswer: String) {
+        viewModelScope.launch {
+            try {
+                val updatedCard = flashcard.copy(
+                question = newQuestion,
+                answer = newAnswer,
+                updatedAt = Clock.System.now()
+            )
+                updateFlashcardUseCase(updatedCard)
+            } catch (e: Exception) {
+                println("Error al actualizar flashcard: ${e.message}")
+            }
+        }
+    }
+
+
+    fun deleteFlashcard(flashcard: Flashcard) {
+        viewModelScope.launch {
+            try {
+                deleteFlashcardUseCase(flashcard)
+            } catch (e: Exception) {
+                println("Error al eliminar flashcard: ${e.message}")
+            }
+        }
+    }
 }
+
+

@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.braincards.app.domain.models.ReviewQuality
+import org.braincards.app.presentation.components.FlipCard
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,9 +69,7 @@ fun StudyScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
 
-
                         Spacer(modifier = Modifier.height(32.dp))
-
 
                         Button(onClick = onBackClick) {
                             Text("Volver a los mazos")
@@ -106,52 +105,32 @@ fun ReviewCard(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-
-        Card(
+        // Tarjeta que gira (FlipCard ya es una Card visualmente)
+        FlipCard(
+            isFlipped = state.isAnswerVisible,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Pregunta",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
+            front = {
+                // CARA A: PREGUNTA
+                CardFaceContent(
+                    title = "Pregunta",
                     text = state.currentCard.question,
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center
+                    color = MaterialTheme.colorScheme.primary
                 )
-
-                if (state.isAnswerVisible) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
-
-                    Text(
-                        text = "Respuesta",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = state.currentCard.answer,
-                        style = MaterialTheme.typography.headlineSmall,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            },
+            back = {
+                // CARA B: RESPUESTA
+                CardFaceContent(
+                    title = "Respuesta",
+                    text = state.currentCard.answer,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
             }
-        }
+        )
 
+        // Controles (Botones)
         if (!state.isAnswerVisible) {
             Button(
                 onClick = onShowAnswer,
@@ -214,5 +193,29 @@ fun DifficultyButton(
         colors = ButtonDefaults.buttonColors(containerColor = color)
     ) {
         Text(text, maxLines = 1)
+    }
+}
+
+@Composable
+fun CardFaceContent(title: String, text: String, color: Color) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = color
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.headlineMedium, // Un poco más grande
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

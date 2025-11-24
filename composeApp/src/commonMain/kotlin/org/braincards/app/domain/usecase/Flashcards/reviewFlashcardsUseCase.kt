@@ -1,14 +1,12 @@
-package org.braincards.app.domain.usecase
+package org.braincards.app.domain.usecase.Flashcards
 
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
-import kotlinx.datetime.toInstant
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.repository.FlashcardRepository
-import kotlin.math.max
 import kotlin.math.roundToInt
 
 class ReviewFlashcardUseCase(private val repository: FlashcardRepository) {

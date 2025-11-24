@@ -10,9 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.ReviewQuality
-import org.braincards.app.domain.usecase.GetDueFlashcardsUseCase
-import org.braincards.app.domain.usecase.GetFlashcardUseCase
-import org.braincards.app.domain.usecase.ReviewFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 
 sealed class StudyState {
     data object Loading : StudyState()

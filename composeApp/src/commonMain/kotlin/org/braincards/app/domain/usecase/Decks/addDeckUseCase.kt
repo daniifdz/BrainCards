@@ -1,4 +1,4 @@
-package org.braincards.app.domain.usecase
+package org.braincards.app.domain.usecase.Decks
 
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.repository.DecksRepository
