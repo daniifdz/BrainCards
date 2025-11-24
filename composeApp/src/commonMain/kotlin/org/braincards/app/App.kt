@@ -1,29 +1,39 @@
 package org.braincards.app
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
+import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
-
-import braindcards.composeapp.generated.resources.Res
-import braindcards.composeapp.generated.resources.compose_multiplatform
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import org.braincards.app.presentation.screens.decks.DecksScreen
+import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
+import org.braincards.app.presentation.screens.navigation.Screen
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        DecksScreen()
+        var currentScreen by remember { mutableStateOf<Screen>(Screen.DecksList) }
+
+        Crossfade(targetState = currentScreen) { screen ->
+            when (screen) {
+                is Screen.DecksList -> {
+                    DecksScreen(
+                        onDeckClick = { deckId ->
+                            currentScreen = Screen.FlashcardsList(deckId)
+                        }
+                    )
+                }
+                is Screen.FlashcardsList -> {
+                    FlashcardScreen(
+                        deckId = screen.deckId,
+                        onBackClick = {
+                            currentScreen = Screen.DecksList
+                        }
+                    )
+                }
+            }
+        }
     }
 }

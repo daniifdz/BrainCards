@@ -20,7 +20,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 
 @OptIn(KoinExperimentalAPI::class)
 @Composable
-fun DecksScreen() {
+fun DecksScreen(onDeckClick: (Int) -> Unit) {
     // 1. Pedimos el ViewModel a Koin automáticamente
     val viewModel = koinViewModel<DecksViewModel>()
 
@@ -61,7 +61,7 @@ fun DecksScreen() {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(decks) { deck ->
-                    DeckItem(deck = deck, onClick = { /* Navegaremos luego */ })
+                    DeckItem(deck = deck, onClick = {onDeckClick(deck.id)})
                 }
             }
         }

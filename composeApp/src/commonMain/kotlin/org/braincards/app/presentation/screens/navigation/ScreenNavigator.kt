@@ -1,0 +1,7 @@
+package org.braincards.app.presentation.screens.navigation
+
+
+sealed class Screen {
+    data object DecksList : Screen()
+    data class FlashcardsList(val deckId: Int) : Screen()
+}
