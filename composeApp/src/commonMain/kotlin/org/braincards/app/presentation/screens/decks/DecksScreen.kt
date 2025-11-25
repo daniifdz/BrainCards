@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -21,18 +22,27 @@ import org.braincards.app.domain.models.Deck
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
-@OptIn(KoinExperimentalAPI::class)
+@OptIn(KoinExperimentalAPI::class, ExperimentalMaterial3Api::class)
 @Composable
-fun DecksScreen(onDeckClick: (Int) -> Unit) {
+fun DecksScreen(onDeckClick: (Int) -> Unit, onBackClick: () -> Unit) {
     val viewModel = koinViewModel<DecksViewModel>()
     val decks by viewModel.decks.collectAsState()
 
-    // Estados para controlar los diálogos
     var showAddDialog by remember { mutableStateOf(false) }
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
     var deckToEdit by remember { mutableStateOf<Deck?>(null) }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Mis Mazos") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },

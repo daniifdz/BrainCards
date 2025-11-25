@@ -15,14 +15,24 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
     MaterialTheme {
-        var currentScreen by remember { mutableStateOf<Screen>(Screen.DecksList) }
+        var currentScreen by remember { mutableStateOf<Screen>(Screen.Home) }
 
         Crossfade(targetState = currentScreen) { screen ->
             when (screen) {
+                is Screen.Home -> {
+                    // Necesitas importar HomeScreen
+                    org.braincards.app.presentation.screens.home.HomeScreen(
+                        onNavigateToDecks = { currentScreen = Screen.DecksList },
+                        onNavigateToStudy = { /* TODO: Implementar modo estudio global luego */ }
+                    )
+                }
                 is Screen.DecksList -> {
                     DecksScreen(
                         onDeckClick = { deckId ->
                             currentScreen = Screen.FlashcardsList(deckId)
+                        },
+                        onBackClick = {
+                            currentScreen = Screen.Home
                         }
                     )
                 }
@@ -47,3 +57,4 @@ fun App() {
         }
     }
 }
+
