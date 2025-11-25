@@ -15,16 +15,29 @@ import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
+import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
+import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
+import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
+import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 
 class FlashCardViewModel(
     private val addFlashcardUseCase: AddFlashcardUseCase,
     private val getFlashcardUseCase: GetFlashcardUseCase,
     private val updateFlashcardUseCase: UpdateFlashcardUseCase,
-    private val deleteFlashcardUseCase: DeleteFlashcardUseCase
-) : ViewModel() {
+    private val deleteFlashcardUseCase: DeleteFlashcardUseCase,
+    private val addTopicUseCase: AddTopicUseCase,
+    private val getTopicsUseCase: GetTopicsUseCase,
+    private val updateTopicUseCase: UpdateTopicUseCase,
+    private val deleteTopicUseCase: DeleteTopicUseCase
+
+    ) : ViewModel() {
 
     private val _flashcards = MutableStateFlow<List<Flashcard>>(emptyList())
     val flashcards: StateFlow<List<Flashcard>> = _flashcards.asStateFlow()
+
+    private val _topics = MutableStateFlow<List<org.braincards.app.domain.models.Topic>>(emptyList())
+    val topics: StateFlow<List<org.braincards.app.domain.models.Topic>> = _topics.asStateFlow()
+
 
     private var loadJob: Job? = null
 
@@ -94,6 +107,47 @@ class FlashCardViewModel(
             }
         }
     }
+
+    //logica topics
+    fun loadTopics(deckId: Int) {
+        viewModelScope.launch {
+            getTopicsUseCase(deckId)
+                .catch { e -> println("Error loading topics: ${e.message}") }
+                .collectLatest { list -> _topics.value = list }
+        }
+    }
+
+    fun addTopic(deckId: Int, name: String) {
+        viewModelScope.launch {
+            val now = Clock.System.now()
+            val newTopic = org.braincards.app.domain.models.Topic(
+                id = 0,
+                deckId = deckId,
+                name = name,
+                createdAt = now,
+                updatedAt = now
+            )
+            addTopicUseCase(newTopic)
+        }
+    }
+    fun updateTopic(topic: org.braincards.app.domain.models.Topic, newName: String) {
+        viewModelScope.launch {
+            val updatedTopic = topic.copy(
+                name = newName,
+                updatedAt = Clock.System.now()
+            )
+            updateTopicUseCase(updatedTopic)
+        }
+    }
+
+    fun deleteTopic(topic: org.braincards.app.domain.models.Topic) {
+        viewModelScope.launch {
+            deleteTopicUseCase(topic)
+        }
+    }
 }
+
+
+
 
 
