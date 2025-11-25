@@ -150,20 +150,20 @@ fun ReviewCard(
                     onClick = { onRate(ReviewQuality.AGAIN) }
                 )
                 DifficultyButton(
-                    text = "Dificil",
+                    text = "Difícil",
                     color = Color(0xFFFFC107),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.HARD) }
                 )
                 DifficultyButton(
                     text = "Bien",
-                    color = Color(0xFF4CAF50),
+                    color = Color(0xFF2196F3),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.GOOD) }
                 )
                 DifficultyButton(
-                    text = "Muy facil",
-                    color = Color(0xFF2196F3),
+                    text = "Muy fácil",
+                    color = Color(0xFF4CAF50),
                     modifier = Modifier.weight(1f),
                     onClick = { onRate(ReviewQuality.EASY) }
                 )
