@@ -6,4 +6,6 @@ sealed class Screen {
     data object DecksList : Screen()
     data class FlashcardsList(val deckId: Int) : Screen()
     data class StudySession(val deckId: Int) : Screen()
+
+    object Settings : Screen()
 }

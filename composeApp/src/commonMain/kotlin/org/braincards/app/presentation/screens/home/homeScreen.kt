@@ -35,13 +35,14 @@ data class HomeItem(
 @Composable
 fun HomeScreen(
     onNavigateToDecks: () -> Unit,
-    onNavigateToStudy: () -> Unit
+    onNavigateToStudy: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val items = listOf(
         HomeItem("Mis Mazos", Icons.Default.LibraryBooks, Color(0xFF7C4DFF), onNavigateToDecks),
         HomeItem("Estudiar Todo", Icons.Default.PlayCircleFilled, Color(0xFF00BFA5), onNavigateToStudy),
         HomeItem("Estadísticas", Icons.Default.BarChart, Color(0xFFFF4081)) { /* TODO */ },
-        HomeItem("Ajustes", Icons.Default.Settings, Color(0xFF607D8B)) { /* TODO */ }
+        HomeItem("Ajustes", Icons.Default.Settings, Color(0xFF607D8B), onNavigateToSettings)
     )
 
     Box(

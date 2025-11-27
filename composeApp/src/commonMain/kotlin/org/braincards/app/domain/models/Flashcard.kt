@@ -17,5 +17,8 @@ data class Flashcard(
     //metadata de estudio
     val easeFactor: Double = 2.5, //recordar la tarjeta
     val interval: Int, //dias hasta la proxima revision
-    val repetitions: Int
+    val repetitions: Int,
+
+    //topic nullabel
+    val topicId: Int? = null
 )

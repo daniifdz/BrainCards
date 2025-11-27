@@ -7,6 +7,7 @@ fun FlashcardEntity.toDomain(): Flashcard {
     return Flashcard(
         id = id,
         deckId = deckId,
+        topicId = topicId,
         question = question,
         answer = answer,
         easeFactor = easeFactor,
@@ -22,6 +23,7 @@ fun Flashcard.toEntity(): FlashcardEntity {
     return FlashcardEntity(
         id = id,
         deckId = deckId,
+        topicId = topicId,
         question = question,
         answer = answer,
         easeFactor = easeFactor,
