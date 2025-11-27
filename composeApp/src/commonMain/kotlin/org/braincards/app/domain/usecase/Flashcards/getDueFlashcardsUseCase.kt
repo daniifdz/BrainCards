@@ -6,6 +6,10 @@ import org.braincards.app.domain.repository.FlashcardRepository
 
 class GetDueFlashcardsUseCase(private val repository: FlashcardRepository) {
     suspend operator fun invoke(deckId: Int, now: Instant): List<Flashcard> {
-        return repository.getDueFlashcardsByDeck(deckId, now)
+        return if (deckId == -1) {
+            repository.getAllDueFlashcards(now)
+        } else {
+            repository.getDueFlashcardsByDeck(deckId, now)
+        }
     }
 }

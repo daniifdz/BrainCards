@@ -35,7 +35,7 @@ class FlashcardRepositoryImpl(
     override suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<Flashcard> {
         return flashcardDao.getDueFlashcardsByDeck(deckId, now).map { it.toDomain() }
     }
-    
+
     override suspend fun updateFlashcard(flashcard: Flashcard) {
         flashcardDao.updateFlashcard(flashcard.toEntity())
     }
@@ -45,4 +45,8 @@ class FlashcardRepositoryImpl(
             entities.map { it.toDomain() }
         }
     }
+
+    override suspend fun getAllDueFlashcards(now: Instant): List<Flashcard> =
+        flashcardDao.getAllDueFlashcards(now).map { it.toDomain() }
+
 }

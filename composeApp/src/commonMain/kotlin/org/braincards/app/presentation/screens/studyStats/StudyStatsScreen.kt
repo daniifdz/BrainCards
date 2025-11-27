@@ -2,6 +2,8 @@ package org.braincards.app.presentation.screens.studyStats
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -25,6 +27,7 @@ fun StudyStatsScreen(
     viewModel: StudyStatsVM = koinViewModel()
 ) {
     val stats by viewModel.stats.collectAsState()
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
@@ -42,6 +45,7 @@ fun StudyStatsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(scrollState) // Habilitamos el scroll vertical
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top

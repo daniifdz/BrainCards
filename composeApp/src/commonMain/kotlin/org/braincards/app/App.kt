@@ -40,11 +40,12 @@ fun App() {
                 is Screen.Home -> {
                     HomeScreen(
                         onNavigateToDecks = { currentScreen = Screen.DecksList },
-                        onNavigateToStudy = {  },
+                        onNavigateToStudy = { currentScreen = Screen.StudySession(-1) },
                         onNavigateToSettings = { currentScreen = Screen.Settings },
                         onNavigateToStats = { currentScreen = Screen.Stats }
                     )
                 }
+
                 is Screen.DecksList -> {
                     DecksScreen(
                         onDeckClick = { deckId ->
@@ -55,6 +56,7 @@ fun App() {
                         }
                     )
                 }
+
                 is Screen.FlashcardsList -> {
                     FlashcardScreen(
                         deckId = screen.deckId,
@@ -64,6 +66,7 @@ fun App() {
                         }
                     )
                 }
+
                 is Screen.StudySession -> {
                     StudyScreen(
                         deckId = screen.deckId,
@@ -72,6 +75,7 @@ fun App() {
                         }
                     )
                 }
+
                 is Screen.Settings -> {
                     SettingsScreen(
                         currentTheme = appTheme,
@@ -79,6 +83,7 @@ fun App() {
                         onBackClick = { currentScreen = Screen.Home }
                     )
                 }
+
                 is Screen.Stats -> {
                     StudyStatsScreen(
                         onBackClick = { currentScreen = Screen.Home }

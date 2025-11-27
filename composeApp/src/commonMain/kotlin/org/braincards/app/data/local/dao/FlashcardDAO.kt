@@ -35,4 +35,9 @@ interface FlashcardDao {
 
     @Query("SELECT * FROM flashcards")
     fun getAllFlashcards(): Flow<List<FlashcardEntity>>
+
+
+    @Query("SELECT * FROM flashcards WHERE nextReview <= :now ORDER BY nextReview ASC")
+    suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
+
 }

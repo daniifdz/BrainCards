@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,8 +18,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.braincards.app.domain.models.Deck
+import org.braincards.app.presentation.components.EmptyState
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -54,13 +57,14 @@ fun DecksScreen(onDeckClick: (Int) -> Unit, onBackClick: () -> Unit) {
     ) { padding ->
         if (decks.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                Text(
-                    text = "No tienes mazos aún.\n¡Crea el primero!",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                EmptyState(
+                    message = "No tienes mazos aún",
+                    description = "Crea tu primer mazo para empezar a estudiar.",
+                    icon = Icons.Default.LibraryAdd
                 )
             }
         } else {
