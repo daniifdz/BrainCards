@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import org.braincards.app.platform.openEmailClient
 
 // Enum para representar las opciones de tema de forma clara y segura.
 enum class AppTheme(val displayName: String) {
@@ -109,7 +110,14 @@ fun SettingsScreen(
                 headlineContent = { Text("Enviar comentarios") },
                 supportingContent = { Text("Ayúdanos a mejorar") },
                 leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
-                modifier = Modifier.clickable { /* TODO: Implementar lógica de email */ }
+                modifier = Modifier.clickable {
+                    // Llamamos a la función común. KMP hará el resto.
+                    openEmailClient(
+                        recipient = "braincards.soporte@proton.me",
+                        subject = "Feedback para BrainCards v1.0.0",
+                        body = "Hola, tengo una sugerencia/problema:\n\n"
+                    )
+                }
             )
 
             ListItem(
