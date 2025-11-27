@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -107,11 +108,16 @@ fun SettingsScreen(
             )
 
             ListItem(
+                headlineContent = { Text("Desarrollado por") },
+                supportingContent = { Text("Daniel Fernández-Muñiz Arribas") },
+                leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+            )
+
+            ListItem(
                 headlineContent = { Text("Enviar comentarios") },
                 supportingContent = { Text("Ayúdanos a mejorar") },
                 leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
                 modifier = Modifier.clickable {
-                    // Llamamos a la función común. KMP hará el resto.
                     openEmailClient(
                         recipient = "braincards.soporte@proton.me",
                         subject = "Feedback para BrainCards v1.0.0",
@@ -122,8 +128,8 @@ fun SettingsScreen(
 
             ListItem(
                 headlineContent = { Text("Copyright") },
-                supportingContent = { Text("Todos los derechos reservados") },
-                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
+                supportingContent = { Text("© 2024 BrainCards. Todos los derechos reservados.") },
+                leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
             )
         }
     }

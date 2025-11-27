@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
@@ -34,9 +37,34 @@ class FlashCardViewModel(
     private val deleteTopicUseCase: DeleteTopicUseCase
 ) : ViewModel() {
 
-    // Estado para las Flashcards
     private val _flashcards = MutableStateFlow<List<Flashcard>>(emptyList())
-    val flashcards: StateFlow<List<Flashcard>> = _flashcards.asStateFlow()
+    
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    // combinamos la lista original con el texto de búsqueda
+    val filteredFlashcards: StateFlow<List<Flashcard>> = combine(
+        _flashcards,
+        _searchQuery
+    ) { cards, query ->
+        if (query.isBlank()) {
+            cards
+        } else {
+            cards.filter {
+                it.question.contains(query, ignoreCase = true) ||
+                it.answer.contains(query, ignoreCase = true)
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+
+    val flashcards: StateFlow<List<Flashcard>> = filteredFlashcards
+
     private var loadFlashcardsJob: Job? = null
 
     // Estado para los Temas
@@ -44,9 +72,12 @@ class FlashCardViewModel(
     val topics: StateFlow<List<Topic>> = _topics.asStateFlow()
     private var loadTopicsJob: Job? = null
 
-    // Estado de selección de Tema
     private val _selectedTopicId = MutableStateFlow<Int?>(null)
     val selectedTopicId: StateFlow<Int?> = _selectedTopicId.asStateFlow()
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
 
     fun loadFlashcards(deckId: Int) {
         loadFlashcardsJob?.cancel()
@@ -68,6 +99,7 @@ class FlashCardViewModel(
 
     fun selectTopic(topicId: Int?) {
         _selectedTopicId.value = topicId
+        _searchQuery.value = ""
     }
 
     //flashcards
