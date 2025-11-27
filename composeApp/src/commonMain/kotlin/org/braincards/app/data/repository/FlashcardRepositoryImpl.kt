@@ -40,4 +40,9 @@ class FlashcardRepositoryImpl(
         flashcardDao.updateFlashcard(flashcard.toEntity())
     }
 
+    override fun getAllFlashcards(): Flow<List<Flashcard>> {
+        return flashcardDao.getAllFlashcards().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
 }

@@ -31,5 +31,8 @@ interface FlashcardDao {
     suspend fun deleteFlashcardById(id: Int)
 
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND nextReview <= :now ORDER BY nextReview ASC")
-    suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<FlashcardEntity>}
+    suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<FlashcardEntity>
 
+    @Query("SELECT * FROM flashcards")
+    fun getAllFlashcards(): Flow<List<FlashcardEntity>>
+}

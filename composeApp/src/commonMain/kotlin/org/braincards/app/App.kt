@@ -16,6 +16,7 @@ import androidx.compose.material3.lightColorScheme
 import org.braincards.app.presentation.screens.home.HomeScreen
 import org.braincards.app.presentation.screens.settings.AppTheme
 import org.braincards.app.presentation.screens.settings.SettingsScreen
+import org.braincards.app.presentation.screens.studyStats.StudyStatsScreen
 
 
 @Composable
@@ -37,11 +38,11 @@ fun App() {
         Crossfade(targetState = currentScreen) { screen ->
             when (screen) {
                 is Screen.Home -> {
-                    // Necesitas importar HomeScreen
                     HomeScreen(
                         onNavigateToDecks = { currentScreen = Screen.DecksList },
-                        onNavigateToStudy = { /* TODO: Implementar modo estudio global luego */ },
-                        onNavigateToSettings = { currentScreen = Screen.Settings }
+                        onNavigateToStudy = {  },
+                        onNavigateToSettings = { currentScreen = Screen.Settings },
+                        onNavigateToStats = { currentScreen = Screen.Stats }
                     )
                 }
                 is Screen.DecksList -> {
@@ -75,6 +76,11 @@ fun App() {
                     SettingsScreen(
                         currentTheme = appTheme,
                         onThemeChange = { newTheme -> appTheme = newTheme },
+                        onBackClick = { currentScreen = Screen.Home }
+                    )
+                }
+                is Screen.Stats -> {
+                    StudyStatsScreen(
                         onBackClick = { currentScreen = Screen.Home }
                     )
                 }

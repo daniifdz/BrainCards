@@ -19,6 +19,7 @@ import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
+import org.braincards.app.domain.usecase.Stats.GetStudyStatsUseCase
 import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
 import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
@@ -26,6 +27,7 @@ import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.study.StudyViewModel
+import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
 import org.koin.dsl.module
 
 fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) = module {
@@ -104,6 +106,15 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
     factory { GetTopicsUseCase(repository = get()) }
     factory { UpdateTopicUseCase(repository = get()) }
     factory { DeleteTopicUseCase(repository = get()) }
+
+    //Stats
+    factory { GetStudyStatsUseCase(repository = get()) }
+
+    viewModel {
+        StudyStatsVM(
+            getStudyStatsUseCase = get()
+        )
+    }
 
 
 }
