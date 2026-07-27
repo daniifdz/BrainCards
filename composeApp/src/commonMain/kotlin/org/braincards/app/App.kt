@@ -71,7 +71,10 @@ fun App() {
                     StudyScreen(
                         deckId = screen.deckId,
                         onBackClick = {
-                            currentScreen = Screen.FlashcardsList(screen.deckId)
+                            currentScreen = Screen.Home
+                        },
+                        onGoToDecksClick = {
+                            currentScreen = Screen.DecksList
                         }
                     )
                 }

@@ -15,7 +15,6 @@ repositories {
     google()
     mavenCentral()
     gradlePluginPortal()
-
 }
 
 kotlin {
@@ -56,10 +55,6 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.savedstate)
-
-
-
-
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -69,6 +64,21 @@ kotlin {
             implementation(libs.kotlinx.coroutinesSwing)
         }
     }
+}
+
+val jvmMainJar by tasks.registering(Jar::class) {
+    group = "build"
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes["Main-Class"] = "org.braincards.app.MainKt"
+    }
+
+    from(kotlin.targets["jvm"].compilations["main"].output.allOutputs)
+
+    dependsOn(configurations["jvmRuntimeClasspath"])
+    from({
+        configurations["jvmRuntimeClasspath"].map { if (it.isDirectory) it else zipTree(it) }
+    })
 }
 
 android {
@@ -87,11 +97,30 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/braincards-key.jks")
+            storePassword = "***REMOVED***"
+            keyAlias = "braincards"
+            keyPassword = "***REMOVED***"
+        }
+    }
+
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+
+            applicationVariants.all {
+                outputs.all {
+                    val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+                    outputImpl.outputFileName = "BrainCards.apk"
+                }
+            }
         }
     }
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -104,6 +133,7 @@ dependencies {
     add("kspJvm", libs.androidx.room.compiler)
     add("kspAndroid", libs.androidx.room.compiler)
 }
+
 room {
     schemaDirectory("$projectDir/schemas")
 }
@@ -114,8 +144,14 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.braincards.app"
+            packageName = "BrainCards"
             packageVersion = "1.0.0"
+
+            windows {
+                iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
+                menuGroup = "BrainCards"
+                perUserInstall = true
+            }
         }
     }
 }
