@@ -1,5 +1,17 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+fun signingProperty(propertyName: String, envName: String): String =
+    (localProperties.getProperty(propertyName) ?: System.getenv(envName))
+        ?: error("Missing $propertyName in local.properties or $envName environment variable")
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -101,9 +113,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("keystore/braincards-key.jks")
-            storePassword = "***REMOVED***"
+            storePassword = signingProperty("KEYSTORE_PASSWORD", "BRAINCARDS_KEYSTORE_PASSWORD")
             keyAlias = "braincards"
-            keyPassword = "***REMOVED***"
+            keyPassword = signingProperty("KEY_PASSWORD", "BRAINCARDS_KEY_PASSWORD")
         }
     }
 
