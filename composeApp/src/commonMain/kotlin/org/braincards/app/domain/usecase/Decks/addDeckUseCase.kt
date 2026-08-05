@@ -3,6 +3,7 @@ package org.braincards.app.domain.usecase.Decks
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.repository.DecksRepository
 import kotlinx.datetime.Clock
+import org.braincards.app.domain.util.IdGenerator
 
 class AddDeckUseCase(private val repository: DecksRepository){
 
@@ -12,7 +13,7 @@ class AddDeckUseCase(private val repository: DecksRepository){
         val now = Clock.System.now()
 
         val newDeck = Deck(
-            id = 0,
+            id = IdGenerator.newId(),
             name = name,
             description = description,
             createdAt = now,

@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.datetime.Instant
+import org.braincards.app.domain.models.CardType
 
 @Entity(
     tableName = "flashcards",
@@ -13,13 +14,11 @@ import kotlinx.datetime.Instant
             entity = DeckEntity::class,
             parentColumns = ["id"],
             childColumns = ["deckId"],
-            onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
             entity = TopicEntity::class,
             parentColumns = ["id"],
             childColumns = ["topicId"],
-            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
@@ -28,10 +27,9 @@ import kotlinx.datetime.Instant
     ]
 )
 data class FlashcardEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val deckId: Int,
-    val topicId: Int? = null,
+    @PrimaryKey val id: String,
+    val deckId: String,
+    val topicId: String? = null,
     val question: String,
     val answer: String,
 
@@ -39,9 +37,20 @@ data class FlashcardEntity(
     val easeFactor: Double,
     val interval: Int,
     val repetitions: Int,
+    val cardType: CardType,
 
     //fechas
     val createdAt: Instant,
     val updatedAt: Instant,
-    val nextReview: Instant
-)
+    val nextReview: Instant,
+
+    //sync
+    val deletedAt: Instant? = null,
+    val lastSyncedAt: Instant? = null,
+    val userId: String? = null,
+
+    // tipo test
+    val options: List<String>? = null,
+    val correctOptionIndex: Int? = null
+
+    )

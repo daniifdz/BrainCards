@@ -15,7 +15,10 @@ fun FlashcardEntity.toDomain(): Flashcard {
         repetitions = repetitions,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        nextReview = nextReview
+        nextReview = nextReview,
+        cardType = cardType,
+        deletedAt = deletedAt,
+        lastSyncedAt = lastSyncedAt
     )
 }
 
@@ -31,6 +34,9 @@ fun Flashcard.toEntity(): FlashcardEntity {
         repetitions = repetitions,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        nextReview = nextReview
+        nextReview = nextReview,
+        cardType = cardType,
+        deletedAt = deletedAt,
+        lastSyncedAt = lastSyncedAt
     )
 }

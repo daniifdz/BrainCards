@@ -13,6 +13,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.presentation.screens.home.HomeScreen
 import org.braincards.app.presentation.screens.settings.AppTheme
 import org.braincards.app.presentation.screens.settings.SettingsScreen
@@ -40,7 +41,7 @@ fun App() {
                 is Screen.Home -> {
                     HomeScreen(
                         onNavigateToDecks = { currentScreen = Screen.DecksList },
-                        onNavigateToStudy = { currentScreen = Screen.StudySession(-1) },
+                        onNavigateToStudy = { currentScreen = Screen.StudySession(StudyScope.All) },
                         onNavigateToSettings = { currentScreen = Screen.Settings },
                         onNavigateToStats = { currentScreen = Screen.Stats }
                     )
@@ -62,7 +63,7 @@ fun App() {
                         deckId = screen.deckId,
                         onBackClick = { currentScreen = Screen.DecksList },
                         onStudyClick = { deckId ->
-                            currentScreen = Screen.StudySession(deckId)
+                            currentScreen = Screen.StudySession(StudyScope.Deck(deckId))
                         }
                     )
                 }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.braincards.app.domain.models.CardType
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
@@ -23,6 +24,7 @@ import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
 import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
+import org.braincards.app.domain.util.IdGenerator
 
 class FlashCardViewModel(
     // Casos de uso de Flashcards
@@ -103,13 +105,15 @@ class FlashCardViewModel(
     }
 
     //flashcards
-    fun addFlashcard(deckId: Int, question: String, answer: String, topicId: Int? = null) {
+    fun addFlashcard(deckId: String, question: String, answer: String, topicId: String? = null) {
         viewModelScope.launch {
             val now = Clock.System.now()
             addFlashcardUseCase(Flashcard(
-                id = 0, deckId = deckId, topicId = topicId, question = question, answer = answer,
+                id = IdGenerator.newId(), deckId = deckId, topicId = topicId,
+                question = question, answer = answer,
                 createdAt = now, updatedAt = now, nextReview = now,
-                easeFactor = 2.5, interval = 0, repetitions = 0
+                easeFactor = 2.5, interval = 0, repetitions = 0,
+                cardType = CardType.FLIP
             ))
         }
     }
@@ -125,10 +129,10 @@ class FlashCardViewModel(
     }
 
     //topics
-    fun createTopic(deckId: Int, name: String) {
+    fun createTopic(deckId: String, name: String) {
         viewModelScope.launch {
             val now = Clock.System.now()
-            addTopicUseCase(Topic(id = 0, deckId = deckId, name = name, createdAt = now, updatedAt = now))
+            addTopicUseCase(Topic(id = IdGenerator.newId(), deckId = deckId, name = name, createdAt = now, updatedAt = now))
         }
     }
 

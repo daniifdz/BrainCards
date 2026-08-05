@@ -27,7 +27,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 
 @OptIn(KoinExperimentalAPI::class, ExperimentalMaterial3Api::class)
 @Composable
-fun DecksScreen(onDeckClick: (Int) -> Unit, onBackClick: () -> Unit) {
+fun DecksScreen(onDeckClick: (String) -> Unit, onBackClick: () -> Unit) {
     val viewModel = koinViewModel<DecksViewModel>()
     val decks by viewModel.decks.collectAsState()
 

@@ -9,11 +9,15 @@ package org.braincards.app.data.local.entity
 
 @Entity(tableName = "decks")
  data class DeckEntity @OptIn(ExperimentalTime::class) constructor(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: String,
     val name: String,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val description: String?
+    val description: String?,
+
+    val deletedAt: Instant? = null,
+    val userId: String? = null,
+    val lastSyncedAt: Instant? = null
  )
 
 

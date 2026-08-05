@@ -14,16 +14,20 @@ import kotlin.time.ExperimentalTime
             entity = DeckEntity::class,
             parentColumns = ["id"],
             childColumns = ["deckId"],
-            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index(value = ["deckId"])]
 )
 data class TopicEntity @OptIn(ExperimentalTime::class) constructor(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val deckId: Int,
+    @PrimaryKey val id: String,
+    val deckId: String,
     val name: String,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+
+
+    val deletedAt: Instant? = null,
+    val lastSyncedAt: Instant? = null,
+    val userId: String? = null
+
 )
