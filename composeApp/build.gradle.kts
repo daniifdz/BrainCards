@@ -21,6 +21,7 @@ plugins {
     //---------------------------------------
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.serialization)
 }
 
 repositories {
@@ -67,6 +68,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.savedstate)
+            implementation(libs.kotlin.serialization)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
