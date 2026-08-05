@@ -74,14 +74,14 @@ class FlashCardViewModel(
     val topics: StateFlow<List<Topic>> = _topics.asStateFlow()
     private var loadTopicsJob: Job? = null
 
-    private val _selectedTopicId = MutableStateFlow<Int?>(null)
-    val selectedTopicId: StateFlow<Int?> = _selectedTopicId.asStateFlow()
+    private val _selectedTopicId = MutableStateFlow<String?>(null)
+    val selectedTopicId: StateFlow<String?> = _selectedTopicId.asStateFlow()
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
 
-    fun loadFlashcards(deckId: Int) {
+    fun loadFlashcards(deckId: String) {
         loadFlashcardsJob?.cancel()
         loadFlashcardsJob = viewModelScope.launch {
             getFlashcardUseCase(deckId)
@@ -90,7 +90,7 @@ class FlashCardViewModel(
         }
     }
 
-    fun loadTopics(deckId: Int) {
+    fun loadTopics(deckId: String) {
         loadTopicsJob?.cancel()
         loadTopicsJob = viewModelScope.launch {
             getTopicsUseCase(deckId)
@@ -99,7 +99,7 @@ class FlashCardViewModel(
         }
     }
 
-    fun selectTopic(topicId: Int?) {
+    fun selectTopic(topicId: String?) {
         _selectedTopicId.value = topicId
         _searchQuery.value = ""
     }

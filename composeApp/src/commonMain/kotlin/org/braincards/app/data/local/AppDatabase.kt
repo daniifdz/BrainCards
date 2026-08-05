@@ -8,9 +8,10 @@ import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
 import org.braincards.app.data.local.entity.DeckEntity
 import org.braincards.app.data.local.entity.FlashcardEntity
+import org.braincards.app.data.local.entity.ReviewLogEntity
 import org.braincards.app.data.local.entity.TopicEntity
 
-@Database(entities = [DeckEntity::class, FlashcardEntity::class, TopicEntity::class], version = 3)
+@Database(entities = [DeckEntity::class, FlashcardEntity::class, TopicEntity::class, ReviewLogEntity::class], version = 4)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

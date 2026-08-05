@@ -18,11 +18,11 @@ class FlashcardRepositoryImpl(
         flashcardDao.addFlashcard(flashcard.toEntity())
     }
 
-    override suspend fun getFlashcardById(id: Int): Flashcard? {
+    override suspend fun getFlashcardById(id: String): Flashcard? {
         return flashcardDao.getFlashcardById(id)?.toDomain()
     }
 
-    override fun getFlashcardsByDeckId(deckId: Int): Flow<List<Flashcard>> {
+    override fun getFlashcardsByDeckId(deckId: String): Flow<List<Flashcard>> {
         return flashcardDao.getFlashcardsByDeckId(deckId).map { list ->
             list.map { it.toDomain() }
         }
@@ -32,7 +32,7 @@ class FlashcardRepositoryImpl(
         flashcardDao.deleteFlashcard(flashcard.toEntity())
     }
 
-    override suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<Flashcard> {
+    override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard> {
         return flashcardDao.getDueFlashcardsByDeck(deckId, now).map { it.toDomain() }
     }
 

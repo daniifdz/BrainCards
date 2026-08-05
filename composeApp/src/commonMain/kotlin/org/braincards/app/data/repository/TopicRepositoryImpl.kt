@@ -23,7 +23,7 @@ class TopicRepositoryImpl(private val topicDao: TopicDao): TopicsRepository {
         topicDao.deleteTopic(topic.toEntity())
     }
 
-    override fun getTopicsByDeckId(deckId: Int): Flow<List<Topic>> {
+    override fun getTopicsByDeckId(deckId: String): Flow<List<Topic>> {
         return topicDao.getTopicsByDeckId(deckId).map { topics ->
             topics.map {
                 it.toDomain()
@@ -31,7 +31,7 @@ class TopicRepositoryImpl(private val topicDao: TopicDao): TopicsRepository {
         }
     }
 
-    override suspend fun getTopicById(id: Int): Topic? {
+    override suspend fun getTopicById(id: String): Topic? {
         return topicDao.getTopicById(id)?.toDomain()
     }
 }

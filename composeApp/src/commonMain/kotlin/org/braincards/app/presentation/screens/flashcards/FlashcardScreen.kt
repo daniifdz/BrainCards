@@ -30,9 +30,9 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlashcardScreen(
-    deckId: Int,
+    deckId: String,
     onBackClick: () -> Unit,
-    onStudyClick: (Int) -> Unit,
+    onStudyClick: (String) -> Unit,
     viewModel: FlashCardViewModel = koinViewModel()
 ) {
     LaunchedEffect(deckId) {
@@ -219,7 +219,7 @@ private fun RootContent(
     paddingValues: PaddingValues,
     topics: List<Topic>,
     flashcards: List<Flashcard>,
-    onTopicClick: (Int) -> Unit,
+    onTopicClick: (String) -> Unit,
     onTopicEdit: (Topic) -> Unit,
     onTopicDelete: (Topic) -> Unit,
     onCardEdit: (Flashcard) -> Unit,

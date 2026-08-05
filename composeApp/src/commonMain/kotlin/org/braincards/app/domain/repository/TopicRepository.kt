@@ -7,6 +7,6 @@ interface TopicsRepository {
     suspend fun addTopic(topic: Topic)
     suspend fun updateTopic(topic: Topic)
     suspend fun deleteTopic(topic: Topic)
-    fun getTopicsByDeckId(deckId: Int): Flow<List<Topic>>
-    suspend fun getTopicById(id: Int): Topic?
+    fun getTopicsByDeckId(deckId: String): Flow<List<Topic>>
+    suspend fun getTopicById(id: String): Topic?
 }

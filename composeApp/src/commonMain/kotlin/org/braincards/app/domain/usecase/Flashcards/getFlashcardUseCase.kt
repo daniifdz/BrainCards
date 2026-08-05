@@ -7,7 +7,7 @@ import org.braincards.app.domain.repository.FlashcardRepository
 class GetFlashcardUseCase(private val repository: FlashcardRepository) {
 
 
-    operator fun invoke(deckId: Int): Flow<List<Flashcard>> {
+    operator fun invoke(deckId: String): Flow<List<Flashcard>> {
         return repository.getFlashcardsByDeckId(deckId)
     }
 }

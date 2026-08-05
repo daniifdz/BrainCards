@@ -12,19 +12,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.braincards.app.domain.models.ReviewQuality
+import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.presentation.components.FlipCard
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudyScreen(
-    deckId: Int,
+    deckId: String?,
     onBackClick: () -> Unit,
     onGoToDecksClick: () -> Unit,
     viewModel: StudyViewModel = koinViewModel()
 ) {
+
+    //!!¿este valor puede ser null de verdad en algún caso legítimo de mi app?".
+    // Si la respuesta es sí (como aquí), !! no es la solución, es esconder el
+    // !! solo tiene sentido cuando sabes con certeza matemática que ese caso
+    // nunca puede pasar (y aun así, suele haber formas mejores de expresarlo).
     LaunchedEffect(deckId) {
-        viewModel.initSession(deckId)
+        val scope = if (deckId != null) StudyScope.Deck(deckId) else StudyScope.All
+        viewModel.initSession(scope)
     }
 
     val state by viewModel.state.collectAsState()
@@ -76,10 +83,11 @@ fun StudyScreen(
                             Text("Volver a los mazos")
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        OutlinedButton(onClick = { viewModel.reviewAllCards(deckId) }) {
-                            Text("Repasar todo de todas formas")
+                        if (deckId != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(onClick = { viewModel.reviewAllCards(deckId) }) {
+                                Text("Repasar todo de todas formas")
+                            }
                         }
                     }
                 }

@@ -21,8 +21,8 @@ interface TopicDao {
     suspend fun deleteTopic(topic: TopicEntity)
 
     @Query("SELECT * FROM topics WHERE deckId = :deckId")
-    fun getTopicsByDeckId(deckId: Int): Flow<List<TopicEntity>>
+    fun getTopicsByDeckId(deckId: String): Flow<List<TopicEntity>>
 
     @Query("SELECT * FROM topics WHERE id = :id")
-    suspend fun getTopicById(id: Int): TopicEntity?
+    suspend fun getTopicById(id: String): TopicEntity?
 }

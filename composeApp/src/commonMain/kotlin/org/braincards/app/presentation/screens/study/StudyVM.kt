@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.ReviewQuality
+import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
@@ -35,12 +36,12 @@ class StudyViewModel(
 
     private val sessionQueue = ArrayDeque<Flashcard>()
 
-    fun initSession(deckId: Int) {
+    fun initSession(scope: StudyScope) {
         viewModelScope.launch {
             _state.value = StudyState.Loading
             val now = Clock.System.now()
 
-            val dueCards = getDueFlashcardsUseCase(deckId, now)
+            val dueCards = getDueFlashcardsUseCase(scope, now)
 
             if (dueCards.isEmpty()) {
                 _state.value = StudyState.Empty
@@ -72,7 +73,7 @@ class StudyViewModel(
         }
     }
 
-    fun reviewAllCards(deckId: Int) {
+    fun reviewAllCards(deckId: String) {
         viewModelScope.launch {
             _state.value = StudyState.Loading
 

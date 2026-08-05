@@ -70,7 +70,10 @@ fun App() {
 
                 is Screen.StudySession -> {
                     StudyScreen(
-                        deckId = screen.deckId,
+                        deckId = when (val scope = screen.scope) {
+                            is StudyScope.All -> null
+                            is StudyScope.Deck -> scope.deckId
+                        },
                         onBackClick = {
                             currentScreen = Screen.Home
                         },

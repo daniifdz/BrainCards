@@ -6,10 +6,10 @@ import org.braincards.app.domain.models.Flashcard
 
 interface FlashcardRepository {
     suspend fun addFlashcard(flashcard: Flashcard)
-    suspend fun getFlashcardById(id: Int): Flashcard?
-    fun getFlashcardsByDeckId(deckId: Int): Flow<List<Flashcard>>
+    suspend fun getFlashcardById(id: String): Flashcard?
+    fun getFlashcardsByDeckId(deckId: String): Flow<List<Flashcard>>
     suspend fun deleteFlashcard(flashcard: Flashcard)
-    suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<Flashcard>
+    suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard>
     suspend fun updateFlashcard(flashcard: Flashcard)
     
     fun getAllFlashcards(): Flow<List<Flashcard>>

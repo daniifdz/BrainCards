@@ -22,16 +22,16 @@ interface FlashcardDao {
     suspend fun deleteFlashcard(flashcard: FlashcardEntity)
 
     @Query("SELECT * FROM flashcards WHERE id = :id")
-    suspend fun getFlashcardById(id: Int): FlashcardEntity?
+    suspend fun getFlashcardById(id: String): FlashcardEntity?
 
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId")
-    fun getFlashcardsByDeckId(deckId: Int): Flow<List<FlashcardEntity>>
+    fun getFlashcardsByDeckId(deckId: String): Flow<List<FlashcardEntity>>
 
     @Query("DELETE FROM flashcards WHERE id = :id")
-    suspend fun deleteFlashcardById(id: Int)
+    suspend fun deleteFlashcardById(id: String)
 
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND nextReview <= :now ORDER BY nextReview ASC")
-    suspend fun getDueFlashcardsByDeck(deckId: Int, now: Instant): List<FlashcardEntity>
+    suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<FlashcardEntity>
 
     @Query("SELECT * FROM flashcards")
     fun getAllFlashcards(): Flow<List<FlashcardEntity>>
