@@ -6,9 +6,12 @@ import androidx.room.TypeConverters
 import org.braincards.app.data.local.dao.DeckDao
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
+import org.braincards.app.data.local.dao.ReviewLogDao
 import org.braincards.app.data.local.entity.DeckEntity
-import org.braincards.app.data.local.entity.FlashcardEntity
+
 import org.braincards.app.data.local.entity.ReviewLogEntity
+
+import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.data.local.entity.TopicEntity
 
 @Database(entities = [DeckEntity::class, FlashcardEntity::class, TopicEntity::class, ReviewLogEntity::class], version = 4)
@@ -19,6 +22,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun flashcardDao(): FlashcardDao
 
     abstract fun topicDao(): TopicDao
+
+    abstract fun reviewLogDao(): ReviewLogDao
 }
 
 
