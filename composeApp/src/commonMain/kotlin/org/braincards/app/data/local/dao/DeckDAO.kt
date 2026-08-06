@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.braincards.app.data.local.entity.DeckEntity
+import kotlinx.datetime.Instant
 
 @Dao
 interface DeckDao {
@@ -18,12 +19,12 @@ interface DeckDao {
     @Update
     suspend fun updateDeck(deck: DeckEntity)
 
-    @Delete
-    suspend fun deleteDeck(deck: DeckEntity)
+    @Query ("UPDATE decks SET deletedAt = :deletedAt WHERE id = :id")
+    suspend fun softdeleteDeck(id:String, deletedAt: Instant)
 
-    @Query("SELECT * FROM decks")
+    @Query("SELECT * FROM decks WHERE deletedAt IS NULL")
     fun getAllDecks(): Flow<List<DeckEntity>>
 
-    @Query("SELECT * FROM decks WHERE id = :id")
-    suspend fun getDeckById(id: Int): DeckEntity?
+    @Query("SELECT * FROM decks WHERE id = :id AND deletedAt IS NULL")
+    suspend fun getDeckById(id: String): DeckEntity?
 }
