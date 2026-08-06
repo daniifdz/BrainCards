@@ -2,6 +2,7 @@ package org.braincards.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.entity.FlashcardEntity
@@ -29,7 +30,7 @@ class FlashcardRepositoryImpl(
     }
 
     override suspend fun deleteFlashcard(flashcard: Flashcard) {
-        flashcardDao.deleteFlashcard(flashcard.toEntity())
+        flashcardDao.softdeleteFlashcardById(flashcard.id, Clock.System.now())
     }
 
     override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard> {

@@ -2,6 +2,7 @@ package org.braincards.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import org.braincards.app.data.local.dao.TopicDao
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
@@ -20,7 +21,7 @@ class TopicRepositoryImpl(private val topicDao: TopicDao): TopicsRepository {
     }
 
     override suspend fun deleteTopic(topic: Topic) {
-        topicDao.deleteTopic(topic.toEntity())
+        topicDao.softdeleteTopic(topic.id, Clock.System.now())
     }
 
     override fun getTopicsByDeckId(deckId: String): Flow<List<Topic>> {
