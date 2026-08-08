@@ -5,9 +5,11 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
+import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
@@ -46,12 +48,13 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
     single { get<AppDatabase>().deckDao() }
     single { get<AppDatabase>().flashcardDao() }
     single {get<AppDatabase>().topicDao()}
+    single {get<AppDatabase>().reviewLogDao()}
 
     // Proveer el Repositorio
-    single<DecksRepository> { DeckRepositoryImpl(deckDao = get()) }
+    single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get()) }
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
-    single<TopicsRepository> { TopicRepositoryImpl(topicDao = get()) }
-
+    single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get()) }
+    single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
 
 
     //usecasess deck

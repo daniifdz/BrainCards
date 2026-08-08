@@ -1,15 +1,19 @@
 package org.braincards.app.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import org.braincards.app.data.local.dao.DeckDao
+import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
+import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.TopicsRepository
 
-class TopicRepositoryImpl(private val topicDao: TopicDao): TopicsRepository {
+class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardDao: FlashcardDao): TopicsRepository {
 
     override suspend fun addTopic(topic: Topic) {
         topicDao.addTopic(topic.toEntity())
@@ -21,7 +25,15 @@ class TopicRepositoryImpl(private val topicDao: TopicDao): TopicsRepository {
     }
 
     override suspend fun deleteTopic(topic: Topic) {
-        topicDao.softdeleteTopic(topic.id, Clock.System.now())
+        val now = Clock.System.now()
+        topicDao.softdeleteTopic(topic.id, now)
+
+
+        val flashcardsOfDeck = flashcardDao.getFlashcardsByDeckId(topic.deckId).first()
+        val flashcardsOfThisTopic = flashcardsOfDeck.filter{it.topicId == topic.id}
+        for (flashcard in flashcardsOfThisTopic){
+            flashcardDao.softdeleteFlashcardById(flashcard.id, now)
+        }
     }
 
     override fun getTopicsByDeckId(deckId: String): Flow<List<Topic>> {

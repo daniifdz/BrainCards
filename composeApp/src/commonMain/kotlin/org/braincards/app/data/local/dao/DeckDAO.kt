@@ -22,6 +22,7 @@ interface DeckDao {
     @Query ("UPDATE decks SET deletedAt = :deletedAt WHERE id = :id")
     suspend fun softdeleteDeck(id:String, deletedAt: Instant)
 
+
     @Query("SELECT * FROM decks WHERE deletedAt IS NULL")
     fun getAllDecks(): Flow<List<DeckEntity>>
 
