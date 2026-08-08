@@ -5,11 +5,14 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import org.braincards.app.domain.models.Flashcard
+import org.braincards.app.domain.models.ReviewLog
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.ReviewLogRepository
+import org.braincards.app.domain.util.IdGenerator
 import kotlin.math.roundToInt
 
-class ReviewFlashcardUseCase(private val repository: FlashcardRepository) {
+class ReviewFlashcardUseCase(private val repository: FlashcardRepository, private val reviewLogRepository: ReviewLogRepository) {
 
     suspend operator fun invoke(flashcard: Flashcard, quality: ReviewQuality) {
         val q = quality.value
@@ -58,5 +61,17 @@ class ReviewFlashcardUseCase(private val repository: FlashcardRepository) {
         )
 
         repository.updateFlashcard(updatedCard)
+
+        reviewLogRepository.addReviewLog(
+            ReviewLog(
+                id = IdGenerator.newId(),
+                cardId = flashcard.id,
+                timestamp = now,
+                grade = q,
+                previousInterval = flashcard.interval,
+                newInterval = newInterval,
+                userId = flashcard.userId
+            )
+        )
     }
 }

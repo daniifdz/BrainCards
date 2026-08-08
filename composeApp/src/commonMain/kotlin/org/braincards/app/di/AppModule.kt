@@ -95,12 +95,12 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
 
     //stdy
     factory { GetDueFlashcardsUseCase(repository = get()) }
-    factory { ReviewFlashcardUseCase(repository = get()) }
+    factory { ReviewFlashcardUseCase(repository = get(), reviewLogRepository = get()) }
     viewModel {
         StudyViewModel(
             getDueFlashcardsUseCase = get(),
             reviewFlashcardUseCase = get(),
-            getFlashcardUseCase = get()
+            getFlashcardUseCase = get(),
         )
     }
 

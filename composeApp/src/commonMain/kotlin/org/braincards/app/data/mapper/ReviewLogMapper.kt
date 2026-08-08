@@ -10,7 +10,8 @@ fun ReviewLogEntity.toDomain(): ReviewLog {
         timestamp = timestamp,
         grade = grade,
         previousInterval = previousInterval,
-        newInterval = newInterval
+        newInterval = newInterval,
+        userId = userId
     )
 }
 
@@ -21,6 +22,7 @@ fun ReviewLog.toEntity(): ReviewLogEntity {
         timestamp = timestamp,
         grade = grade,
         previousInterval = previousInterval,
-        newInterval = newInterval
+        newInterval = newInterval,
+        userId = userId
     )
 }

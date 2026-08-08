@@ -8,5 +8,6 @@ data class ReviewLog(
     val timestamp: Instant,
     val grade: Int,
     val previousInterval: Int,
-    val newInterval: Int
+    val newInterval: Int,
+    val userId: String? = null
 )
