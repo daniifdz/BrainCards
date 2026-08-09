@@ -3,6 +3,7 @@ package org.braincards.app.di
 import org.koin.core.module.dsl.viewModel
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
@@ -39,8 +40,7 @@ fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) 
         databaseBuilder
             .setDriver(BundledSQLiteDriver()) //necesario para el funcionamineto con KMP
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.IO)
-            .fallbackToDestructiveMigrationOnDowngrade(true)
-            .fallbackToDestructiveMigration(true)
+            .addMigrations(MIGRATION_3_4)
             .build()
     }
 
