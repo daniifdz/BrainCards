@@ -40,8 +40,10 @@ fun FlashcardScreen(
         viewModel.loadTopics(deckId)
     }
 
-    val flashcards by viewModel.flashcards.collectAsState()
-    val topics by viewModel.topics.collectAsState()
+    val flashcardsState by viewModel.flashcards.collectAsState()
+    val topicsState by viewModel.topics.collectAsState()
+
+
     val selectedTopicId by viewModel.selectedTopicId.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
@@ -56,7 +58,35 @@ fun FlashcardScreen(
     var topicToDelete by remember { mutableStateOf<Topic?>(null) }
     var topicToEdit by remember { mutableStateOf<Topic?>(null) }
 
-    val selectedTopic = topics.find { it.id == selectedTopicId }
+
+    //loading//error antes de todo el scaffold
+    if (flashcardsState is FlashcardsUiState.Loading || topicsState is TopicUiState.Loading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (flashcardsState is FlashcardsUiState.Error) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text((flashcardsState as FlashcardsUiState.Error).message)
+        }
+        return
+    }
+
+    if (topicsState is TopicUiState.Error) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text((topicsState as TopicUiState.Error).message)
+        }
+        return
+    }
+
+    val flashcards = (flashcardsState as FlashcardsUiState.Success).flashcards
+    val topics = (topicsState as TopicUiState.Success).topics
+
+    val selectedTopic = topics.find { it.id == selectedTopicId }//este igual sobra
+
+
 
     Scaffold(
         topBar = {
@@ -116,7 +146,7 @@ fun FlashcardScreen(
                             Icon(Icons.Default.Search, contentDescription = "Buscar")
                         }
                         // Icono de Estudiar (Solo si hay cartas y no estamos buscando)
-                        if (flashcards.isNotEmpty()) {
+                        if (flashcardsState is FlashcardsUiState.Success && searchQuery.isEmpty()) { //esto lo acabo de modificar
                             IconButton(onClick = { onStudyClick(deckId) }) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = "Estudiar mazo")
                             }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.domain.models.CardType
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
@@ -25,6 +26,18 @@ import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.domain.util.IdGenerator
+
+sealed class FlashcardsUiState {
+    data object Loading : FlashcardsUiState()
+    data class Success(val flashcards: List<Flashcard>) : FlashcardsUiState()
+    data class Error(val message: String) : FlashcardsUiState()
+}
+
+sealed class TopicUiState {
+    data object Loading : TopicUiState()
+    data class Success(val topics: List<Topic>) : TopicUiState()
+    data class Error(val message: String) : TopicUiState()
+}
 
 class FlashCardViewModel(
     // Casos de uso de Flashcards
@@ -39,39 +52,45 @@ class FlashCardViewModel(
     private val deleteTopicUseCase: DeleteTopicUseCase
 ) : ViewModel() {
 
-    private val _flashcards = MutableStateFlow<List<Flashcard>>(emptyList())
-    
+    private val _flashcardState = MutableStateFlow<FlashcardsUiState>(FlashcardsUiState.Loading)
+
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
     // combinamos la lista original con el texto de búsqueda
-    val filteredFlashcards: StateFlow<List<Flashcard>> = combine(
-        _flashcards,
+    val filteredFlashcards: StateFlow<FlashcardsUiState> = combine(
+        _flashcardState,
         _searchQuery
-    ) { cards, query ->
-        if (query.isBlank()) {
-            cards
-        } else {
-            cards.filter {
-                it.question.contains(query, ignoreCase = true) ||
-                it.answer.contains(query, ignoreCase = true)
+    ) { state, query ->
+        when (state) {
+            is FlashcardsUiState.Success -> {
+                val filtered = if (query.isBlank()) {
+                    state.flashcards
+                } else {
+                    state.flashcards.filter {
+                        it.question.contains(query, ignoreCase = true) ||
+                                it.answer.contains(query, ignoreCase = true)
+                    }
+                }
+                FlashcardsUiState.Success(filtered)
             }
+            else -> state
         }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
+        initialValue = FlashcardsUiState.Loading
     )
 
 
-    val flashcards: StateFlow<List<Flashcard>> = filteredFlashcards
+    val flashcards: StateFlow<FlashcardsUiState> = filteredFlashcards
 
     private var loadFlashcardsJob: Job? = null
 
     // Estado para los Temas
-    private val _topics = MutableStateFlow<List<Topic>>(emptyList())
-    val topics: StateFlow<List<Topic>> = _topics.asStateFlow()
+    private val _topicState = MutableStateFlow<TopicUiState>(TopicUiState.Loading)
+    val topics: StateFlow<TopicUiState> = _topicState.asStateFlow()
     private var loadTopicsJob: Job? = null
 
     private val _selectedTopicId = MutableStateFlow<String?>(null)
@@ -81,25 +100,36 @@ class FlashCardViewModel(
         _searchQuery.value = query
     }
 
+
     fun loadFlashcards(deckId: String) {
         loadFlashcardsJob?.cancel()
         loadFlashcardsJob = viewModelScope.launch {
+            _flashcardState.value = FlashcardsUiState.Loading
             getFlashcardUseCase(deckId)
-                .catch { e -> println("Error loading flashcards: ${e.message}") }
-                .collectLatest { list -> _flashcards.value = list }
+                .catch { e ->
+                    _flashcardState.value = FlashcardsUiState.Error("Error loading flashcards: ${e.message}") }
+                .collectLatest { list ->
+                    _flashcardState.value = FlashcardsUiState.Success(list)
+                }
         }
     }
+
 
     fun loadTopics(deckId: String) {
         loadTopicsJob?.cancel()
         loadTopicsJob = viewModelScope.launch {
+            _topicState.value = TopicUiState.Loading
             getTopicsUseCase(deckId)
-                .catch { e -> println("Error loading topics: ${e.message}") }
-                .collectLatest { list -> _topics.value = list }
+                .catch { e ->
+                    _topicState.value = TopicUiState.Error("Error loading topics: ${e.message}") }
+                .collectLatest { list ->
+                    _topicState.value = TopicUiState.Success(list)
+                }
         }
     }
 
     fun selectTopic(topicId: String?) {
+
         _selectedTopicId.value = topicId
         _searchQuery.value = ""
     }
