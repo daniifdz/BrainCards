@@ -99,6 +99,36 @@ fun StudyScreen(
                         onRate = { quality -> viewModel.rateCard(quality) }
                     )
                 }
+                is StudyState.Finished -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "✅",
+                            style = MaterialTheme.typography.displayLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "¡Sesión completada!",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Repasaste ${currentState.totalReviewed} tarjetas",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            "✔️ ${currentState.correctCount} correctas   ❌ ${currentState.failedCount} falladas",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Button(onClick = onBackClick) {
+                            Text("Volver a los mazos")
+                        }
+                    }
+
+                }
             }
         }
     }

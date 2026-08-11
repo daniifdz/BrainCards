@@ -10,19 +10,30 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.ReviewQuality
+import org.braincards.app.domain.models.StudyQueue
 import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 
 sealed class StudyState {
+    //data object: para un caso sin datos propios
     data object Loading : StudyState()
     data object Empty : StudyState()
+
+    //data classs: para un caso con datos propios, se acompaña de info concreta y
+    //distinta cada vez que se usa
     data class Reviewing(
         val currentCard: Flashcard,
         val isAnswerVisible: Boolean = false,
         val remainingCount: Int
-    ) : StudyState()
+    ): StudyState()
+
+    data class Finished(
+        val totalReviewed: Int,
+        val correctCount: Int,
+        val failedCount: Int
+    ): StudyState()
 }
 
 class StudyViewModel(
@@ -34,7 +45,11 @@ class StudyViewModel(
     private val _state = MutableStateFlow<StudyState>(StudyState.Loading)
     val state: StateFlow<StudyState> = _state.asStateFlow()
 
-    private val sessionQueue = ArrayDeque<Flashcard>()
+
+
+    private var studyQueue: StudyQueue? = null
+
+    private var isSubmitting :Boolean = false
 
     fun initSession(scope: StudyScope) {
         viewModelScope.launch {
@@ -46,23 +61,39 @@ class StudyViewModel(
             if (dueCards.isEmpty()) {
                 _state.value = StudyState.Empty
             } else {
-                sessionQueue.clear()
-                sessionQueue.addAll(dueCards)
+
+                studyQueue = StudyQueue(
+                    queue = dueCards,
+                    correctCount = 0,
+                    failedCount = 0
+                )
+
                 showNextCard()
             }
         }
     }
 
     private fun showNextCard() {
-        val nextCard = sessionQueue.firstOrNull()
-        if (nextCard == null) {
-            _state.value = StudyState.Empty
-        } else {
+        val current = studyQueue
+        val nextCard = studyQueue?.currentCard
+
+        if (nextCard != null && current!=null) {
             _state.value = StudyState.Reviewing(
                 currentCard = nextCard,
                 isAnswerVisible = false,
-                remainingCount = sessionQueue.size
+                remainingCount = current.queue.size
             )
+
+            //la cola esta vacia pero ya se puntuo algo, la sesión termino
+        } else if(current != null && (current.correctCount + current.failedCount) >0){
+            _state.value = StudyState.Finished(
+                totalReviewed = current.correctCount + current.failedCount,
+                correctCount = current.correctCount,
+                failedCount = current.failedCount
+            )
+        }else{
+            //cola vacia no se puntuo nada nunca, noy hay nada que estudiar
+            _state.value = StudyState.Empty
         }
     }
 
@@ -82,26 +113,38 @@ class StudyViewModel(
             if (allCards.isEmpty()) {
                 _state.value = StudyState.Empty
             } else {
-                sessionQueue.clear()
-                sessionQueue.addAll(allCards)
-                sessionQueue.shuffle()
+                studyQueue = StudyQueue(
+                    queue = allCards.shuffled(),
+                    correctCount = 0,
+                    failedCount = 0
+                )
+
                 showNextCard()
             }
         }
     }
 
     fun rateCard(quality: ReviewQuality) {
+        //usamos el valor de la variable antes de la llamada
+        if(isSubmitting)return //puntuación en curso, ingora pulsación
+
+
         val currentState = _state.value
         if (currentState is StudyState.Reviewing) {
             val card = currentState.currentCard
+            isSubmitting = true
 
-            viewModelScope.launch {
-                reviewFlashcardUseCase(card, quality)
+                viewModelScope.launch {
+                    reviewFlashcardUseCase(card, quality)
 
-                sessionQueue.removeFirst()
 
-                showNextCard()
-            }
+                    studyQueue = studyQueue?.submitResult(card,quality)
+
+                    isSubmitting = false
+                    showNextCard()
+                }
+
+
         }
     }
 }
