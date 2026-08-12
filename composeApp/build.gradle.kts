@@ -69,6 +69,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.savedstate)
             implementation(libs.kotlin.serialization)
+            implementation(libs.navigation.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

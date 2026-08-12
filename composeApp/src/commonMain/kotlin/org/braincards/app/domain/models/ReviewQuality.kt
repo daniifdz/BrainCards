@@ -6,3 +6,5 @@ enum class ReviewQuality(val value: Int) {
     GOOD(4),  //Bien
     EASY(5)   //Facil
 }
+
+
