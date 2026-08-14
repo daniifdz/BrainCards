@@ -4,7 +4,6 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import org.braincards.app.presentation.screens.decks.DecksScreen
 import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
 import org.braincards.app.presentation.screens.navigation.Screen
@@ -16,17 +15,22 @@ import androidx.compose.material3.lightColorScheme
 import org.braincards.app.presentation.screens.home.HomeScreen
 import org.braincards.app.presentation.screens.settings.AppTheme
 import org.braincards.app.presentation.screens.settings.SettingsScreen
+import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 @Preview
 fun App() {
-    var appTheme by remember { mutableStateOf(AppTheme.SYSTEM) }
+    val themeViewModel = koinViewModel<ThemeViewModel>()
+    val appTheme by themeViewModel.theme.collectAsState()
 
     val useDarkTheme = when (appTheme) {
         AppTheme.SYSTEM -> isSystemInDarkTheme()
@@ -93,7 +97,7 @@ fun App() {
             composable<Screen.Settings>{
                 SettingsScreen(
                     currentTheme = appTheme,
-                    onThemeChange = { newTheme -> appTheme = newTheme },
+                    onThemeChange = { newTheme -> themeViewModel.setTheme(newTheme) },
                     onBackClick = { navController.popBackStack() },
                 )
             }

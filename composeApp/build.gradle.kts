@@ -61,6 +61,7 @@ kotlin {
             implementation(projects.shared)
             //---------------------------------------------------------
             implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.datastore.preferences)
             implementation(libs.sqlite.bundled)
             implementation(libs.kotlinx.datetime)
             implementation(libs.koin.core)

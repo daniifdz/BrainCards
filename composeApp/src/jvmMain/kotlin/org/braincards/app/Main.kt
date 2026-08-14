@@ -4,10 +4,14 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.res.painterResource
 import org.braincards.app.data.local.DatabaseFactory
+import org.braincards.app.data.local.SettingsDataStoreFactory
 import org.braincards.app.di.initKoin
 
 fun main() = application {
-    initKoin(databaseFactory = DatabaseFactory())
+    initKoin(
+        databaseFactory = DatabaseFactory(),
+        settingsDataStoreFactory = SettingsDataStoreFactory()
+    )
     Window(
         onCloseRequest = ::exitApplication,
         title = "BrainCards",

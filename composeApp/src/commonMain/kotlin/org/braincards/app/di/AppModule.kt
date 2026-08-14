@@ -1,6 +1,8 @@
 package org.braincards.app.di
 
 import org.koin.core.module.dsl.viewModel
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.migration.MIGRATION_3_4
@@ -30,10 +32,17 @@ import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.study.StudyViewModel
+import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
 import org.koin.dsl.module
 
-fun appModule(databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>) = module {
+fun appModule(
+    databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>,
+    settingsDataStore: DataStore<Preferences>
+) = module {
+
+    single<DataStore<Preferences>> { settingsDataStore }
+    viewModel { ThemeViewModel(dataStore = get()) }
 
     // Proveer la Base de Datos (Singleton)
     single<AppDatabase> {

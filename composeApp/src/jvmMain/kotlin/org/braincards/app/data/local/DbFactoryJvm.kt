@@ -7,7 +7,7 @@ import java.io.File
 actual class DatabaseFactory {
     actual fun create(): RoomDatabase.Builder<AppDatabase> {
         // almaceno db en la carpeta del user
-        val dbFile = File(System.getProperty("java.io.tmpdir"), "braindcards.db")
+        val dbFile = File(appDataDir(), "braindcards.db")
         return Room.databaseBuilder<AppDatabase>(
             name = dbFile.absolutePath,
         )
