@@ -150,6 +150,19 @@ dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
 }
 
+// El classpath del propio plugin de KSP (no el de Room como procesador, que ya resuelve bien)
+// arrastra kotlinx-serialization-json 1.6.3, anterior a que GeneratedSerializer.typeParametersSerializers()
+// tuviera implementacion "default". Choca con las clases de Room (FieldBundle$$serializer, etc.),
+// compiladas esperando ese default -> AbstractMethodError al validar el esquema exportado.
+configurations.matching { it.name == "kspPluginClasspath" || it.name == "kspPluginClasspathNonEmbeddable" }
+    .configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "org.jetbrains.kotlinx" && requested.name.startsWith("kotlinx-serialization")) {
+                useVersion(libs.versions.kotlinxSerialization.get())
+            }
+        }
+    }
+
 room {
     schemaDirectory("$projectDir/schemas")
 }
