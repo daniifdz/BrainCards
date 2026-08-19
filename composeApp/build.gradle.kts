@@ -118,14 +118,15 @@ android {
         create("release") {
             storeFile = file("keystore/braincards-key.jks")
             storePassword = signingProperty("KEYSTORE_PASSWORD", "BRAINCARDS_KEYSTORE_PASSWORD")
-            keyAlias = "braincards"
+            keyAlias = "key0"
             keyPassword = signingProperty("KEY_PASSWORD", "BRAINCARDS_KEY_PASSWORD")
         }
     }
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
 
             applicationVariants.all {
