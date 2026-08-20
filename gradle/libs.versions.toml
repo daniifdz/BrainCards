@@ -25,6 +25,7 @@ koin = "4.0.0"
 koin-compose = "4.0.0"
 savedstate = "1.2.1"
 navigationCompose = "2.9.0"
+androidxSplashscreen = "1.2.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -51,6 +52,7 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 androidx-savedstate = { module = "androidx.savedstate:savedstate", version.ref = "savedstate" }
 kotlin-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidxSplashscreen" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

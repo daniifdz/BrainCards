@@ -71,6 +71,7 @@ kotlin {
             implementation(libs.androidx.savedstate)
             implementation(libs.kotlin.serialization)
             implementation(libs.navigation.compose)
+            implementation(libs.androidx.core.splashscreen)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -32,7 +32,7 @@ fun App() {
     val themeViewModel = koinViewModel<ThemeViewModel>()
     val appTheme by themeViewModel.theme.collectAsState()
 
-    val useDarkTheme = when (appTheme) {
+    val useDarkTheme = when (appTheme ?: AppTheme.SYSTEM) {
         AppTheme.SYSTEM -> isSystemInDarkTheme()
         AppTheme.LIGHT -> false
         AppTheme.DARK -> true
@@ -96,7 +96,7 @@ fun App() {
             }
             composable<Screen.Settings>{
                 SettingsScreen(
-                    currentTheme = appTheme,
+                    currentTheme = appTheme?: AppTheme.SYSTEM,
                     onThemeChange = { newTheme -> themeViewModel.setTheme(newTheme) },
                     onBackClick = { navController.popBackStack() },
                 )

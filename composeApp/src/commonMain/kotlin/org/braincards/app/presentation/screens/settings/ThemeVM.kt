@@ -18,12 +18,12 @@ class ThemeViewModel(
     private val dataStore: DataStore<Preferences>
 ) : ViewModel() {
 
-    val theme: StateFlow<AppTheme> = dataStore.data
+    val theme: StateFlow<AppTheme?> = dataStore.data
         .map { prefs -> prefs[THEME_KEY]?.let { AppTheme.valueOf(it) } ?: AppTheme.SYSTEM }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = AppTheme.SYSTEM
+            initialValue = null
         )
 
     fun setTheme(newTheme: AppTheme) {
