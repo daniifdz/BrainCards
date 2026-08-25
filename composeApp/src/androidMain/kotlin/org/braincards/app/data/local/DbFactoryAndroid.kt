@@ -11,7 +11,7 @@ actual class DatabaseFactory(
 ) {
     actual fun create(): RoomDatabase.Builder<AppDatabase> {
         val appContext = context.applicationContext
-        val dbFile = appContext.getDatabasePath("braindcards.db")
+        val dbFile = appContext.getDatabasePath("braincards.db")
 
         return Room.databaseBuilder<AppDatabase>(
             context = appContext,
