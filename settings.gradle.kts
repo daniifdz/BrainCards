@@ -1,4 +1,4 @@
-rootProject.name = "BraindCards"
+rootProject.name = "BrainCards"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
@@ -21,4 +21,3 @@ plugins {
 }
 
 include(":composeApp")
-include(":shared")
