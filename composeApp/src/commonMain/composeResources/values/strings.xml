@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">BrainCards</string>
+    <string name="deck_content">Contenido del Mazo</string>
+    <string name="topic_title">Tema: %s</string>
+    <string name="back">Atrás</string>
+    <string name="search">Buscar</string>
+    <string name="search_hint">Buscar carta...</string>
+    <string name="close_search">Cerrar búsqueda</string>
+    <string name="clear_text">Borrar texto</string>
+    <string name="study_deck">Estudiar mazo</string>
+    <string name="add">Añadir</string>
+    <string name="new_card">Nueva Carta</string>
+    <string name="new_topic">Nuevo Tema</string>
+    <string name="edit">Editar</string>
+    <string name="delete">Borrar</string>
+    <string name="empty_deck">Mazo vacío. ¡Añade temas o cartas!</string>
+    <string name="empty_topic">No hay cartas en este tema. ¡Añade la primera!</string>
+    <string name="delete_card_title">¿Borrar Carta?</string>
+    <string name="delete_card_text">Se eliminará permanentemente.</string>
+    <string name="delete_topic_title">¿Borrar Tema?</string>
+    <string name="delete_topic_text">Se borrará el tema \'%s\' Y TODAS SUS CARTAS.</string>
+    <string name="cancel">Cancelar</string>
+    <string name="save">Guardar</string>
+    <string name="create">Crear</string>
+    <string name="confirm_add">Añadir</string>
+    <string name="question_label">Pregunta</string>
+    <string name="answer_label">Respuesta</string>
+    <string name="topic_name_label">Nombre del Tema</string>
+    <string name="name_label">Nombre</string>
+    <string name="options">Opciones</string>
+    <string name="temas_header">Temas</string>
+    <string name="general_cards_header">Cartas Generales</string>
+</resources>
