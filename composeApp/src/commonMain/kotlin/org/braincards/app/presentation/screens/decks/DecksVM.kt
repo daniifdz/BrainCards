@@ -2,8 +2,11 @@ package org.braincards.app.presentation.screens.decks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -20,6 +23,10 @@ class DecksViewModel(
     private val deleteDeckUseCase: DeleteDeckUseCase
 ) : ViewModel() {
 
+
+    private val _errorEvent = MutableSharedFlow<String>()
+    val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
+
     // Lista de mazos actualizada
     val decks: StateFlow<List<Deck>> = getDecksUseCase()
         .stateIn(
@@ -31,7 +38,12 @@ class DecksViewModel(
     // Crear mazo
     fun createDeck(name: String, description: String?) {
         viewModelScope.launch {
-            addDeckUseCase(name, description)
+            try {
+                addDeckUseCase(name, description)
+
+            }catch (e: IllegalArgumentException){
+                _errorEvent.emit(e.message ?: "Error al guardar el mazo")
+            }
         }
     }
 
@@ -45,12 +57,16 @@ class DecksViewModel(
     // Editar mazo
     fun updateDeck(deck: Deck, newName: String, newDescription: String?) {
         viewModelScope.launch {
-            val updatedDeck = deck.copy(
-                name = newName,
-                description = newDescription,
-                updatedAt = Clock.System.now()
-            )
-            updateDeckUseCase(updatedDeck)
+            try {
+                val updatedDeck = deck.copy(
+                    name = newName,
+                    description = newDescription,
+                    updatedAt = Clock.System.now()
+                )
+                updateDeckUseCase(updatedDeck)
+            } catch (e: IllegalArgumentException) {
+                _errorEvent.emit(e.message ?: "Error al actualizar el mazo")
+            }
         }
     }
 }
