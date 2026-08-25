@@ -59,6 +59,7 @@ fun appModule(
     single { get<AppDatabase>().flashcardDao() }
     single {get<AppDatabase>().topicDao()}
     single {get<AppDatabase>().reviewLogDao()}
+    single { get<AppDatabase>().cardSchedulingDao() }
 
     // Proveer el Repositorio
     single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get()) }

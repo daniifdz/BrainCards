@@ -11,6 +11,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
+// TODO(card_scheduling): roto a proposito, downstream de ReviewFlashcardUseCase (ver TODO
+// alli). buildFlashcard() de aqui abajo construye Flashcard con easeFactor/interval/
+// repetitions, que ya no existen en el modelo. Se retoma en la misma sesion.
 class ReviewFlashcardUseCaseTest {
 
     private fun buildFlashcard(

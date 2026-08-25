@@ -12,6 +12,12 @@ import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.util.IdGenerator
 import kotlin.math.roundToInt
 
+// TODO(card_scheduling): roto a proposito. easeFactor/interval/repetitions/nextReview se
+// movieron a CardScheduling (domain/models/CardScheduling.kt + CardSchedulingDao) y esta
+// clase todavia lee/escribe esos campos directamente sobre Flashcard. Dejado sin tocar
+// segun lo acordado -- se retoma junto con StudyQueue/StudyViewModel en otra sesion,
+// leyendo/escribiendo via CardSchedulingDao (repositorio de dominio aun no creado) en vez
+// de flashcard.copy(...).
 class ReviewFlashcardUseCase(private val repository: FlashcardRepository, private val reviewLogRepository: ReviewLogRepository) {
 
     suspend operator fun invoke(flashcard: Flashcard, quality: ReviewQuality) {

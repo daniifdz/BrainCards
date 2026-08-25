@@ -108,11 +108,15 @@ class FlashCardViewModel(
         viewModelScope.launch {
             try{
                 val now = Clock.System.now()
+                // TODO(card_scheduling): esto ya no crea el CardScheduling inicial de la
+                // tarjeta (easeFactor=2.5, interval=0, repetitions=0, nextReview=now) porque
+                // ese modelo/DAO se separó de Flashcard pero su wiring de dominio (repositorio,
+                // creacion junto con la flashcard) se deja para la sesion que retome
+                // ReviewFlashcardUseCase/StudyQueue/StudyViewModel.
                 addFlashcardUseCase(Flashcard(
                     id = IdGenerator.newId(), deckId = deckId, topicId = topicId,
                     question = question, answer = answer,
-                    createdAt = now, updatedAt = now, nextReview = now,
-                    easeFactor = 2.5, interval = 0, repetitions = 0,
+                    createdAt = now, updatedAt = now,
                     cardType = CardType.FLIP
                 ))
             }catch (e: IllegalArgumentException){

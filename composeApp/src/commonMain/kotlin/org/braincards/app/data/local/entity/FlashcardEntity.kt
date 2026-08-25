@@ -32,17 +32,11 @@ data class FlashcardEntity(
     val topicId: String? = null,
     val question: String,
     val answer: String,
-
-    //metricas de estudio
-    val easeFactor: Double,
-    val interval: Int,
-    val repetitions: Int,
     val cardType: CardType,
 
     //fechas
     val createdAt: Instant,
     val updatedAt: Instant,
-    val nextReview: Instant,
 
     //sync
     val deletedAt: Instant? = null,

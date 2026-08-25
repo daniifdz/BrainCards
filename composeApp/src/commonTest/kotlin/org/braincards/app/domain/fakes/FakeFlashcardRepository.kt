@@ -29,8 +29,12 @@ class FakeFlashcardRepository : FlashcardRepository {
         flashcards.remove(flashcard.id)
     }
 
+    // "due" ahora depende de card_scheduling (separado de Flashcard) y este fake no
+    // modela esa tabla todavia -- stub sin resultados hasta que se retome el wiring
+    // de CardScheduling (misma sesion que ReviewFlashcardUseCase/StudyQueue/StudyViewModel).
+    // Ningun test que sigue en pie llama a estos dos metodos.
     override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard> =
-        flashcards.values.filter { it.deckId == deckId && it.nextReview <= now }
+        emptyList()
 
     override suspend fun updateFlashcard(flashcard: Flashcard) {
         flashcards[flashcard.id] = flashcard
@@ -41,5 +45,5 @@ class FakeFlashcardRepository : FlashcardRepository {
         flowOf(flashcards.values.toList())
 
     override suspend fun getAllDueFlashcards(now: Instant): List<Flashcard> =
-        flashcards.values.filter { it.nextReview <= now }
+        emptyList()
 }

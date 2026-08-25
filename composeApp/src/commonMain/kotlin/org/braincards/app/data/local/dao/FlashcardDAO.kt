@@ -28,14 +28,27 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET deletedAt  = :deletedAt WHERE id = :id")
     suspend fun softdeleteFlashcardById(id: String, deletedAt: Instant)
 
-    @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND deletedAt IS NULL AND nextReview <= :now ORDER BY nextReview ASC ")
+    // nextReview vive en card_scheduling desde que se separo el scheduling de Flashcard;
+    // "due" ahora se resuelve con un JOIN, seleccionando solo columnas de flashcards.
+    @Query(
+        "SELECT flashcards.* FROM flashcards " +
+            "JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            "WHERE flashcards.deckId = :deckId AND flashcards.deletedAt IS NULL " +
+            "AND card_scheduling.nextReview <= :now " +
+            "ORDER BY card_scheduling.nextReview ASC"
+    )
     suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<FlashcardEntity>
 
     @Query("SELECT * FROM flashcards WHERE deletedAt IS NULL")
     fun getAllFlashcards(): Flow<List<FlashcardEntity>>
 
 
-    @Query("SELECT * FROM flashcards WHERE nextReview <= :now  AND deletedAt IS NULL ORDER BY nextReview ASC ")
+    @Query(
+        "SELECT flashcards.* FROM flashcards " +
+            "JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            "WHERE flashcards.deletedAt IS NULL AND card_scheduling.nextReview <= :now " +
+            "ORDER BY card_scheduling.nextReview ASC"
+    )
     suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
 
 }

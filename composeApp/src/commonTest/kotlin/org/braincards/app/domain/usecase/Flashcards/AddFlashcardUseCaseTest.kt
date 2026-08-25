@@ -21,9 +21,6 @@ class AddFlashcardUseCaseTest {
         answer = answer,
         createdAt = Clock.System.now(),
         updatedAt = Clock.System.now(),
-        nextReview = Clock.System.now(),
-        interval = 0,
-        repetitions = 0,
         cardType = CardType.FLIP
     )
 
