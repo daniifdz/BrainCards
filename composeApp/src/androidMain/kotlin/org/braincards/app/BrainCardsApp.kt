@@ -7,7 +7,7 @@ import org.braincards.app.di.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 
-class BraindCardsApp : Application() {
+class BrainCardsApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
@@ -16,7 +16,7 @@ class BraindCardsApp : Application() {
             settingsDataStoreFactory = SettingsDataStoreFactory(this)
         ) {
             androidLogger()
-            androidContext(this@BraindCardsApp)
+            androidContext(this@BrainCardsApp)
         }
     }
 }

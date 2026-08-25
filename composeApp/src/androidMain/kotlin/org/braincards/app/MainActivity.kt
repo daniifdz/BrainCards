@@ -10,7 +10,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import org.braincards.app.platform.AndroidContext
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -22,8 +21,6 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen() // ANTES de super.onCreate()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-        AndroidContext.setContext(applicationContext)
 
         var isThemeReady = false
         splashScreen.setKeepOnScreenCondition { !isThemeReady }

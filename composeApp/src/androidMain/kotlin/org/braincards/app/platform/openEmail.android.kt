@@ -3,24 +3,20 @@ package org.braincards.app.platform
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import java.lang.ref.WeakReference
-
-object AndroidContext {
-    private var contextRef: WeakReference<Context>? = null
-
-    fun setContext(context: Context) {
-        contextRef = WeakReference(context)
-    }
-
-    fun getContext(): Context? = contextRef?.get()
-}
+import org.koin.core.context.GlobalContext
 
 actual fun openEmailClient(
     recipient: String,
     subject: String,
     body: String
 ) {
-    val context = AndroidContext.getContext()
+    // Obtenemos el contexto a través de Koin
+    val context = try {
+        GlobalContext.get().get<Context>()
+    } catch (e: Exception) {
+        null
+    }
+
     if (context != null) {
         try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
@@ -35,6 +31,6 @@ actual fun openEmailClient(
             e.printStackTrace()
         }
     } else {
-        println("Error: Contexto de Android no inicializado.")
+        println("Error: Contexto de Android no encontrado en Koin.")
     }
 }
