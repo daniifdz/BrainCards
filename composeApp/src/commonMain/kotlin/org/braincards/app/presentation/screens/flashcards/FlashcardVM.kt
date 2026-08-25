@@ -95,6 +95,7 @@ class FlashCardViewModel(
             _flashcardState.value = FlashcardsUiState.Loading
             getFlashcardUseCase(deckId)
                 .catch { e ->
+                    println("Error al cargar las tarjetas: $e")
                     _flashcardState.value = FlashcardsUiState.Error("Error loading flashcards: ${e.message}") }
                 .collectLatest { list ->
                     _flashcardState.value = FlashcardsUiState.Success(list)

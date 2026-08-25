@@ -50,7 +50,8 @@ class TopicVM(
             _topicState.value = TopicUiState.Loading
             getTopicsUseCase(deckId)
                 .catch { e ->
-                    _topicState.value = TopicUiState.Error("Error loading topics: ${e.message}")
+                    println("Error al cargar los temas: $e")
+                    _topicState.value = TopicUiState.Error("Error al cargar los topics: ${e.message}")
                 }
                 .collectLatest { list ->
                     _topicState.value = TopicUiState.Success(list)
