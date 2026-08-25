@@ -9,6 +9,7 @@ class AddDeckUseCase(private val repository: DecksRepository){
 
     //uso de clase como funcion
     suspend operator fun invoke(name: String, description: String?) {
+        require(name.isNotBlank()) { "El nombre del mazo no puede estar vacío" }
 
         val now = Clock.System.now()
 
