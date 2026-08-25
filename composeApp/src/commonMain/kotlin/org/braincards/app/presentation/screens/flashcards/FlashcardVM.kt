@@ -26,6 +26,10 @@ import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.domain.util.IdGenerator
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
 
 sealed class FlashcardsUiState {
     data object Loading : FlashcardsUiState()
@@ -33,24 +37,16 @@ sealed class FlashcardsUiState {
     data class Error(val message: String) : FlashcardsUiState()
 }
 
-sealed class TopicUiState {
-    data object Loading : TopicUiState()
-    data class Success(val topics: List<Topic>) : TopicUiState()
-    data class Error(val message: String) : TopicUiState()
-}
-
 class FlashCardViewModel(
     // Casos de uso de Flashcards
     private val addFlashcardUseCase: AddFlashcardUseCase,
     private val getFlashcardUseCase: GetFlashcardUseCase,
     private val updateFlashcardUseCase: UpdateFlashcardUseCase,
-    private val deleteFlashcardUseCase: DeleteFlashcardUseCase,
-    // Casos de uso de Temas
-    private val addTopicUseCase: AddTopicUseCase,
-    private val getTopicsUseCase: GetTopicsUseCase,
-    private val updateTopicUseCase: UpdateTopicUseCase,
-    private val deleteTopicUseCase: DeleteTopicUseCase
+    private val deleteFlashcardUseCase: DeleteFlashcardUseCase
 ) : ViewModel() {
+
+    private val _errorEvent = MutableSharedFlow<String>()
+    val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
 
     private val _flashcardState = MutableStateFlow<FlashcardsUiState>(FlashcardsUiState.Loading)
 
@@ -88,14 +84,6 @@ class FlashCardViewModel(
 
     private var loadFlashcardsJob: Job? = null
 
-    // Estado para los Temas
-    private val _topicState = MutableStateFlow<TopicUiState>(TopicUiState.Loading)
-    val topics: StateFlow<TopicUiState> = _topicState.asStateFlow()
-    private var loadTopicsJob: Job? = null
-
-    private val _selectedTopicId = MutableStateFlow<String?>(null)
-    val selectedTopicId: StateFlow<String?> = _selectedTopicId.asStateFlow()
-
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
@@ -114,65 +102,42 @@ class FlashCardViewModel(
         }
     }
 
-
-    fun loadTopics(deckId: String) {
-        loadTopicsJob?.cancel()
-        loadTopicsJob = viewModelScope.launch {
-            _topicState.value = TopicUiState.Loading
-            getTopicsUseCase(deckId)
-                .catch { e ->
-                    _topicState.value = TopicUiState.Error("Error loading topics: ${e.message}") }
-                .collectLatest { list ->
-                    _topicState.value = TopicUiState.Success(list)
-                }
-        }
-    }
-
-    fun selectTopic(topicId: String?) {
-
-        _selectedTopicId.value = topicId
-        _searchQuery.value = ""
-    }
-
     //flashcards
     fun addFlashcard(deckId: String, question: String, answer: String, topicId: String? = null) {
         viewModelScope.launch {
-            val now = Clock.System.now()
-            addFlashcardUseCase(Flashcard(
-                id = IdGenerator.newId(), deckId = deckId, topicId = topicId,
-                question = question, answer = answer,
-                createdAt = now, updatedAt = now, nextReview = now,
-                easeFactor = 2.5, interval = 0, repetitions = 0,
-                cardType = CardType.FLIP
-            ))
+            try{
+                val now = Clock.System.now()
+                addFlashcardUseCase(Flashcard(
+                    id = IdGenerator.newId(), deckId = deckId, topicId = topicId,
+                    question = question, answer = answer,
+                    createdAt = now, updatedAt = now, nextReview = now,
+                    easeFactor = 2.5, interval = 0, repetitions = 0,
+                    cardType = CardType.FLIP
+                ))
+            }catch (e: IllegalArgumentException){
+                _errorEvent.emit(e.message ?: "Error al guardar la tarjeta")
+            }
+
         }
     }
 
     fun updateFlashcard(flashcard: Flashcard, newQuestion: String, newAnswer: String) {
         viewModelScope.launch {
-            updateFlashcardUseCase(flashcard.copy(question = newQuestion, answer = newAnswer, updatedAt = Clock.System.now()))
+            try {
+                updateFlashcardUseCase(
+                    flashcard.copy(
+                        question = newQuestion,
+                        answer = newAnswer,
+                        updatedAt = Clock.System.now()
+                    )
+                )
+            } catch (e: IllegalArgumentException) {
+                _errorEvent.emit(e.message ?: "Error al actualizar la tarjeta")
+            }
         }
     }
 
     fun deleteFlashcard(flashcard: Flashcard) {
         viewModelScope.launch { deleteFlashcardUseCase(flashcard) }
-    }
-
-    //topics
-    fun createTopic(deckId: String, name: String) {
-        viewModelScope.launch {
-            val now = Clock.System.now()
-            addTopicUseCase(Topic(id = IdGenerator.newId(), deckId = deckId, name = name, createdAt = now, updatedAt = now))
-        }
-    }
-
-    fun updateTopic(topic: Topic, newName: String) {
-        viewModelScope.launch {
-            updateTopicUseCase(topic.copy(name = newName, updatedAt = Clock.System.now()))
-        }
-    }
-
-    fun deleteTopic(topic: Topic) {
-        viewModelScope.launch { deleteTopicUseCase(topic) }
     }
 }

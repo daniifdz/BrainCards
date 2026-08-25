@@ -31,6 +31,7 @@ import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
+import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
@@ -92,13 +93,16 @@ fun appModule(
             addFlashcardUseCase = get(),
             getFlashcardUseCase = get(),
             updateFlashcardUseCase = get(),
-            deleteFlashcardUseCase = get(),
-            //topics
+            deleteFlashcardUseCase = get()
+        )
+    }
+
+    viewModel {
+        TopicVM(
             addTopicUseCase = get(),
             getTopicsUseCase = get(),
             updateTopicUseCase = get(),
             deleteTopicUseCase = get()
-
         )
     }
 

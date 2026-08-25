@@ -35,7 +35,16 @@ fun DecksScreen(onDeckClick: (String) -> Unit, onBackClick: () -> Unit) {
     var deckToDelete by remember { mutableStateOf<Deck?>(null) }
     var deckToEdit by remember { mutableStateOf<Deck?>(null) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.errorEvent.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+
         topBar = {
             TopAppBar(
                 title = { Text("Mis Mazos") },
@@ -220,7 +229,7 @@ fun AddDeckDialog(onDismiss: () -> Unit, onConfirm: (String, String?) -> Unit) {
         },
         confirmButton = {
             Button(
-                onClick = { if (name.isNotBlank()) onConfirm(name, description) }
+                onClick = { onConfirm(name, description) }
             ) {
                 Text("Crear")
             }
@@ -262,7 +271,7 @@ fun EditDeckDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { if (name.isNotBlank()) onConfirm(name, description) }) {
+            Button(onClick = { onConfirm(name, description) }) {
                 Text("Guardar")
             }
         },
