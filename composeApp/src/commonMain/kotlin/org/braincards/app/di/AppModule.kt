@@ -129,7 +129,7 @@ fun appModule(
     factory { DeleteTopicUseCase(repository = get()) }
 
     //Stats
-    factory { GetStudyStatsUseCase(repository = get()) }
+    factory { GetStudyStatsUseCase(repository = get(), cardSchedulingRepository = get()) }
 
     viewModel {
         StudyStatsVM(

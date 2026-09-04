@@ -1,5 +1,7 @@
 package org.braincards.app.data.repository
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.braincards.app.data.local.dao.CardSchedulingDao
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
@@ -18,5 +20,9 @@ class CardSchedulingRepositoryImpl(
     // si el cardId no existe, la reemplaza entera si ya existe (cardId es la PK).
     override suspend fun upsert(scheduling: CardScheduling) {
         cardSchedulingDao.insert(scheduling.toEntity())
+    }
+
+    override fun getAll(): Flow<List<CardScheduling>> {
+        return cardSchedulingDao.getAll().map { entities -> entities.map { it.toDomain() } }
     }
 }
