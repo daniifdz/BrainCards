@@ -205,3 +205,99 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `index_reviewlog_userId` ON `reviewlog` (`userId`)")
     }
 }
+
+/**
+ * v4 -> v5: separa el scheduling del SM-2 (easeFactor, interval, repetitions, nextReview)
+ * de flashcards a su propia tabla card_scheduling. A diferencia de la 3->4, aqui no hay que
+ * remapear ningun id -- los cardId ya son UUID desde la migracion anterior, es solo mover
+ * columnas de sitio. SQL de las tablas copiado literal de composeApp/schemas/.../5.json.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+
+        // Paso 1: card_scheduling nueva
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `card_scheduling` (`cardId` TEXT NOT NULL, " +
+                "`easeFactor` REAL NOT NULL, `interval` INTEGER NOT NULL, " +
+                "`repetitions` INTEGER NOT NULL, `nextReview` INTEGER NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`cardId`), " +
+                "FOREIGN KEY(`cardId`) REFERENCES `flashcards`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )"
+        )
+
+        // Paso 2: volcar el scheduling de cada flashcard vieja a card_scheduling,
+        // usando el id de la flashcard como cardId y su updatedAt como updatedAt inicial.
+        // Tiene que pasar antes de tocar la tabla flashcards vieja -- es la unica fuente.
+        val flashcardsRead = connection.prepare(
+            "SELECT id, easeFactor, interval, repetitions, nextReview, updatedAt FROM flashcards"
+        )
+        val schedulingInsert = connection.prepare(
+            "INSERT INTO card_scheduling (cardId, easeFactor, interval, repetitions, nextReview, updatedAt) " +
+                "VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        try {
+            while (flashcardsRead.step()) {
+                schedulingInsert.bindText(1, flashcardsRead.getText(0))
+                schedulingInsert.bindDouble(2, flashcardsRead.getDouble(1))
+                schedulingInsert.bindLong(3, flashcardsRead.getLong(2))
+                schedulingInsert.bindLong(4, flashcardsRead.getLong(3))
+                schedulingInsert.bindLong(5, flashcardsRead.getLong(4))
+                schedulingInsert.bindLong(6, flashcardsRead.getLong(5))
+                schedulingInsert.step()
+                schedulingInsert.reset()
+            }
+        } finally {
+            schedulingInsert.close()
+            flashcardsRead.close()
+        }
+
+        // Paso 3: flashcards_new con el esquema reducido (sin las 4 columnas de scheduling)
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `flashcards_new` (`id` TEXT NOT NULL, `deckId` TEXT NOT NULL, " +
+                "`topicId` TEXT, `question` TEXT NOT NULL, `answer` TEXT NOT NULL, `cardType` TEXT NOT NULL, " +
+                "`createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `deletedAt` INTEGER, " +
+                "`lastSyncedAt` INTEGER, `userId` TEXT, `options` TEXT, `correctOptionIndex` INTEGER, " +
+                "PRIMARY KEY(`id`), FOREIGN KEY(`deckId`) REFERENCES `decks`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION , " +
+                "FOREIGN KEY(`topicId`) REFERENCES `topics`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION )"
+        )
+
+        // Paso 4: copiar el resto de columnas (todo menos las 4 de scheduling) a flashcards_new
+        val oldRead = connection.prepare(
+            "SELECT id, deckId, topicId, question, answer, cardType, createdAt, updatedAt, " +
+                "deletedAt, lastSyncedAt, userId, options, correctOptionIndex FROM flashcards"
+        )
+        val newInsert = connection.prepare(
+            "INSERT INTO flashcards_new (id, deckId, topicId, question, answer, cardType, createdAt, " +
+                "updatedAt, deletedAt, lastSyncedAt, userId, options, correctOptionIndex) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        try {
+            while (oldRead.step()) {
+                newInsert.bindText(1, oldRead.getText(0))
+                newInsert.bindText(2, oldRead.getText(1))
+                if (oldRead.isNull(2)) newInsert.bindNull(3) else newInsert.bindText(3, oldRead.getText(2))
+                newInsert.bindText(4, oldRead.getText(3))
+                newInsert.bindText(5, oldRead.getText(4))
+                newInsert.bindText(6, oldRead.getText(5))
+                newInsert.bindLong(7, oldRead.getLong(6))
+                newInsert.bindLong(8, oldRead.getLong(7))
+                if (oldRead.isNull(8)) newInsert.bindNull(9) else newInsert.bindLong(9, oldRead.getLong(8))
+                if (oldRead.isNull(9)) newInsert.bindNull(10) else newInsert.bindLong(10, oldRead.getLong(9))
+                if (oldRead.isNull(10)) newInsert.bindNull(11) else newInsert.bindText(11, oldRead.getText(10))
+                if (oldRead.isNull(11)) newInsert.bindNull(12) else newInsert.bindText(12, oldRead.getText(11))
+                if (oldRead.isNull(12)) newInsert.bindNull(13) else newInsert.bindLong(13, oldRead.getLong(12))
+                newInsert.step()
+                newInsert.reset()
+            }
+        } finally {
+            newInsert.close()
+            oldRead.close()
+        }
+
+        // Paso 5: fuera la vieja, dentro la nueva con su nombre definitivo, recrear indices
+        connection.execSQL("DROP TABLE flashcards")
+        connection.execSQL("ALTER TABLE flashcards_new RENAME TO flashcards")
+
+        connection.execSQL("CREATE INDEX IF NOT EXISTS `index_flashcards_deckId` ON `flashcards` (`deckId`)")
+        connection.execSQL("CREATE INDEX IF NOT EXISTS `index_flashcards_topicId` ON `flashcards` (`topicId`)")
+    }
+}

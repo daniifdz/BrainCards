@@ -6,10 +6,13 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.migration.MIGRATION_3_4
+import org.braincards.app.data.local.migration.MIGRATION_4_5
+import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
+import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.ReviewLogRepository
@@ -50,7 +53,7 @@ fun appModule(
         databaseBuilder
             .setDriver(BundledSQLiteDriver()) //necesario para el funcionamineto con KMP
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.IO)
-            .addMigrations(MIGRATION_3_4)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
             .build()
     }
 
@@ -66,6 +69,7 @@ fun appModule(
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
     single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get()) }
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
+    single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get()) }
 
 
     //usecasess deck
@@ -109,7 +113,7 @@ fun appModule(
 
     //stdy
     factory { GetDueFlashcardsUseCase(repository = get()) }
-    factory { ReviewFlashcardUseCase(repository = get(), reviewLogRepository = get()) }
+    factory { ReviewFlashcardUseCase(reviewLogRepository = get(), cardSchedulingRepository = get()) }
     viewModel {
         StudyViewModel(
             getDueFlashcardsUseCase = get(),
