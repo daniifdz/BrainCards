@@ -30,6 +30,46 @@ repositories {
     gradlePluginPortal()
 }
 
+// Genera SupabaseConfig.kt en build/ (ya gitignorado por **/build/) a partir de
+// local.properties/env vars -- nunca hardcodeado, mismo principio que el keystore.
+// Si no encuentra los valores, genera constantes vacias con un warning en vez de
+// romper la build: hoy nada del proyecto depende todavia de Supabase para compilar.
+val generatedSupabaseConfigDir = layout.buildDirectory.dir("generated/supabaseConfig/commonMain/kotlin")
+
+val generateSupabaseConfig by tasks.registering {
+    val outputDir = generatedSupabaseConfigDir
+    val supabaseUrl = localProperties.getProperty("SUPABASE_URL")
+        ?: System.getenv("BRAINCARDS_SUPABASE_URL")
+    val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY")
+        ?: System.getenv("BRAINCARDS_SUPABASE_ANON_KEY")
+
+    inputs.property("supabaseUrl", supabaseUrl ?: "")
+    inputs.property("supabaseAnonKey", supabaseAnonKey ?: "")
+    outputs.dir(outputDir)
+
+    doLast {
+        if (supabaseUrl.isNullOrBlank() || supabaseAnonKey.isNullOrBlank()) {
+            logger.warn(
+                "SUPABASE_URL/SUPABASE_ANON_KEY no encontrados en local.properties ni en " +
+                    "BRAINCARDS_SUPABASE_URL/BRAINCARDS_SUPABASE_ANON_KEY -- generando " +
+                    "SupabaseConfig.kt con constantes vacias. El cliente de Supabase no " +
+                    "funcionara hasta que se configuren."
+            )
+        }
+
+        val packageDir = outputDir.get().asFile.resolve("org/braincards/app/config")
+        packageDir.mkdirs()
+        packageDir.resolve("SupabaseConfig.kt").writeText(
+            """
+            |package org.braincards.app.config
+            |
+            |internal const val SUPABASE_URL = "${supabaseUrl.orEmpty()}"
+            |internal const val SUPABASE_ANON_KEY = "${supabaseAnonKey.orEmpty()}"
+            |""".trimMargin()
+        )
+    }
+}
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -48,6 +88,10 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             //---------------------------------------------------------
             implementation(libs.koin.android)
+            implementation(libs.ktor.client.android)
+        }
+        commonMain {
+            kotlin.srcDir(generateSupabaseConfig)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -71,6 +115,8 @@ kotlin {
             implementation(libs.kotlin.serialization)
             implementation(libs.navigation.compose)
             implementation(libs.androidx.core.splashscreen)
+            implementation(platform(libs.supabase.bom.get()))
+            implementation(libs.supabase.postgrest)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -78,6 +124,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.ktor.client.cio)
         }
     }
 }
