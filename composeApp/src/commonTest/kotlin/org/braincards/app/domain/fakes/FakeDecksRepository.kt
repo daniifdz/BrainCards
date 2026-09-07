@@ -25,4 +25,10 @@ class FakeDecksRepository : DecksRepository {
     override fun getAllDecks(): Flow<List<Deck>> = flowOf(decks.values.toList())
 
     override suspend fun getDeckById(id: String): Deck? = decks[id]
+
+    override suspend fun claimOrphanedDecks(userId: String): Int {
+        val orphaned = decks.values.filter { it.userId == null }
+        orphaned.forEach { decks[it.id] = it.copy(userId = userId) }
+        return orphaned.size
+    }
 }

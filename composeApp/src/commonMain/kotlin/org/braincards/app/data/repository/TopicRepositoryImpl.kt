@@ -47,6 +47,10 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
     override suspend fun getTopicById(id: String): Topic? {
         return topicDao.getTopicById(id)?.toDomain()
     }
+
+    override suspend fun claimOrphanedTopics(userId: String): Int {
+        return topicDao.claimOrphanedTopics(userId)
+    }
 }
 
 

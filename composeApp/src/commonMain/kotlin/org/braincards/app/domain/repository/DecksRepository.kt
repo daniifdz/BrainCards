@@ -12,6 +12,7 @@ interface DecksRepository{
     suspend fun updateDeck (deck: Deck)
     fun getAllDecks(): Flow<List<Deck>>
     suspend fun getDeckById(id: String): Deck?
+    suspend fun claimOrphanedDecks(userId: String): Int
 }
 
 

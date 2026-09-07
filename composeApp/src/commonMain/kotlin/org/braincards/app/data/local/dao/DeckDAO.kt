@@ -28,4 +28,7 @@ interface DeckDao {
 
     @Query("SELECT * FROM decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getDeckById(id: String): DeckEntity?
+
+    @Query("UPDATE decks SET userId = :userId WHERE userId IS NULL")
+    suspend fun claimOrphanedDecks(userId: String): Int
 }

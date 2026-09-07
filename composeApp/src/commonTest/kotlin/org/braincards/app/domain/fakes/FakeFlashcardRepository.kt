@@ -46,4 +46,10 @@ class FakeFlashcardRepository : FlashcardRepository {
 
     override suspend fun getAllDueFlashcards(now: Instant): List<Flashcard> =
         emptyList()
+
+    override suspend fun claimOrphanedFlashcards(userId: String): Int {
+        val orphaned = flashcards.values.filter { it.userId == null }
+        orphaned.forEach { flashcards[it.id] = it.copy(userId = userId) }
+        return orphaned.size
+    }
 }

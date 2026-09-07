@@ -1,0 +1,122 @@
+package org.braincards.app.presentation.screens.auth
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.repository.AuthRepository
+import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
+import org.braincards.app.domain.usecase.Auth.SignInUseCase
+import org.braincards.app.domain.usecase.Auth.SignOutUseCase
+import org.braincards.app.domain.usecase.Auth.SignUpUseCase
+
+class AuthViewModel(
+    authRepository: AuthRepository,
+    private val signUpUseCase: SignUpUseCase,
+    private val signInUseCase: SignInUseCase,
+    private val signOutUseCase: SignOutUseCase,
+    private val sendPasswordResetUseCase: SendPasswordResetUseCase,
+    private val backfillLocalDataUseCase: BackfillLocalDataUseCase
+) : ViewModel() {
+
+    val authState: StateFlow<AuthState> = authRepository.authState
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = AuthState.Loading
+        )
+
+    private val _isSubmitting = MutableStateFlow(false)
+    val isSubmitting: StateFlow<Boolean> = _isSubmitting.asStateFlow()
+
+    private val _messageEvent = MutableSharedFlow<String>()
+    val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
+
+    // Evita repetir el backfill para el mismo usuario en cada recomposicion/reconexion
+    // del Flow -- la query en si ya es idempotente (WHERE userId IS NULL), esto es
+    // solo para no relanzarla sin necesidad.
+    private var backfillDoneForUserId: String? = null
+
+    init {
+        viewModelScope.launch {
+            authState.collect { state ->
+                if (state is AuthState.Authenticated && backfillDoneForUserId != state.userId) {
+                    backfillDoneForUserId = state.userId
+                    backfillLocalDataUseCase(state.userId)
+                }
+            }
+        }
+    }
+
+    fun signUp(email: String, password: String) {
+        if (_isSubmitting.value) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                signUpUseCase(email, password)
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al registrarse")
+            } catch (e: Exception) {
+                println("Error al registrarse: $e")
+                _messageEvent.emit("No se pudo completar el registro")
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+
+    fun signIn(email: String, password: String) {
+        if (_isSubmitting.value) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                signInUseCase(email, password)
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al iniciar sesión")
+            } catch (e: Exception) {
+                println("Error al iniciar sesión: $e")
+                _messageEvent.emit("No se pudo iniciar sesión. Revisa tu email y contraseña")
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                signOutUseCase()
+            } catch (e: Exception) {
+                println("Error al cerrar sesión: $e")
+                _messageEvent.emit("No se pudo cerrar sesión")
+            }
+        }
+    }
+
+    fun sendPasswordReset(email: String) {
+        if (_isSubmitting.value) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                sendPasswordResetUseCase(email)
+                _messageEvent.emit("Te hemos enviado un correo para restablecer tu contraseña")
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al enviar el correo")
+            } catch (e: Exception) {
+                println("Error al enviar el correo de recuperación: $e")
+                _messageEvent.emit("No se pudo enviar el correo")
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+}

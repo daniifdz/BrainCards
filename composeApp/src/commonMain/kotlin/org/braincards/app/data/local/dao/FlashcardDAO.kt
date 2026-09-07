@@ -51,4 +51,7 @@ interface FlashcardDao {
     )
     suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
 
+    @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
+    suspend fun claimOrphanedFlashcards(userId: String): Int
+
 }

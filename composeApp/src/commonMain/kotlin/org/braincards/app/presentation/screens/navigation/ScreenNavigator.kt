@@ -19,4 +19,8 @@ sealed class Screen {
     @Serializable
 
     data object Stats : Screen()
+    @Serializable
+    data object Auth : Screen()
+    @Serializable
+    data object ForgotPassword : Screen()
 }

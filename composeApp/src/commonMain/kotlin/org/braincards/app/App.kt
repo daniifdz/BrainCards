@@ -4,6 +4,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import org.braincards.app.presentation.screens.auth.AuthScreen
+import org.braincards.app.presentation.screens.auth.ForgotPasswordScreen
 import org.braincards.app.presentation.screens.decks.DecksScreen
 import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
 import org.braincards.app.presentation.screens.navigation.Screen
@@ -99,11 +101,24 @@ fun App() {
                     currentTheme = appTheme?: AppTheme.SYSTEM,
                     onThemeChange = { newTheme -> themeViewModel.setTheme(newTheme) },
                     onBackClick = { navController.popBackStack() },
+                    onNavigateToAuth = { navController.navigate(Screen.Auth) },
                 )
             }
             composable<Screen.Stats>{
                 StudyStatsScreen(
                     onBackClick = {navController.popBackStack()}
+                )
+            }
+            composable<Screen.Auth> {
+                AuthScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onAuthenticated = { navController.popBackStack() },
+                    onForgotPasswordClick = { navController.navigate(Screen.ForgotPassword) }
+                )
+            }
+            composable<Screen.ForgotPassword> {
+                ForgotPasswordScreen(
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

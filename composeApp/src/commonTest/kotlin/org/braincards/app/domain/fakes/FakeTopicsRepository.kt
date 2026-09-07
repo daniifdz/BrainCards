@@ -26,4 +26,10 @@ class FakeTopicsRepository : TopicsRepository {
         flowOf(topics.values.filter { it.deckId == deckId })
 
     override suspend fun getTopicById(id: String): Topic? = topics[id]
+
+    override suspend fun claimOrphanedTopics(userId: String): Int {
+        val orphaned = topics.values.filter { it.userId == null }
+        orphaned.forEach { topics[it.id] = it.copy(userId = userId) }
+        return orphaned.size
+    }
 }

@@ -26,4 +26,7 @@ interface TopicDao {
 
     @Query("SELECT * FROM topics WHERE id = :id AND deletedAt IS NULL")
     suspend fun getTopicById(id: String): TopicEntity?
+
+    @Query("UPDATE topics SET userId = :userId WHERE userId IS NULL")
+    suspend fun claimOrphanedTopics(userId: String): Int
 }

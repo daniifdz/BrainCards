@@ -50,4 +50,8 @@ class FlashcardRepositoryImpl(
     override suspend fun getAllDueFlashcards(now: Instant): List<Flashcard> =
         flashcardDao.getAllDueFlashcards(now).map { it.toDomain() }
 
+    override suspend fun claimOrphanedFlashcards(userId: String): Int {
+        return flashcardDao.claimOrphanedFlashcards(userId)
+    }
+
 }

@@ -1,22 +1,35 @@
 package org.braincards.app.di
 
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 import org.koin.core.module.dsl.viewModel
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import org.braincards.app.config.SUPABASE_ANON_KEY
+import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.local.migration.MIGRATION_4_5
+import org.braincards.app.data.repository.AuthRepositoryImpl
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
+import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
+import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
+import org.braincards.app.domain.usecase.Auth.SignInUseCase
+import org.braincards.app.domain.usecase.Auth.SignOutUseCase
+import org.braincards.app.domain.usecase.Auth.SignUpUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
@@ -32,6 +45,7 @@ import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
 import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
+import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.flashcards.TopicVM
@@ -47,6 +61,42 @@ fun appModule(
 
     single<DataStore<Preferences>> { settingsDataStore }
     viewModel { ThemeViewModel(dataStore = get()) }
+
+    // Cliente de Supabase (Singleton) -- URL/clave via SupabaseConfig.kt generado en build/
+    // a partir de local.properties/env vars, nunca hardcodeadas (ver Sprint 12 Bloque B).
+    single<SupabaseClient> {
+        createSupabaseClient(
+            supabaseUrl = SUPABASE_URL,
+            supabaseKey = SUPABASE_ANON_KEY
+        ) {
+            install(Auth)
+            install(Postgrest)
+        }
+    }
+    single<AuthRepository> { AuthRepositoryImpl(client = get()) }
+
+    factory { SignUpUseCase(repository = get()) }
+    factory { SignInUseCase(repository = get()) }
+    factory { SignOutUseCase(repository = get()) }
+    factory { SendPasswordResetUseCase(repository = get()) }
+    factory {
+        BackfillLocalDataUseCase(
+            decksRepository = get(),
+            topicsRepository = get(),
+            flashcardRepository = get()
+        )
+    }
+
+    viewModel {
+        AuthViewModel(
+            authRepository = get(),
+            signUpUseCase = get(),
+            signInUseCase = get(),
+            signOutUseCase = get(),
+            sendPasswordResetUseCase = get(),
+            backfillLocalDataUseCase = get()
+        )
+    }
 
     // Proveer la Base de Datos (Singleton)
     single<AppDatabase> {

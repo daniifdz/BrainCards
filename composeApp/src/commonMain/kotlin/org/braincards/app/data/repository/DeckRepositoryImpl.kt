@@ -45,4 +45,8 @@ class DeckRepositoryImpl (private val deckDao: DeckDao, private val topicDao: To
     override suspend fun getDeckById(id: String): Deck? {
         return deckDao.getDeckById(id)?.toDomain()
     }
+
+    override suspend fun claimOrphanedDecks(userId: String): Int {
+        return deckDao.claimOrphanedDecks(userId)
+    }
 }

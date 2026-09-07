@@ -16,4 +16,6 @@ interface FlashcardRepository {
 
     suspend fun getAllDueFlashcards(now: Instant): List<Flashcard>
 
+    suspend fun claimOrphanedFlashcards(userId: String): Int
+
 }

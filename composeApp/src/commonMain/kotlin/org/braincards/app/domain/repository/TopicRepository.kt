@@ -9,4 +9,5 @@ interface TopicsRepository {
     suspend fun deleteTopic(topic: Topic)
     fun getTopicsByDeckId(deckId: String): Flow<List<Topic>>
     suspend fun getTopicById(id: String): Topic?
+    suspend fun claimOrphanedTopics(userId: String): Int
 }
