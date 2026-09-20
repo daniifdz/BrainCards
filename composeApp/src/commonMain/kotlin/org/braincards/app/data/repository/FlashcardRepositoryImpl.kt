@@ -54,4 +54,17 @@ class FlashcardRepositoryImpl(
         return flashcardDao.claimOrphanedFlashcards(userId)
     }
 
+    override suspend fun getPendingSync(userId: String): List<Flashcard> {
+        return flashcardDao.getPendingSyncFlashcards(userId).map { it.toDomain() }
+    }
+
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>) {
+        val entities = flashcards.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+        flashcardDao.insertAllFlashcards(entities)
+    }
+
+    override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
+        flashcardDao.markFlashcardsPushed(ids, syncedAt)
+    }
+
 }

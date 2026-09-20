@@ -19,8 +19,11 @@ interface DeckDao {
     @Update
     suspend fun updateDeck(deck: DeckEntity)
 
-    @Query ("UPDATE decks SET deletedAt = :deletedAt WHERE id = :id")
-    suspend fun softdeleteDeck(id:String, deletedAt: Instant)
+    // updatedAt tambien se toca al borrar -- si no, el PUSH del sync (que detecta
+    // pendientes comparando updatedAt vs lastSyncedAt) nunca veria un borrado logico
+    // sin otro cambio de contenido como "pendiente de subir".
+    @Query("UPDATE decks SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :id")
+    suspend fun softdeleteDeck(id: String, deletedAt: Instant)
 
 
     @Query("SELECT * FROM decks WHERE deletedAt IS NULL")
@@ -31,4 +34,15 @@ interface DeckDao {
 
     @Query("UPDATE decks SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedDecks(userId: String): Int
+
+    // sync (Bloque D) -- sin filtro deletedAt IS NULL a proposito, ver comentario
+    // en DecksRepository.getPendingSync.
+    @Query("SELECT * FROM decks WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
+    suspend fun getPendingSyncDecks(userId: String): List<DeckEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllDecks(decks: List<DeckEntity>)
+
+    @Query("UPDATE decks SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
+    suspend fun markDecksPushed(ids: List<String>, syncedAt: Instant)
 }

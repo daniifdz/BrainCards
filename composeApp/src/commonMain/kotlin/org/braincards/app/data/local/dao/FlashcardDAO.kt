@@ -25,7 +25,8 @@ interface FlashcardDao {
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND deletedAt IS NULL")
     fun getFlashcardsByDeckId(deckId: String): Flow<List<FlashcardEntity>>
 
-    @Query("UPDATE flashcards SET deletedAt  = :deletedAt WHERE id = :id")
+    // updatedAt tambien se toca al borrar -- ver mismo comentario en DeckDao.softdeleteDeck.
+    @Query("UPDATE flashcards SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :id")
     suspend fun softdeleteFlashcardById(id: String, deletedAt: Instant)
 
     // nextReview vive en card_scheduling desde que se separo el scheduling de Flashcard;
@@ -53,5 +54,15 @@ interface FlashcardDao {
 
     @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedFlashcards(userId: String): Int
+
+    // sync (Bloque D) -- mismo criterio que DeckDao/TopicDao.
+    @Query("SELECT * FROM flashcards WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
+    suspend fun getPendingSyncFlashcards(userId: String): List<FlashcardEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllFlashcards(flashcards: List<FlashcardEntity>)
+
+    @Query("UPDATE flashcards SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
+    suspend fun markFlashcardsPushed(ids: List<String>, syncedAt: Instant)
 
 }

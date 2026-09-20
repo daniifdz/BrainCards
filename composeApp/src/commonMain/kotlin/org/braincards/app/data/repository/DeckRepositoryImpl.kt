@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.DeckDao
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
@@ -48,5 +49,21 @@ class DeckRepositoryImpl (private val deckDao: DeckDao, private val topicDao: To
 
     override suspend fun claimOrphanedDecks(userId: String): Int {
         return deckDao.claimOrphanedDecks(userId)
+    }
+
+    override suspend fun getPendingSync(userId: String): List<Deck> {
+        return deckDao.getPendingSyncDecks(userId).map { it.toDomain() }
+    }
+
+    // lastSyncedAt del pull se pisa a updatedAt: el valor que traia el DTO es el
+    // de OTRO dispositivo, no dice nada sobre si este dispositivo tiene esta fila
+    // pendiente de subir -- justo despues de aplicar un pull, no lo esta.
+    override suspend fun applyRemotePull(decks: List<Deck>) {
+        val entities = decks.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+        deckDao.insertAllDecks(entities)
+    }
+
+    override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
+        deckDao.markDecksPushed(ids, syncedAt)
     }
 }

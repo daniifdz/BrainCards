@@ -18,4 +18,9 @@ interface FlashcardRepository {
 
     suspend fun claimOrphanedFlashcards(userId: String): Int
 
+    // sync (Bloque D) -- mismo criterio que DecksRepository/TopicsRepository.
+    suspend fun getPendingSync(userId: String): List<Flashcard>
+    suspend fun applyRemotePull(flashcards: List<Flashcard>)
+    suspend fun markPushed(ids: List<String>, syncedAt: Instant)
+
 }

@@ -2,6 +2,7 @@ package org.braincards.app.domain.fakes
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.TopicsRepository
 
@@ -31,5 +32,16 @@ class FakeTopicsRepository : TopicsRepository {
         val orphaned = topics.values.filter { it.userId == null }
         orphaned.forEach { topics[it.id] = it.copy(userId = userId) }
         return orphaned.size
+    }
+
+    override suspend fun getPendingSync(userId: String): List<Topic> =
+        topics.values.filter { it.userId == userId && (it.lastSyncedAt == null || it.updatedAt > it.lastSyncedAt!!) }
+
+    override suspend fun applyRemotePull(topics: List<Topic>) {
+        topics.forEach { this.topics[it.id] = it.copy(lastSyncedAt = it.updatedAt) }
+    }
+
+    override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
+        ids.forEach { id -> topics[id]?.let { topics[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
 }

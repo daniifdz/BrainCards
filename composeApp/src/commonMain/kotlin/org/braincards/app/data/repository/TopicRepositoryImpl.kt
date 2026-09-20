@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.DeckDao
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
@@ -50,6 +51,19 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
 
     override suspend fun claimOrphanedTopics(userId: String): Int {
         return topicDao.claimOrphanedTopics(userId)
+    }
+
+    override suspend fun getPendingSync(userId: String): List<Topic> {
+        return topicDao.getPendingSyncTopics(userId).map { it.toDomain() }
+    }
+
+    override suspend fun applyRemotePull(topics: List<Topic>) {
+        val entities = topics.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+        topicDao.insertAllTopics(entities)
+    }
+
+    override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
+        topicDao.markTopicsPushed(ids, syncedAt)
     }
 }
 

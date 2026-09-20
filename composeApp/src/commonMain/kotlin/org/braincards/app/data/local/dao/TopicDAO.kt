@@ -18,8 +18,9 @@ interface TopicDao {
     @Update
     suspend fun updateTopic(topic: TopicEntity)
 
-    @Query ("UPDATE topics SET deletedAt = :deletedAt WHERE id = :id")
-    suspend fun softdeleteTopic(id:String, deletedAt: Instant)
+    // updatedAt tambien se toca al borrar -- ver mismo comentario en DeckDao.softdeleteDeck.
+    @Query("UPDATE topics SET deletedAt = :deletedAt, updatedAt = :deletedAt WHERE id = :id")
+    suspend fun softdeleteTopic(id: String, deletedAt: Instant)
 
     @Query("SELECT * FROM topics WHERE deckId = :deckId AND deletedAt IS NULL")
     fun getTopicsByDeckId(deckId: String): Flow<List<TopicEntity>>
@@ -29,4 +30,14 @@ interface TopicDao {
 
     @Query("UPDATE topics SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedTopics(userId: String): Int
+
+    // sync (Bloque D) -- mismo criterio que DeckDao.
+    @Query("SELECT * FROM topics WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
+    suspend fun getPendingSyncTopics(userId: String): List<TopicEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAllTopics(topics: List<TopicEntity>)
+
+    @Query("UPDATE topics SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
+    suspend fun markTopicsPushed(ids: List<String>, syncedAt: Instant)
 }

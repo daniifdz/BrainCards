@@ -52,4 +52,15 @@ class FakeFlashcardRepository : FlashcardRepository {
         orphaned.forEach { flashcards[it.id] = it.copy(userId = userId) }
         return orphaned.size
     }
+
+    override suspend fun getPendingSync(userId: String): List<Flashcard> =
+        flashcards.values.filter { it.userId == userId && (it.lastSyncedAt == null || it.updatedAt > it.lastSyncedAt!!) }
+
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>) {
+        flashcards.forEach { this.flashcards[it.id] = it.copy(lastSyncedAt = it.updatedAt) }
+    }
+
+    override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
+        ids.forEach { id -> flashcards[id]?.let { flashcards[id] = it.copy(lastSyncedAt = syncedAt) } }
+    }
 }
