@@ -13,9 +13,10 @@ fun Deck.toEntity(): DeckEntity {
         name = this.name,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
-        description = this.description
-
-
+        description = this.description,
+        deletedAt = this.deletedAt,
+        userId = this.userId,
+        lastSyncedAt = this.lastSyncedAt
     )
 }
 
@@ -28,6 +29,9 @@ fun DeckEntity.toDomain(): Deck {
         name = this.name,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
-        description = this.description
+        description = this.description,
+        deletedAt = this.deletedAt,
+        userId = this.userId,
+        lastSyncedAt = this.lastSyncedAt
     )
 }

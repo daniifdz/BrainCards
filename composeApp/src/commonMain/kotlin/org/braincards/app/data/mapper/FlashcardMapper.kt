@@ -14,7 +14,10 @@ fun FlashcardEntity.toDomain(): Flashcard {
         updatedAt = updatedAt,
         cardType = cardType,
         deletedAt = deletedAt,
-        lastSyncedAt = lastSyncedAt
+        lastSyncedAt = lastSyncedAt,
+        userId = userId,
+        options = options,
+        correctOptionIndex = correctOptionIndex
     )
 }
 
@@ -29,6 +32,9 @@ fun Flashcard.toEntity(): FlashcardEntity {
         updatedAt = updatedAt,
         cardType = cardType,
         deletedAt = deletedAt,
-        lastSyncedAt = lastSyncedAt
+        lastSyncedAt = lastSyncedAt,
+        userId = userId,
+        options = options,
+        correctOptionIndex = correctOptionIndex
     )
 }

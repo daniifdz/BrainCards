@@ -9,7 +9,10 @@ fun TopicEntity.toDomain(): Topic {
         deckId = deckId,
         name = name,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        lastSyncedAt = lastSyncedAt,
+        userId = userId
     )
 }
 
@@ -19,6 +22,9 @@ fun Topic.toEntity(): TopicEntity {
         deckId = deckId,
         name = name,
         createdAt = createdAt,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        deletedAt = deletedAt,
+        lastSyncedAt = lastSyncedAt,
+        userId = userId
     )
 }
