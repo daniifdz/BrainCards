@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
@@ -18,6 +20,8 @@ import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
+import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
+import org.braincards.app.domain.usecase.Sync.SyncResult
 
 class AuthViewModel(
     authRepository: AuthRepository,
@@ -25,7 +29,8 @@ class AuthViewModel(
     private val signInUseCase: SignInUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
-    private val backfillLocalDataUseCase: BackfillLocalDataUseCase
+    private val backfillLocalDataUseCase: BackfillLocalDataUseCase,
+    private val syncEngineUseCase: SyncEngineUseCase
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authRepository.authState
@@ -41,6 +46,14 @@ class AuthViewModel(
     private val _messageEvent = MutableSharedFlow<String>()
     val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
 
+    private val _isSyncing = MutableStateFlow(false)
+    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
+
+    // Evita que el sync automatico (login/arranque con sesion) y el boton manual de
+    // Ajustes corran a la vez si coinciden -- dos syncs concurrentes podrian pisarse
+    // el push/pull entre si.
+    private val syncMutex = Mutex()
+
     // Evita repetir el backfill para el mismo usuario en cada recomposicion/reconexion
     // del Flow -- la query en si ya es idempotente (WHERE userId IS NULL), esto es
     // solo para no relanzarla sin necesidad.
@@ -52,7 +65,50 @@ class AuthViewModel(
                 if (state is AuthState.Authenticated && backfillDoneForUserId != state.userId) {
                     backfillDoneForUserId = state.userId
                     backfillLocalDataUseCase(state.userId)
+                    // Mismo bloque, misma corrutina, en orden: el backfill tiene que
+                    // terminar antes de que el primer push busque filas pendientes,
+                    // o las que acaban de adoptarse (userId antes null) no entrarian
+                    // todavia en getPendingSync(userId). Sync automatico (login o
+                    // arranque con sesion ya activa) -- silencioso, sin snackbar, para
+                    // no interrumpir al usuario nada mas entrar; solo el boton manual
+                    // de Ajustes (syncNow) informa del resultado.
+                    runSync()
                 }
+            }
+        }
+    }
+
+    /** Disparador manual del boton "Sincronizar ahora" de Ajustes -- este si informa
+     * del resultado, a diferencia del sync automatico de login/arranque. */
+    fun syncNow() {
+        viewModelScope.launch {
+            val result = runSync()
+            _messageEvent.emit(result.toUserMessage())
+        }
+    }
+
+    private suspend fun runSync(): SyncResult = syncMutex.withLock {
+        _isSyncing.value = true
+        try {
+            syncEngineUseCase()
+        } finally {
+            _isSyncing.value = false
+        }
+    }
+
+    private fun SyncResult.toUserMessage(): String = when (this) {
+        is SyncResult.NotAuthenticated -> "Inicia sesión para sincronizar"
+        is SyncResult.Completed -> {
+            val pullAbortedCount = listOf(pull.decks, pull.topics, pull.flashcards).count { it.aborted }
+            val pushFailedCount = push.decks.failed + push.topics.failed + push.flashcards.failed
+            when {
+                pullAbortedCount > 0 && pushFailedCount > 0 ->
+                    "No se pudo sincronizar del todo. Se reintentará más tarde"
+                pullAbortedCount > 0 ->
+                    "No se pudieron comprobar los cambios remotos. Se reintentará más tarde"
+                pushFailedCount > 0 ->
+                    "Sincronizado parcialmente: $pushFailedCount cambios pendientes de subir"
+                else -> "Sincronizado"
             }
         }
     }

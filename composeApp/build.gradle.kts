@@ -117,6 +117,7 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
             implementation(platform(libs.supabase.bom.get()))
             implementation(libs.supabase.postgrest)
+            implementation(libs.supabase.auth)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

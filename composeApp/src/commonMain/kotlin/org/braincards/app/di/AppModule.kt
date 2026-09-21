@@ -13,6 +13,7 @@ import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.local.migration.MIGRATION_4_5
+import org.braincards.app.data.remote.RemoteDataSourceImpl
 import org.braincards.app.data.repository.AuthRepositoryImpl
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
@@ -23,6 +24,7 @@ import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
@@ -30,6 +32,7 @@ import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
+import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
@@ -75,6 +78,9 @@ fun appModule(
     }
     single<AuthRepository> { AuthRepositoryImpl(client = get()) }
 
+    // Envoltura fina sobre Postgrest (Bloque D) -- ver comentario en RemoteDataSourceImpl.
+    single<RemoteDataSource> { RemoteDataSourceImpl(client = get()) }
+
     factory { SignUpUseCase(repository = get()) }
     factory { SignInUseCase(repository = get()) }
     factory { SignOutUseCase(repository = get()) }
@@ -86,6 +92,16 @@ fun appModule(
             flashcardRepository = get()
         )
     }
+    factory {
+        SyncEngineUseCase(
+            authRepository = get(),
+            remoteDataSource = get(),
+            decksRepository = get(),
+            topicsRepository = get(),
+            flashcardRepository = get(),
+            backfillLocalDataUseCase = get()
+        )
+    }
 
     viewModel {
         AuthViewModel(
@@ -94,7 +110,8 @@ fun appModule(
             signInUseCase = get(),
             signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
-            backfillLocalDataUseCase = get()
+            backfillLocalDataUseCase = get(),
+            syncEngineUseCase = get()
         )
     }
 

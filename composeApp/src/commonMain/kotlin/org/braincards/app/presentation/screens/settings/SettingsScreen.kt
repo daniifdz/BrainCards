@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.presentation.screens.auth.AuthViewModel
@@ -38,6 +40,16 @@ fun SettingsScreen(
     var isDropdownExpanded by remember { mutableStateOf(false) }
     val authViewModel = koinViewModel<AuthViewModel>()
     val authState by authViewModel.authState.collectAsState()
+    val isSyncing by authViewModel.isSyncing.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        authViewModel.messageEvent.collectLatest { message ->
+            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -49,7 +61,8 @@ fun SettingsScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -116,6 +129,18 @@ fun SettingsScreen(
                         headlineContent = { Text(state.email ?: "Sesión iniciada") },
                         supportingContent = { Text("Sincronización activada") },
                         leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Sincronizar ahora") },
+                        supportingContent = { Text(if (isSyncing) "Sincronizando…" else "Sube y baja tus mazos manualmente") },
+                        leadingContent = {
+                            if (isSyncing) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.Default.Sync, contentDescription = null)
+                            }
+                        },
+                        modifier = Modifier.clickable(enabled = !isSyncing) { authViewModel.syncNow() }
                     )
                     ListItem(
                         headlineContent = { Text("Cerrar sesión") },
