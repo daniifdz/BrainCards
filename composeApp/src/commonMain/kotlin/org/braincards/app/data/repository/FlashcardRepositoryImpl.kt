@@ -58,9 +58,16 @@ class FlashcardRepositoryImpl(
         return flashcardDao.getPendingSyncFlashcards(userId).map { it.toDomain() }
     }
 
-    override suspend fun applyRemotePull(flashcards: List<Flashcard>) {
-        val entities = flashcards.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+    // LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int {
+        val toApply = flashcards.filter { remote ->
+            val local = flashcardDao.getFlashcardByIdIncludingDeleted(remote.id)
+            local == null || remote.updatedAt > local.updatedAt
+        }
+        if (toApply.isEmpty()) return 0
+        val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
         flashcardDao.insertAllFlashcards(entities)
+        return toApply.size
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

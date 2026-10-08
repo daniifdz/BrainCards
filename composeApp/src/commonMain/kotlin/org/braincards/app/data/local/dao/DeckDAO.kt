@@ -32,6 +32,13 @@ interface DeckDao {
     @Query("SELECT * FROM decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getDeckById(id: String): DeckEntity?
 
+    // sync (Bloque E, LWW) -- sin filtro deletedAt IS NULL a proposito: para comparar
+    // updatedAt contra una fila remota del pull, un tombstone local sigue siendo la
+    // fila real (con su updatedAt real), no "no existe". Si usaramos getDeckById aqui,
+    // una fila borrada localmente parecería inexistente y el pull la resucitaria.
+    @Query("SELECT * FROM decks WHERE id = :id")
+    suspend fun getDeckByIdIncludingDeleted(id: String): DeckEntity?
+
     @Query("UPDATE decks SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedDecks(userId: String): Int
 

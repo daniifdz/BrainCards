@@ -15,6 +15,8 @@ interface TopicsRepository {
     // sync (Bloque D) -- mismo criterio que DecksRepository: getPendingSync incluye
     // tombstones (deletedAt != null), applyRemotePull sincroniza lastSyncedAt localmente.
     suspend fun getPendingSync(userId: String): List<Topic>
-    suspend fun applyRemotePull(topics: List<Topic>)
+
+    // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
+    suspend fun applyRemotePull(topics: List<Topic>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 }

@@ -56,8 +56,9 @@ class FakeFlashcardRepository : FlashcardRepository {
     override suspend fun getPendingSync(userId: String): List<Flashcard> =
         flashcards.values.filter { it.userId == userId && (it.lastSyncedAt == null || it.updatedAt > it.lastSyncedAt!!) }
 
-    override suspend fun applyRemotePull(flashcards: List<Flashcard>) {
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int {
         flashcards.forEach { this.flashcards[it.id] = it.copy(lastSyncedAt = it.updatedAt) }
+        return flashcards.size
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

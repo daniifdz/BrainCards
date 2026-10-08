@@ -28,6 +28,10 @@ interface TopicDao {
     @Query("SELECT * FROM topics WHERE id = :id AND deletedAt IS NULL")
     suspend fun getTopicById(id: String): TopicEntity?
 
+    // sync (Bloque E, LWW) -- ver comentario en DeckDao.getDeckByIdIncludingDeleted.
+    @Query("SELECT * FROM topics WHERE id = :id")
+    suspend fun getTopicByIdIncludingDeleted(id: String): TopicEntity?
+
     @Query("UPDATE topics SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedTopics(userId: String): Int
 

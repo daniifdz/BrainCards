@@ -22,6 +22,10 @@ interface FlashcardDao {
     @Query("SELECT * FROM flashcards WHERE id = :id AND deletedAt IS NULL")
     suspend fun getFlashcardById(id: String): FlashcardEntity?
 
+    // sync (Bloque E, LWW) -- ver comentario en DeckDao.getDeckByIdIncludingDeleted.
+    @Query("SELECT * FROM flashcards WHERE id = :id")
+    suspend fun getFlashcardByIdIncludingDeleted(id: String): FlashcardEntity?
+
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND deletedAt IS NULL")
     fun getFlashcardsByDeckId(deckId: String): Flow<List<FlashcardEntity>>
 

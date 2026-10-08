@@ -37,8 +37,9 @@ class FakeTopicsRepository : TopicsRepository {
     override suspend fun getPendingSync(userId: String): List<Topic> =
         topics.values.filter { it.userId == userId && (it.lastSyncedAt == null || it.updatedAt > it.lastSyncedAt!!) }
 
-    override suspend fun applyRemotePull(topics: List<Topic>) {
+    override suspend fun applyRemotePull(topics: List<Topic>): Int {
         topics.forEach { this.topics[it.id] = it.copy(lastSyncedAt = it.updatedAt) }
+        return topics.size
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

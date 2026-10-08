@@ -20,7 +20,9 @@ interface FlashcardRepository {
 
     // sync (Bloque D) -- mismo criterio que DecksRepository/TopicsRepository.
     suspend fun getPendingSync(userId: String): List<Flashcard>
-    suspend fun applyRemotePull(flashcards: List<Flashcard>)
+
+    // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
+    suspend fun applyRemotePull(flashcards: List<Flashcard>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
 }

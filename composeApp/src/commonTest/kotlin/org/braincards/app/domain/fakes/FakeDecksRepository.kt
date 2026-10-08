@@ -36,8 +36,9 @@ class FakeDecksRepository : DecksRepository {
     override suspend fun getPendingSync(userId: String): List<Deck> =
         decks.values.filter { it.userId == userId && (it.lastSyncedAt == null || it.updatedAt > it.lastSyncedAt!!) }
 
-    override suspend fun applyRemotePull(decks: List<Deck>) {
+    override suspend fun applyRemotePull(decks: List<Deck>): Int {
         decks.forEach { this.decks[it.id] = it.copy(lastSyncedAt = it.updatedAt) }
+        return decks.size
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

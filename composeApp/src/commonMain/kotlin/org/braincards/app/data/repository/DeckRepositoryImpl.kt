@@ -55,12 +55,26 @@ class DeckRepositoryImpl (private val deckDao: DeckDao, private val topicDao: To
         return deckDao.getPendingSyncDecks(userId).map { it.toDomain() }
     }
 
-    // lastSyncedAt del pull se pisa a updatedAt: el valor que traia el DTO es el
-    // de OTRO dispositivo, no dice nada sobre si este dispositivo tiene esta fila
-    // pendiente de subir -- justo despues de aplicar un pull, no lo esta.
-    override suspend fun applyRemotePull(decks: List<Deck>) {
-        val entities = decks.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+    // LWW por fila (Bloque E): compara updatedAt remoto contra el local antes de
+    // aplicar cada fila -- ya no es un upsert masivo sin mirar. Si la fila local es
+    // igual o mas nueva, se ignora esa fila del pull sin tocarla: sigue "sucia"
+    // (lastSyncedAt sin actualizar) y se sube sola en el push de esta misma pasada
+    // de sync(). getDeckByIdIncludingDeleted (no getDeckById) para no confundir un
+    // tombstone local con "no existe" y resucitarlo por error.
+    //
+    // lastSyncedAt del pull se pisa a updatedAt en las filas que SI se aplican: el
+    // valor que traia el DTO es el de OTRO dispositivo, no dice nada sobre si este
+    // dispositivo tiene esta fila pendiente de subir -- justo despues de aplicarla,
+    // no lo esta.
+    override suspend fun applyRemotePull(decks: List<Deck>): Int {
+        val toApply = decks.filter { remote ->
+            val local = deckDao.getDeckByIdIncludingDeleted(remote.id)
+            local == null || remote.updatedAt > local.updatedAt
+        }
+        if (toApply.isEmpty()) return 0
+        val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
         deckDao.insertAllDecks(entities)
+        return toApply.size
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

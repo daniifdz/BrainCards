@@ -141,12 +141,12 @@ class SyncEngineUseCase(
      */
     private suspend fun <T> pullTable(
         fetch: suspend () -> List<T>,
-        apply: suspend (List<T>) -> Unit
+        apply: suspend (List<T>) -> Int
     ): PullTableResult {
         return try {
             val remoteRows = fetch()
-            apply(remoteRows)
-            PullTableResult(applied = remoteRows.size, aborted = false)
+            val appliedCount = apply(remoteRows)
+            PullTableResult(applied = appliedCount, aborted = false)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

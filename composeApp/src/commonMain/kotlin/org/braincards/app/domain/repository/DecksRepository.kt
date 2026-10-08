@@ -18,7 +18,11 @@ interface DecksRepository{
     // sync (Bloque D) -- incluye filas con deletedAt != null a proposito: un
     // borrado logico tambien es un cambio pendiente de subir (tombstone).
     suspend fun getPendingSync(userId: String): List<Deck>
-    suspend fun applyRemotePull(decks: List<Deck>)
+
+    // Bloque E (LWW): puede aplicar solo un subconjunto de lo recibido -- las filas
+    // donde la version local es igual o mas nueva se ignoran. Devuelve cuantas se
+    // aplicaron de verdad, para que SyncEngineUseCase pueda reportarlo con precision.
+    suspend fun applyRemotePull(decks: List<Deck>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 }
 

@@ -32,9 +32,9 @@ private class OrderTrackingDecksRepository(
         callLog.add("backfill:decks")
         return delegate.claimOrphanedDecks(userId)
     }
-    override suspend fun applyRemotePull(decks: List<Deck>) {
+    override suspend fun applyRemotePull(decks: List<Deck>): Int {
         callLog.add("pull:decks")
-        delegate.applyRemotePull(decks)
+        return delegate.applyRemotePull(decks)
     }
     override suspend fun getPendingSync(userId: String): List<Deck> {
         callLog.add("push:decks")
@@ -50,9 +50,9 @@ private class OrderTrackingTopicsRepository(
         callLog.add("backfill:topics")
         return delegate.claimOrphanedTopics(userId)
     }
-    override suspend fun applyRemotePull(topics: List<Topic>) {
+    override suspend fun applyRemotePull(topics: List<Topic>): Int {
         callLog.add("pull:topics")
-        delegate.applyRemotePull(topics)
+        return delegate.applyRemotePull(topics)
     }
     override suspend fun getPendingSync(userId: String): List<Topic> {
         callLog.add("push:topics")
@@ -68,9 +68,9 @@ private class OrderTrackingFlashcardRepository(
         callLog.add("backfill:flashcards")
         return delegate.claimOrphanedFlashcards(userId)
     }
-    override suspend fun applyRemotePull(flashcards: List<Flashcard>) {
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int {
         callLog.add("pull:flashcards")
-        delegate.applyRemotePull(flashcards)
+        return delegate.applyRemotePull(flashcards)
     }
     override suspend fun getPendingSync(userId: String): List<Flashcard> {
         callLog.add("push:flashcards")
