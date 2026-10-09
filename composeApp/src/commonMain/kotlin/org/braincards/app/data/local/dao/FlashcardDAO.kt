@@ -69,4 +69,8 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
     suspend fun markFlashcardsPushed(ids: List<String>, syncedAt: Instant)
 
+    // Bloque F (borrado de cuenta) -- ver comentario en DeckDao.releaseDecksFromUser.
+    @Query("UPDATE flashcards SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
+    suspend fun releaseFlashcardsFromUser(userId: String): Int
+
 }

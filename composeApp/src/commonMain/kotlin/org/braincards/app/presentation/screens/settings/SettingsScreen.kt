@@ -6,6 +6,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -41,6 +42,8 @@ fun SettingsScreen(
     val authViewModel = koinViewModel<AuthViewModel>()
     val authState by authViewModel.authState.collectAsState()
     val isSyncing by authViewModel.isSyncing.collectAsState()
+    val isDeletingAccount by authViewModel.isDeletingAccount.collectAsState()
+    var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -147,6 +150,34 @@ fun SettingsScreen(
                         leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
                         modifier = Modifier.clickable { authViewModel.signOut() }
                     )
+                    ListItem(
+                        headlineContent = {
+                            Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
+                        },
+                        supportingContent = {
+                            Text(
+                                if (isDeletingAccount) "Eliminando…" else "Borra tu cuenta y tus datos en la nube"
+                            )
+                        },
+                        leadingContent = {
+                            if (isDeletingAccount) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            } else {
+                                Icon(
+                                    Icons.Default.DeleteForever,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        modifier = Modifier.clickable(enabled = !isDeletingAccount) {
+                            showDeleteAccountDialog = true
+                        }
+                    )
                 }
                 else -> {
                     ListItem(
@@ -200,5 +231,31 @@ fun SettingsScreen(
                 leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
             )
         }
+    }
+
+    if (showDeleteAccountDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAccountDialog = false },
+            title = { Text("Eliminar cuenta") },
+            text = {
+                Text(
+                    "Esta acción es irreversible: se borrarán los datos de tu cuenta " +
+                        "en la nube. Los datos locales de este dispositivo se conservarán."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteAccountDialog = false
+                    authViewModel.deleteAccount()
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAccountDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

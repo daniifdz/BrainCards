@@ -80,4 +80,8 @@ class DeckRepositoryImpl (private val deckDao: DeckDao, private val topicDao: To
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
         deckDao.markDecksPushed(ids, syncedAt)
     }
+
+    override suspend fun releaseFromUser(userId: String): Int {
+        return deckDao.releaseDecksFromUser(userId)
+    }
 }

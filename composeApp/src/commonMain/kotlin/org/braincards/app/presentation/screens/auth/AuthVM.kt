@@ -16,6 +16,7 @@ import kotlinx.coroutines.sync.withLock
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
@@ -30,7 +31,8 @@ class AuthViewModel(
     private val signOutUseCase: SignOutUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
     private val backfillLocalDataUseCase: BackfillLocalDataUseCase,
-    private val syncEngineUseCase: SyncEngineUseCase
+    private val syncEngineUseCase: SyncEngineUseCase,
+    private val deleteAccountUseCase: DeleteAccountUseCase
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authRepository.authState
@@ -49,9 +51,12 @@ class AuthViewModel(
     private val _isSyncing = MutableStateFlow(false)
     val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
 
-    // Evita que el sync automatico (login/arranque con sesion) y el boton manual de
-    // Ajustes corran a la vez si coinciden -- dos syncs concurrentes podrian pisarse
-    // el push/pull entre si.
+    private val _isDeletingAccount = MutableStateFlow(false)
+    val isDeletingAccount: StateFlow<Boolean> = _isDeletingAccount.asStateFlow()
+
+    // Evita que el sync automatico (login/arranque con sesion), el boton manual de
+    // Ajustes y el borrado de cuenta corran a la vez si coinciden -- todos tocan las
+    // mismas filas locales (userId/lastSyncedAt), y podrian pisarse entre si.
     private val syncMutex = Mutex()
 
     // Evita repetir el backfill para el mismo usuario en cada recomposicion/reconexion
@@ -154,6 +159,27 @@ class AuthViewModel(
             } catch (e: Exception) {
                 println("Error al cerrar sesión: $e")
                 _messageEvent.emit("No se pudo cerrar sesión")
+            }
+        }
+    }
+
+    /** Borrado de cuenta (Bloque F) -- bloquea doble tap con el mismo criterio que
+     * isSubmitting/isSyncing, y toma syncMutex para no correr a la vez que un sync. */
+    fun deleteAccount() {
+        if (_isDeletingAccount.value) return
+        val userId = (authState.value as? AuthState.Authenticated)?.userId ?: return
+        viewModelScope.launch {
+            syncMutex.withLock {
+                _isDeletingAccount.value = true
+                try {
+                    deleteAccountUseCase(userId)
+                    _messageEvent.emit("Cuenta eliminada")
+                } catch (e: Exception) {
+                    println("Error al eliminar la cuenta: $e")
+                    _messageEvent.emit("No se pudo eliminar la cuenta")
+                } finally {
+                    _isDeletingAccount.value = false
+                }
             }
         }
     }

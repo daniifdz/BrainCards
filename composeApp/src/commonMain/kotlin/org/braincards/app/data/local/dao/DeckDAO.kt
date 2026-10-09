@@ -52,4 +52,9 @@ interface DeckDao {
 
     @Query("UPDATE decks SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
     suspend fun markDecksPushed(ids: List<String>, syncedAt: Instant)
+
+    // Bloque F (borrado de cuenta) -- inverso de claimOrphanedDecks. Sin filtro
+    // deletedAt IS NULL a proposito: un tombstone tambien debe liberarse.
+    @Query("UPDATE decks SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
+    suspend fun releaseDecksFromUser(userId: String): Int
 }

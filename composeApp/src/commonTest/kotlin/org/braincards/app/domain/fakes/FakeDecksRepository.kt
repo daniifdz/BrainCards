@@ -44,4 +44,10 @@ class FakeDecksRepository : DecksRepository {
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
         ids.forEach { id -> decks[id]?.let { decks[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
+
+    override suspend fun releaseFromUser(userId: String): Int {
+        val owned = decks.values.filter { it.userId == userId }
+        owned.forEach { decks[it.id] = it.copy(userId = null, lastSyncedAt = null) }
+        return owned.size
+    }
 }

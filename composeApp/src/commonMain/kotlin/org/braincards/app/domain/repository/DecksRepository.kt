@@ -24,6 +24,12 @@ interface DecksRepository{
     // aplicaron de verdad, para que SyncEngineUseCase pueda reportarlo con precision.
     suspend fun applyRemotePull(decks: List<Deck>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
+
+    // Bloque F (borrado de cuenta) -- inverso de claimOrphanedDecks: libera las filas
+    // de este usuario (userId = null, lastSyncedAt = null) para que una cuenta futura
+    // pueda adoptarlas con claimOrphanedDecks. Incluye tombstones a proposito: un deck
+    // borrado logicamente tambien debe quedar libre, no solo los activos.
+    suspend fun releaseFromUser(userId: String): Int
 }
 
 

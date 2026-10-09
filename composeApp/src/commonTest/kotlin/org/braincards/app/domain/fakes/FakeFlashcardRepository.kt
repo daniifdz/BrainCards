@@ -64,4 +64,10 @@ class FakeFlashcardRepository : FlashcardRepository {
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
         ids.forEach { id -> flashcards[id]?.let { flashcards[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
+
+    override suspend fun releaseFromUser(userId: String): Int {
+        val owned = flashcards.values.filter { it.userId == userId }
+        owned.forEach { flashcards[it.id] = it.copy(userId = null, lastSyncedAt = null) }
+        return owned.size
+    }
 }

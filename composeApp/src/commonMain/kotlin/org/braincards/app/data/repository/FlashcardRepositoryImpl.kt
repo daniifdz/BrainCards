@@ -74,4 +74,8 @@ class FlashcardRepositoryImpl(
         flashcardDao.markFlashcardsPushed(ids, syncedAt)
     }
 
+    override suspend fun releaseFromUser(userId: String): Int {
+        return flashcardDao.releaseFlashcardsFromUser(userId)
+    }
+
 }

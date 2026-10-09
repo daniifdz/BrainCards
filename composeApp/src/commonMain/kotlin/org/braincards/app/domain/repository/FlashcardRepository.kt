@@ -25,4 +25,7 @@ interface FlashcardRepository {
     suspend fun applyRemotePull(flashcards: List<Flashcard>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
+    // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.
+    suspend fun releaseFromUser(userId: String): Int
+
 }

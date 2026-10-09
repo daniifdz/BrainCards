@@ -72,6 +72,10 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
         topicDao.markTopicsPushed(ids, syncedAt)
     }
+
+    override suspend fun releaseFromUser(userId: String): Int {
+        return topicDao.releaseTopicsFromUser(userId)
+    }
 }
 
 

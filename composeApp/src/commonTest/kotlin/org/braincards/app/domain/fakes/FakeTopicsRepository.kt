@@ -45,4 +45,10 @@ class FakeTopicsRepository : TopicsRepository {
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
         ids.forEach { id -> topics[id]?.let { topics[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
+
+    override suspend fun releaseFromUser(userId: String): Int {
+        val owned = topics.values.filter { it.userId == userId }
+        owned.forEach { topics[it.id] = it.copy(userId = null, lastSyncedAt = null) }
+        return owned.size
+    }
 }

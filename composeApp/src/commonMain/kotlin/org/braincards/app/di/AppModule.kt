@@ -28,6 +28,7 @@ import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
@@ -102,6 +103,14 @@ fun appModule(
             backfillLocalDataUseCase = get()
         )
     }
+    factory {
+        DeleteAccountUseCase(
+            authRepository = get(),
+            decksRepository = get(),
+            topicsRepository = get(),
+            flashcardRepository = get()
+        )
+    }
 
     viewModel {
         AuthViewModel(
@@ -111,7 +120,8 @@ fun appModule(
             signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
             backfillLocalDataUseCase = get(),
-            syncEngineUseCase = get()
+            syncEngineUseCase = get(),
+            deleteAccountUseCase = get()
         )
     }
 

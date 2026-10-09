@@ -18,6 +18,14 @@ class FakeAuthRepository(
     private val state = MutableStateFlow(initialState)
     override val authState: Flow<AuthState> = state
 
+    // Controlables desde el test (Bloque F, DeleteAccountUseCaseTest): si no son null,
+    // el metodo correspondiente lanza esa excepcion en vez de "tener exito".
+    var deleteAccountFailure: Throwable? = null
+    var signOutFailure: Throwable? = null
+
+    var deleteAccountCalled = false
+    var signOutCalled = false
+
     fun setState(newState: AuthState) {
         state.value = newState
     }
@@ -30,11 +38,20 @@ class FakeAuthRepository(
         throw UnsupportedOperationException("No usado en estos tests")
     }
 
+    // Antes lanzaba siempre (nadie lo necesitaba) -- DeleteAccountUseCaseTest si lo
+    // necesita funcionando, como ultimo paso tras un borrado remoto exitoso.
     override suspend fun signOut() {
-        throw UnsupportedOperationException("No usado en estos tests")
+        signOutCalled = true
+        signOutFailure?.let { throw it }
+        state.value = AuthState.NotAuthenticated
     }
 
     override suspend fun sendPasswordResetEmail(email: String) {
         throw UnsupportedOperationException("No usado en estos tests")
+    }
+
+    override suspend fun deleteAccount() {
+        deleteAccountCalled = true
+        deleteAccountFailure?.let { throw it }
     }
 }

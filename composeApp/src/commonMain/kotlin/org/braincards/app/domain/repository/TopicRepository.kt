@@ -19,4 +19,7 @@ interface TopicsRepository {
     // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
     suspend fun applyRemotePull(topics: List<Topic>): Int
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
+
+    // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.
+    suspend fun releaseFromUser(userId: String): Int
 }
