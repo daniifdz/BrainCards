@@ -43,7 +43,7 @@ class DeleteAccountUseCaseTest {
     @Test
     fun `borrado exitoso invoca el RPC, cierra sesion y libera las filas locales`() = runBlocking {
         val authRepository = FakeAuthRepository(
-            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com")
+            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true)
         )
         val decksRepository = FakeDecksRepository()
         val topicsRepository = FakeTopicsRepository()
@@ -63,7 +63,7 @@ class DeleteAccountUseCaseTest {
     @Test
     fun `si el RPC falla no se toca la sesion ni las filas locales`() = runBlocking {
         val authRepository = FakeAuthRepository(
-            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com")
+            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true)
         ).apply {
             deleteAccountFailure = RuntimeException("fallo de red simulado")
         }
@@ -79,7 +79,7 @@ class DeleteAccountUseCaseTest {
         assertTrue(authRepository.deleteAccountCalled)
         assertTrue(!authRepository.signOutCalled)
         assertEquals(
-            AuthState.Authenticated(userId = userId, email = "a@b.com"),
+            AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true),
             authRepository.authState.first()
         )
         assertEquals(userId, decksRepository.getDeckById("deck-1")?.userId)
@@ -88,7 +88,7 @@ class DeleteAccountUseCaseTest {
     @Test
     fun `si el RPC tiene exito pero signOut falla, las filas quedan liberadas y no se propaga error`() = runBlocking {
         val authRepository = FakeAuthRepository(
-            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com")
+            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true)
         ).apply {
             signOutFailure = RuntimeException("fallo al cerrar sesion local simulado")
         }

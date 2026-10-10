@@ -20,6 +20,16 @@ sealed interface SyncResult {
     data class Completed(val pull: PullResult, val push: PushResult) : SyncResult
 }
 
+// Bloque D (sin conexion y reintentos) -- usado por SyncCoordinator para decidir
+// si persistir "ultima sincronizacion correcta". No reemplaza la logica mas fina
+// de AuthViewModel.toUserMessage() (esa necesita los conteos por separado para
+// distinguir pull parcial de push parcial en el mensaje al usuario).
+fun SyncResult.Completed.isFullySuccessful(): Boolean {
+    val pullAbortedCount = listOf(pull.decks, pull.topics, pull.flashcards).count { it.aborted }
+    val pushFailedCount = push.decks.failed + push.topics.failed + push.flashcards.failed
+    return pullAbortedCount == 0 && pushFailedCount == 0
+}
+
 data class PullResult(
     val decks: PullTableResult,
     val topics: PullTableResult,

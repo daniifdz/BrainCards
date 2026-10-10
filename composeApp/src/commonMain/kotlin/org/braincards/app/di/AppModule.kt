@@ -56,7 +56,9 @@ import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
+import org.braincards.app.presentation.sync.SyncCoordinator
 import org.koin.dsl.module
+import kotlin.time.Duration.Companion.seconds
 
 fun appModule(
     databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>,
@@ -73,6 +75,10 @@ fun appModule(
             supabaseUrl = SUPABASE_URL,
             supabaseKey = SUPABASE_ANON_KEY
         ) {
+            // Explicito solo por documentacion -- supabase-kt 3.1.4 ya instala este
+            // mismo default (10s) aunque no se declare (confirmado en el codigo
+            // fuente real, KtorSupabaseHttpClient.kt/SupabaseClientBuilder.kt).
+            requestTimeout = 10.seconds
             install(Auth)
             install(Postgrest)
         }
@@ -112,6 +118,21 @@ fun appModule(
         )
     }
 
+    // single(createdAtStart = true), no viewModel -- ver comentario de cabecera en
+    // SyncCoordinator.kt sobre por que no puede ser un ViewModel de Koin aqui.
+    // Reutiliza el DataStore<Preferences> ya registrado arriba (settingsDataStore),
+    // no crea uno nuevo.
+    single(createdAtStart = true) {
+        SyncCoordinator(
+            authRepository = get(),
+            syncEngineUseCase = get(),
+            decksRepository = get(),
+            topicsRepository = get(),
+            flashcardRepository = get(),
+            dataStore = get()
+        )
+    }
+
     viewModel {
         AuthViewModel(
             authRepository = get(),
@@ -119,9 +140,8 @@ fun appModule(
             signInUseCase = get(),
             signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
-            backfillLocalDataUseCase = get(),
-            syncEngineUseCase = get(),
-            deleteAccountUseCase = get()
+            deleteAccountUseCase = get(),
+            syncCoordinator = get()
         )
     }
 

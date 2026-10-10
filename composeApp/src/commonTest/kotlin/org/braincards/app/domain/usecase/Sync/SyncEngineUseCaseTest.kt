@@ -137,7 +137,7 @@ class SyncEngineUseCaseTest {
 
     @Test
     fun `con sesion activa el backfill corre antes que el pull, y el pull antes que el push`() = runBlocking {
-        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com"))
+        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true))
         val remoteDataSource = FakeRemoteDataSource()
         val callLog = mutableListOf<String>()
         val decksRepository = OrderTrackingDecksRepository(FakeDecksRepository(), callLog)
@@ -161,7 +161,7 @@ class SyncEngineUseCaseTest {
 
     @Test
     fun `si el pull falla el push se ejecuta igualmente`() = runBlocking {
-        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com"))
+        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true))
         val remoteDataSource = FakeRemoteDataSource().apply {
             pullDecksFailure = RuntimeException("fallo de red simulado")
         }
@@ -188,7 +188,7 @@ class SyncEngineUseCaseTest {
 
     @Test
     fun `un push con una fila fallida devuelve el resultado parcial correcto`() = runBlocking {
-        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com"))
+        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true))
         val remoteDataSource = FakeRemoteDataSource().apply {
             pushDeckIdsThatFail = setOf("deck-fails")
         }

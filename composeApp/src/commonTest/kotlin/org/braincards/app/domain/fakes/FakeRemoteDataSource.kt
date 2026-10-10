@@ -1,5 +1,6 @@
 package org.braincards.app.domain.fakes
 
+import kotlinx.coroutines.delay
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Flashcard
@@ -38,10 +39,26 @@ class FakeRemoteDataSource : RemoteDataSource {
     val pushedTopicIds = mutableListOf<String>()
     val pushedFlashcardIds = mutableListOf<String>()
 
+    // Bloque D (sin conexion y reintentos) -- usado por SyncCoordinatorTest para
+    // demostrar con un delay real que dos syncNow() concurrentes no se solapan
+    // (si el Mutex del coordinador fallara, maxConcurrentPullDecksCalls subiria a
+    // mas de 1).
+    var pullDecksDelayMillis: Long = 0
+    private var activePullDecksCalls = 0
+    var maxConcurrentPullDecksCalls = 0
+        private set
+
     override suspend fun pullDecks(userId: String, since: Instant): List<Deck> {
         calls.add("pullDecks")
-        pullDecksFailure?.let { throw it }
-        return decksToPull
+        activePullDecksCalls++
+        maxConcurrentPullDecksCalls = maxOf(maxConcurrentPullDecksCalls, activePullDecksCalls)
+        try {
+            if (pullDecksDelayMillis > 0) delay(pullDecksDelayMillis)
+            pullDecksFailure?.let { throw it }
+            return decksToPull
+        } finally {
+            activePullDecksCalls--
+        }
     }
 
     override suspend fun pushDecks(decks: List<Deck>) {

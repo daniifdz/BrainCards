@@ -11,18 +11,16 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
-import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
-import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Sync.SyncResult
+import org.braincards.app.presentation.sync.SyncCoordinator
 
 class AuthViewModel(
     authRepository: AuthRepository,
@@ -30,9 +28,8 @@ class AuthViewModel(
     private val signInUseCase: SignInUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
-    private val backfillLocalDataUseCase: BackfillLocalDataUseCase,
-    private val syncEngineUseCase: SyncEngineUseCase,
-    private val deleteAccountUseCase: DeleteAccountUseCase
+    private val deleteAccountUseCase: DeleteAccountUseCase,
+    private val syncCoordinator: SyncCoordinator
 ) : ViewModel() {
 
     val authState: StateFlow<AuthState> = authRepository.authState
@@ -48,56 +45,22 @@ class AuthViewModel(
     private val _messageEvent = MutableSharedFlow<String>()
     val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
 
-    private val _isSyncing = MutableStateFlow(false)
-    val isSyncing: StateFlow<Boolean> = _isSyncing.asStateFlow()
-
     private val _isDeletingAccount = MutableStateFlow(false)
     val isDeletingAccount: StateFlow<Boolean> = _isDeletingAccount.asStateFlow()
 
-    // Evita que el sync automatico (login/arranque con sesion), el boton manual de
-    // Ajustes y el borrado de cuenta corran a la vez si coinciden -- todos tocan las
-    // mismas filas locales (userId/lastSyncedAt), y podrian pisarse entre si.
-    private val syncMutex = Mutex()
-
-    // Evita repetir el backfill para el mismo usuario en cada recomposicion/reconexion
-    // del Flow -- la query en si ya es idempotente (WHERE userId IS NULL), esto es
-    // solo para no relanzarla sin necesidad.
-    private var backfillDoneForUserId: String? = null
-
-    init {
-        viewModelScope.launch {
-            authState.collect { state ->
-                if (state is AuthState.Authenticated && backfillDoneForUserId != state.userId) {
-                    backfillDoneForUserId = state.userId
-                    backfillLocalDataUseCase(state.userId)
-                    // Mismo bloque, misma corrutina, en orden: el backfill tiene que
-                    // terminar antes de que el primer push busque filas pendientes,
-                    // o las que acaban de adoptarse (userId antes null) no entrarian
-                    // todavia en getPendingSync(userId). Sync automatico (login o
-                    // arranque con sesion ya activa) -- silencioso, sin snackbar, para
-                    // no interrumpir al usuario nada mas entrar; solo el boton manual
-                    // de Ajustes (syncNow) informa del resultado.
-                    runSync()
-                }
-            }
-        }
-    }
+    // El sync automatico (login/arranque con sesion activa) y su Mutex viven ahora
+    // en SyncCoordinator (singleton real, no per-pantalla como este ViewModel) --
+    // ver cabecera de SyncCoordinator.kt. Aqui solo se exponen sus StateFlow.
+    val isSyncing: StateFlow<Boolean> = syncCoordinator.isSyncing
+    val lastSuccessfulSyncAt: StateFlow<Instant?> = syncCoordinator.lastSuccessfulSyncAt
+    val pendingChangesCount: StateFlow<Int> = syncCoordinator.pendingChangesCount
 
     /** Disparador manual del boton "Sincronizar ahora" de Ajustes -- este si informa
      * del resultado, a diferencia del sync automatico de login/arranque. */
     fun syncNow() {
         viewModelScope.launch {
-            val result = runSync()
+            val result = syncCoordinator.syncNow()
             _messageEvent.emit(result.toUserMessage())
-        }
-    }
-
-    private suspend fun runSync(): SyncResult = syncMutex.withLock {
-        _isSyncing.value = true
-        try {
-            syncEngineUseCase()
-        } finally {
-            _isSyncing.value = false
         }
     }
 
@@ -164,12 +127,13 @@ class AuthViewModel(
     }
 
     /** Borrado de cuenta (Bloque F) -- bloquea doble tap con el mismo criterio que
-     * isSubmitting/isSyncing, y toma syncMutex para no correr a la vez que un sync. */
+     * isSubmitting/isSyncing, y toma el Mutex del coordinador para no correr a la
+     * vez que un sync. */
     fun deleteAccount() {
         if (_isDeletingAccount.value) return
         val userId = (authState.value as? AuthState.Authenticated)?.userId ?: return
         viewModelScope.launch {
-            syncMutex.withLock {
+            syncCoordinator.withSyncLock {
                 _isDeletingAccount.value = true
                 try {
                     deleteAccountUseCase(userId)

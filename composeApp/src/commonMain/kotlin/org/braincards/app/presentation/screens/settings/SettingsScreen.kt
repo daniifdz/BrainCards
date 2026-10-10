@@ -17,11 +17,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
+
+// dd/MM HH:mm en hora local -- sin libreria nueva, solo kotlinx-datetime (ya en uso).
+private fun Instant.toShortLocalString(): String {
+    val local = toLocalDateTime(TimeZone.currentSystemDefault())
+    val day = local.dayOfMonth.toString().padStart(2, '0')
+    val month = local.monthNumber.toString().padStart(2, '0')
+    val hour = local.hour.toString().padStart(2, '0')
+    val minute = local.minute.toString().padStart(2, '0')
+    return "$day/$month $hour:$minute"
+}
 
 // Enum para representar las opciones de tema de forma clara y segura.
 enum class AppTheme(val displayName: String) {
@@ -42,6 +55,8 @@ fun SettingsScreen(
     val authViewModel = koinViewModel<AuthViewModel>()
     val authState by authViewModel.authState.collectAsState()
     val isSyncing by authViewModel.isSyncing.collectAsState()
+    val lastSuccessfulSyncAt by authViewModel.lastSuccessfulSyncAt.collectAsState()
+    val pendingChangesCount by authViewModel.pendingChangesCount.collectAsState()
     val isDeletingAccount by authViewModel.isDeletingAccount.collectAsState()
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
@@ -130,7 +145,9 @@ fun SettingsScreen(
                 is AuthState.Authenticated -> {
                     ListItem(
                         headlineContent = { Text(state.email ?: "Sesión iniciada") },
-                        supportingContent = { Text("Sincronización activada") },
+                        supportingContent = {
+                            Text(if (state.sessionConfirmed) "Sincronización activada" else "Sin conexión")
+                        },
                         leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
                     )
                     ListItem(
@@ -144,6 +161,15 @@ fun SettingsScreen(
                             }
                         },
                         modifier = Modifier.clickable(enabled = !isSyncing) { authViewModel.syncNow() }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Estado de sincronización") },
+                        supportingContent = {
+                            val lastSyncText = lastSuccessfulSyncAt?.let { "Última sincronización correcta: ${it.toShortLocalString()}" }
+                                ?: "Sin sincronizar todavía"
+                            Text("$lastSyncText · $pendingChangesCount cambios pendientes")
+                        },
+                        leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                     ListItem(
                         headlineContent = { Text("Cerrar sesión") },

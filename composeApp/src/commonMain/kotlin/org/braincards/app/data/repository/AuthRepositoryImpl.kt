@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.braincards.app.data.mapper.toAuthState
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
 
@@ -15,16 +16,16 @@ class AuthRepositoryImpl(
     private val client: SupabaseClient
 ) : AuthRepository {
 
+    // sessionManager.loadSession() solo se llama en RefreshFailure (lee de
+    // almacenamiento local, sin red) -- ver AuthStateMapper.toAuthState para el
+    // porque de no colapsar RefreshFailure a NotAuthenticated sin mirar esto.
     override val authState: Flow<AuthState> = client.auth.sessionStatus.map { status ->
-        when (status) {
-            is SessionStatus.Authenticated -> AuthState.Authenticated(
-                userId = status.session.user?.id.orEmpty(),
-                email = status.session.user?.email
-            )
-            is SessionStatus.NotAuthenticated -> AuthState.NotAuthenticated
-            is SessionStatus.Initializing -> AuthState.Loading
-            is SessionStatus.RefreshFailure -> AuthState.NotAuthenticated
+        val savedSession = if (status is SessionStatus.RefreshFailure) {
+            client.auth.sessionManager.loadSession()
+        } else {
+            null
         }
+        status.toAuthState(savedSession)
     }
 
     override suspend fun signUp(email: String, password: String) {
