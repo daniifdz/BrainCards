@@ -10,6 +10,13 @@ interface AuthRepository {
     suspend fun signOut()
     suspend fun sendPasswordResetEmail(email: String)
 
+    // Recuperacion de contraseña por codigo OTP (ver AuthStateMapper.kt --
+    // verificar el codigo deja al usuario con una sesion Authenticated real antes
+    // de que ponga la contraseña nueva, por eso updatePassword no necesita nada
+    // mas que la sesion ya activa).
+    suspend fun verifyPasswordResetCode(email: String, code: String)
+    suspend fun updatePassword(newPassword: String)
+
     // Bloque F (borrado de cuenta) -- solo el borrado remoto (RPC delete_own_account).
     // El cierre de sesion local es responsabilidad de signOut(), ya existente; no se
     // llama desde aqui para que el caller (DeleteAccountUseCase) pueda decidir que

@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import org.braincards.app.data.mapper.toAuthErrorMessage
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
+import org.braincards.app.domain.usecase.Auth.ConfirmPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
@@ -28,6 +30,7 @@ class AuthViewModel(
     private val signInUseCase: SignInUseCase,
     private val signOutUseCase: SignOutUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
+    private val confirmPasswordResetUseCase: ConfirmPasswordResetUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val syncCoordinator: SyncCoordinator
 ) : ViewModel() {
@@ -47,6 +50,19 @@ class AuthViewModel(
 
     private val _isDeletingAccount = MutableStateFlow(false)
     val isDeletingAccount: StateFlow<Boolean> = _isDeletingAccount.asStateFlow()
+
+    // Recuperacion de contraseña por OTP.
+    private val _passwordResetCodeSentEvent = MutableSharedFlow<String>()
+    val passwordResetCodeSentEvent: SharedFlow<String> = _passwordResetCodeSentEvent.asSharedFlow()
+
+    private val _passwordResetCompletedEvent = MutableSharedFlow<Unit>()
+    val passwordResetCompletedEvent: SharedFlow<Unit> = _passwordResetCompletedEvent.asSharedFlow()
+
+    // true solo si un verify() tuvo exito pero el updatePassword() posterior
+    // fallo -- ver ConfirmPasswordResetUseCase. Permite que ResetPasswordScreen
+    // deshabilite el campo del codigo y no pida reescribirlo en el reintento.
+    private val _codeVerified = MutableStateFlow(false)
+    val codeVerified: StateFlow<Boolean> = _codeVerified.asStateFlow()
 
     // El sync automatico (login/arranque con sesion activa) y su Mutex viven ahora
     // en SyncCoordinator (singleton real, no per-pantalla como este ViewModel) --
@@ -148,18 +164,48 @@ class AuthViewModel(
         }
     }
 
+    /** Envio inicial (ForgotPasswordScreen) y reenvio (boton "reenviar codigo" en
+     * ResetPasswordScreen) comparten este metodo -- un codigo nuevo invalida
+     * cualquier verificacion previa (ConfirmPasswordResetUseCase.onNewCodeRequested). */
     fun sendPasswordReset(email: String) {
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
             try {
                 sendPasswordResetUseCase(email)
+                confirmPasswordResetUseCase.onNewCodeRequested()
+                _codeVerified.value = false
                 _messageEvent.emit("Te hemos enviado un correo para restablecer tu contraseña")
+                _passwordResetCodeSentEvent.emit(email)
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al enviar el correo")
             } catch (e: Exception) {
                 println("Error al enviar el correo de recuperación: $e")
-                _messageEvent.emit("No se pudo enviar el correo")
+                _messageEvent.emit(e.toAuthErrorMessage())
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+
+    /** Verifica el código que se envió por email y fija la contraseña nueva. Mismo
+     * isSubmitting que el resto (no un flag aparte) -- bloquea doble tap igual
+     * que signUp/signIn/sendPasswordReset. */
+    fun confirmPasswordReset(email: String, code: String, newPassword: String) {
+        if (_isSubmitting.value) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                confirmPasswordResetUseCase(email, code, newPassword)
+                _codeVerified.value = false
+                _messageEvent.emit("Contraseña actualizada")
+                _passwordResetCompletedEvent.emit(Unit)
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al actualizar la contraseña")
+            } catch (e: Exception) {
+                println("Error al confirmar el restablecimiento de contraseña: $e")
+                _codeVerified.value = confirmPasswordResetUseCase.isCodeVerified(email)
+                _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
             }

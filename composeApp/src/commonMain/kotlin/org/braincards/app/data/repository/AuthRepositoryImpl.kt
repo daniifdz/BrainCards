@@ -1,6 +1,7 @@
 package org.braincards.app.data.repository
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -48,6 +49,18 @@ class AuthRepositoryImpl(
 
     override suspend fun sendPasswordResetEmail(email: String) {
         client.auth.resetPasswordForEmail(email)
+    }
+
+    // Verificar el codigo deja al usuario con una sesion Authenticated real
+    // (access + refresh token), igual que un signIn normal -- confirmado en el
+    // codigo fuente real de auth-kt (AuthImpl.verify() llama importSession()).
+    // updatePassword() se apoya en esa sesion ya activa, sin nada mas.
+    override suspend fun verifyPasswordResetCode(email: String, code: String) {
+        client.auth.verifyEmailOtp(type = OtpType.Email.RECOVERY, email = email, token = code)
+    }
+
+    override suspend fun updatePassword(newPassword: String) {
+        client.auth.updateUser { password = newPassword }
     }
 
     // Bloque F -- solo el borrado remoto (RPC security definer, borra de auth.users;

@@ -22,9 +22,16 @@ class FakeAuthRepository(
     // el metodo correspondiente lanza esa excepcion en vez de "tener exito".
     var deleteAccountFailure: Throwable? = null
     var signOutFailure: Throwable? = null
+    var verifyPasswordResetCodeFailure: Throwable? = null
+    var updatePasswordFailure: Throwable? = null
 
     var deleteAccountCalled = false
     var signOutCalled = false
+    // Contadores, no solo booleanos -- ConfirmPasswordResetUseCaseTest necesita
+    // comprobar que verify() NO se repite en un reintento.
+    var verifyPasswordResetCodeCallCount = 0
+    var updatePasswordCallCount = 0
+    var lastVerifiedCode: String? = null
 
     fun setState(newState: AuthState) {
         state.value = newState
@@ -53,5 +60,16 @@ class FakeAuthRepository(
     override suspend fun deleteAccount() {
         deleteAccountCalled = true
         deleteAccountFailure?.let { throw it }
+    }
+
+    override suspend fun verifyPasswordResetCode(email: String, code: String) {
+        verifyPasswordResetCodeCallCount++
+        lastVerifiedCode = code
+        verifyPasswordResetCodeFailure?.let { throw it }
+    }
+
+    override suspend fun updatePassword(newPassword: String) {
+        updatePasswordCallCount++
+        updatePasswordFailure?.let { throw it }
     }
 }

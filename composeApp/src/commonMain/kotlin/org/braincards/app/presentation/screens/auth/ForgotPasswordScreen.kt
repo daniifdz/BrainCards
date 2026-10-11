@@ -36,7 +36,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 
 @OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
-fun ForgotPasswordScreen(onBackClick: () -> Unit) {
+fun ForgotPasswordScreen(onBackClick: () -> Unit, onCodeSent: (email: String) -> Unit) {
     val viewModel = koinViewModel<AuthViewModel>()
     val isSubmitting by viewModel.isSubmitting.collectAsState()
     var email by remember { mutableStateOf("") }
@@ -48,6 +48,10 @@ fun ForgotPasswordScreen(onBackClick: () -> Unit) {
         viewModel.messageEvent.collectLatest { message ->
             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.passwordResetCodeSentEvent.collectLatest { sentEmail -> onCodeSent(sentEmail) }
     }
 
     Scaffold(
@@ -70,7 +74,7 @@ fun ForgotPasswordScreen(onBackClick: () -> Unit) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Te enviaremos un correo con un enlace para restablecer tu contraseña.",
+                text = "Te enviaremos un correo con un código para restablecer tu contraseña.",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -90,7 +94,7 @@ fun ForgotPasswordScreen(onBackClick: () -> Unit) {
                 enabled = !isSubmitting,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Enviar correo de recuperación")
+                Text("Enviar código de recuperación")
             }
         }
     }

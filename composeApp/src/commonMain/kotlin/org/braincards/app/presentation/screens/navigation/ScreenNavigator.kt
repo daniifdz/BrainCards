@@ -23,4 +23,6 @@ sealed class Screen {
     data object Auth : Screen()
     @Serializable
     data object ForgotPassword : Screen()
+    @Serializable
+    data class ResetPassword(val email: String) : Screen()
 }

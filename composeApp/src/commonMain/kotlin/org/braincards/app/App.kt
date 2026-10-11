@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import org.braincards.app.presentation.screens.auth.AuthScreen
 import org.braincards.app.presentation.screens.auth.ForgotPasswordScreen
+import org.braincards.app.presentation.screens.auth.ResetPasswordScreen
 import org.braincards.app.presentation.screens.decks.DecksScreen
 import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
 import org.braincards.app.presentation.screens.navigation.Screen
@@ -118,7 +119,17 @@ fun App() {
             }
             composable<Screen.ForgotPassword> {
                 ForgotPasswordScreen(
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onCodeSent = { email -> navController.navigate(Screen.ResetPassword(email)) }
+                )
+            }
+            composable<Screen.ResetPassword> { backStackEntry ->
+                val route = backStackEntry.toRoute<Screen.ResetPassword>()
+                ResetPasswordScreen(
+                    email = route.email,
+                    onPasswordResetCompleted = {
+                        navController.popBackStack<Screen.Auth>(inclusive = true)
+                    }
                 )
             }
 

@@ -28,11 +28,14 @@ import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.ConfirmPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
+import org.braincards.app.domain.usecase.Auth.UpdatePasswordUseCase
+import org.braincards.app.domain.usecase.Auth.VerifyPasswordResetCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
@@ -92,6 +95,14 @@ fun appModule(
     factory { SignInUseCase(repository = get()) }
     factory { SignOutUseCase(repository = get()) }
     factory { SendPasswordResetUseCase(repository = get()) }
+    factory { VerifyPasswordResetCodeUseCase(repository = get()) }
+    factory { UpdatePasswordUseCase(repository = get()) }
+    factory {
+        ConfirmPasswordResetUseCase(
+            verifyPasswordResetCodeUseCase = get(),
+            updatePasswordUseCase = get()
+        )
+    }
     factory {
         BackfillLocalDataUseCase(
             decksRepository = get(),
@@ -140,6 +151,7 @@ fun appModule(
             signInUseCase = get(),
             signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
+            confirmPasswordResetUseCase = get(),
             deleteAccountUseCase = get(),
             syncCoordinator = get()
         )
