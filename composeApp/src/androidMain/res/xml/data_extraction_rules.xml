@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ (dataExtractionRules). Excluye la sesion de Supabase (refresh token en
+    claro) del backup en la nube y de la transferencia dispositivo a dispositivo.
+    El archivo lo crea multiplatform-settings: "<applicationId>_preferences". Si cambia
+    el applicationId (o se anade un applicationIdSuffix), actualizar tambien aqui y en
+    backup_rules.xml. La BD Room y el DataStore siguen dentro del backup.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="org.braincards.app_preferences.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="org.braincards.app_preferences.xml" />
+    </device-transfer>
+</data-extraction-rules>
