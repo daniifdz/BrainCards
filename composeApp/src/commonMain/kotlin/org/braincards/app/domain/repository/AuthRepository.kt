@@ -2,6 +2,7 @@ package org.braincards.app.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.SignUpOutcome
 
 interface AuthRepository {
     val authState: Flow<AuthState>
@@ -16,6 +17,13 @@ interface AuthRepository {
     // mas que la sesion ya activa).
     suspend fun verifyPasswordResetCode(email: String, code: String)
     suspend fun updatePassword(newPassword: String)
+
+    // Confirmacion de registro por codigo OTP. signUpWithConfirmation distingue si el
+    // servidor devolvio sesion o si hay que verificar el codigo; verifySignUpCode deja
+    // al usuario con una sesion Authenticated real (igual que verifyPasswordResetCode).
+    suspend fun signUpWithConfirmation(email: String, password: String): SignUpOutcome
+    suspend fun verifySignUpCode(email: String, code: String)
+    suspend fun resendSignUpCode(email: String)
 
     // Bloque F (borrado de cuenta) -- solo el borrado remoto (RPC delete_own_account).
     // El cierre de sesion local es responsabilidad de signOut(), ya existente; no se

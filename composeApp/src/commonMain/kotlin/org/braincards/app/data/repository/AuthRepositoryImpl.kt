@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.braincards.app.data.mapper.toAuthState
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository
 
 class AuthRepositoryImpl(
@@ -61,6 +62,26 @@ class AuthRepositoryImpl(
 
     override suspend fun updatePassword(newPassword: String) {
         client.auth.updateUser { password = newPassword }
+    }
+
+    // signUpWith devuelve null si el servidor dio sesion (ya importada, authState
+    // pasa a Authenticated) o un UserInfo sin sesion si hay que confirmar el email
+    // -- confirmado en DefaultAuthProvider.signUp de auth-kt 3.1.4.
+    override suspend fun signUpWithConfirmation(email: String, password: String): SignUpOutcome {
+        val pendingUser = client.auth.signUpWith(Email) {
+            this.email = email
+            this.password = password
+        }
+        return if (pendingUser == null) SignUpOutcome.SessionStarted else SignUpOutcome.ConfirmationRequired
+    }
+
+    // Igual que verifyPasswordResetCode: verifyEmailOtp importa la sesion.
+    override suspend fun verifySignUpCode(email: String, code: String) {
+        client.auth.verifyEmailOtp(type = OtpType.Email.SIGNUP, email = email, token = code)
+    }
+
+    override suspend fun resendSignUpCode(email: String) {
+        client.auth.resendEmail(type = OtpType.Email.SIGNUP, email = email)
     }
 
     // Bloque F -- solo el borrado remoto (RPC security definer, borra de auth.users;

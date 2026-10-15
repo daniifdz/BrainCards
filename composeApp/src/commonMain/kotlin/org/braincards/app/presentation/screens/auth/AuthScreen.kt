@@ -41,7 +41,9 @@ import org.koin.core.annotation.KoinExperimentalAPI
 fun AuthScreen(
     onBackClick: () -> Unit,
     onAuthenticated: () -> Unit,
-    onForgotPasswordClick: () -> Unit
+    onForgotPasswordClick: () -> Unit,
+    onSignUpConfirmationRequired: (email: String) -> Unit,
+    onEmailNotConfirmed: (email: String) -> Unit
 ) {
     val viewModel = koinViewModel<AuthViewModel>()
     val isSubmitting by viewModel.isSubmitting.collectAsState()
@@ -57,6 +59,14 @@ fun AuthScreen(
         viewModel.messageEvent.collectLatest { message ->
             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.signUpConfirmationRequiredEvent.collectLatest { onSignUpConfirmationRequired(it) }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.emailNotConfirmedEvent.collectLatest { onEmailNotConfirmed(it) }
     }
 
     // No usamos authState como key (eso compara valores, no detecta transiciones):

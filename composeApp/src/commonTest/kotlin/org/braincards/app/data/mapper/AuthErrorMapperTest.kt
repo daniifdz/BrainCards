@@ -5,6 +5,8 @@ import io.github.jan.supabase.exceptions.HttpRequestException
 import io.ktor.client.request.HttpRequestBuilder
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * AuthRestException/RestException exigen un HttpResponse real en el constructor
@@ -45,6 +47,31 @@ class AuthErrorMapperTest {
             "Demasiados intentos. Espera un poco antes de volver a intentarlo.",
             authErrorMessage(AuthErrorCode.OverRequestRateLimit)
         )
+    }
+
+    @Test
+    fun `EmailNotConfirmed devuelve mensaje de cuenta sin confirmar`() {
+        assertEquals(
+            "Tu cuenta aún no está confirmada. Escribe el código que te enviamos.",
+            authErrorMessage(AuthErrorCode.EmailNotConfirmed)
+        )
+    }
+
+    @Test
+    fun `InvalidCredentials devuelve mensaje de credenciales incorrectas`() {
+        assertEquals("Email o contraseña incorrectos.", authErrorMessage(AuthErrorCode.InvalidCredentials))
+    }
+
+    @Test
+    fun `isEmailNotConfirmedCode solo es true para EmailNotConfirmed`() {
+        assertTrue(isEmailNotConfirmedCode(AuthErrorCode.EmailNotConfirmed))
+        assertFalse(isEmailNotConfirmedCode(AuthErrorCode.InvalidCredentials))
+        assertFalse(isEmailNotConfirmedCode(null))
+    }
+
+    @Test
+    fun `isEmailNotConfirmed es false para excepciones que no son de auth`() {
+        assertFalse(RuntimeException("x").isEmailNotConfirmed())
     }
 
     @Test

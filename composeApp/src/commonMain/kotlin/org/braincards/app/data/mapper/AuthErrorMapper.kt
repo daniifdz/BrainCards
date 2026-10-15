@@ -18,8 +18,22 @@ fun authErrorMessage(errorCode: AuthErrorCode?): String = when (errorCode) {
     AuthErrorCode.WeakPassword -> "La contraseña es demasiado débil. Prueba con una más larga o con más variedad de caracteres."
     AuthErrorCode.OverEmailSendRateLimit -> "Has pedido demasiados códigos. Espera un poco antes de volver a intentarlo."
     AuthErrorCode.OverRequestRateLimit -> "Demasiados intentos. Espera un poco antes de volver a intentarlo."
+    AuthErrorCode.EmailNotConfirmed -> "Tu cuenta aún no está confirmada. Escribe el código que te enviamos."
+    AuthErrorCode.InvalidCredentials -> "Email o contraseña incorrectos."
     else -> GENERIC_AUTH_ERROR_MESSAGE
 }
+
+/** Nucleo puro de [isEmailNotConfirmed], testeable sin construir un AuthRestException. */
+fun isEmailNotConfirmedCode(errorCode: AuthErrorCode?): Boolean =
+    errorCode == AuthErrorCode.EmailNotConfirmed
+
+/**
+ * true si el login fallo porque la cuenta existe pero su email aun no esta
+ * confirmado -- AuthViewModel lo usa para llevar a la pantalla del codigo en vez
+ * de mostrar un error.
+ */
+fun Throwable.isEmailNotConfirmed(): Boolean =
+    this is AuthRestException && isEmailNotConfirmedCode(errorCode)
 
 /**
  * Mapeo completo Throwable -> mensaje de usuario, reutilizado tanto en el flujo

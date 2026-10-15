@@ -35,7 +35,9 @@ import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
 import org.braincards.app.domain.usecase.Auth.UpdatePasswordUseCase
+import org.braincards.app.domain.usecase.Auth.ResendSignUpCodeUseCase
 import org.braincards.app.domain.usecase.Auth.VerifyPasswordResetCodeUseCase
+import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
@@ -97,6 +99,8 @@ fun appModule(
     factory { SendPasswordResetUseCase(repository = get()) }
     factory { VerifyPasswordResetCodeUseCase(repository = get()) }
     factory { UpdatePasswordUseCase(repository = get()) }
+    factory { VerifySignUpCodeUseCase(repository = get()) }
+    factory { ResendSignUpCodeUseCase(repository = get()) }
     factory {
         ConfirmPasswordResetUseCase(
             verifyPasswordResetCodeUseCase = get(),
@@ -152,6 +156,8 @@ fun appModule(
             signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
             confirmPasswordResetUseCase = get(),
+            verifySignUpCodeUseCase = get(),
+            resendSignUpCodeUseCase = get(),
             deleteAccountUseCase = get(),
             syncCoordinator = get()
         )

@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import org.braincards.app.presentation.screens.auth.AuthScreen
+import org.braincards.app.presentation.screens.auth.ConfirmEmailScreen
 import org.braincards.app.presentation.screens.auth.ForgotPasswordScreen
 import org.braincards.app.presentation.screens.auth.ResetPasswordScreen
 import org.braincards.app.presentation.screens.decks.DecksScreen
@@ -114,7 +115,22 @@ fun App() {
                 AuthScreen(
                     onBackClick = { navController.popBackStack() },
                     onAuthenticated = { navController.popBackStack() },
-                    onForgotPasswordClick = { navController.navigate(Screen.ForgotPassword) }
+                    onForgotPasswordClick = { navController.navigate(Screen.ForgotPassword) },
+                    onSignUpConfirmationRequired = { email ->
+                        navController.navigate(Screen.ConfirmEmail(email, codeJustSent = true))
+                    },
+                    onEmailNotConfirmed = { email ->
+                        navController.navigate(Screen.ConfirmEmail(email, codeJustSent = false))
+                    }
+                )
+            }
+            composable<Screen.ConfirmEmail> { backStackEntry ->
+                val route = backStackEntry.toRoute<Screen.ConfirmEmail>()
+                ConfirmEmailScreen(
+                    email = route.email,
+                    codeJustSent = route.codeJustSent,
+                    onConfirmed = { navController.popBackStack<Screen.Auth>(inclusive = true) },
+                    onBackToLogin = { navController.popBackStack() }
                 )
             }
             composable<Screen.ForgotPassword> {

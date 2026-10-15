@@ -3,6 +3,7 @@ package org.braincards.app.domain.fakes
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository
 
 /**
@@ -32,6 +33,19 @@ class FakeAuthRepository(
     var verifyPasswordResetCodeCallCount = 0
     var updatePasswordCallCount = 0
     var lastVerifiedCode: String? = null
+
+    // Confirmacion de registro por OTP.
+    var signUpOutcome: SignUpOutcome = SignUpOutcome.ConfirmationRequired
+    var signUpFailure: Throwable? = null
+    var verifySignUpCodeFailure: Throwable? = null
+    var resendSignUpCodeFailure: Throwable? = null
+
+    var signUpCallCount = 0
+    var lastSignUpEmail: String? = null
+    var verifySignUpCodeCallCount = 0
+    var lastVerifiedSignUpCode: String? = null
+    var resendSignUpCodeCallCount = 0
+    var lastResentEmail: String? = null
 
     fun setState(newState: AuthState) {
         state.value = newState
@@ -71,5 +85,24 @@ class FakeAuthRepository(
     override suspend fun updatePassword(newPassword: String) {
         updatePasswordCallCount++
         updatePasswordFailure?.let { throw it }
+    }
+
+    override suspend fun signUpWithConfirmation(email: String, password: String): SignUpOutcome {
+        signUpCallCount++
+        lastSignUpEmail = email
+        signUpFailure?.let { throw it }
+        return signUpOutcome
+    }
+
+    override suspend fun verifySignUpCode(email: String, code: String) {
+        verifySignUpCodeCallCount++
+        lastVerifiedSignUpCode = code
+        verifySignUpCodeFailure?.let { throw it }
+    }
+
+    override suspend fun resendSignUpCode(email: String) {
+        resendSignUpCodeCallCount++
+        lastResentEmail = email
+        resendSignUpCodeFailure?.let { throw it }
     }
 }

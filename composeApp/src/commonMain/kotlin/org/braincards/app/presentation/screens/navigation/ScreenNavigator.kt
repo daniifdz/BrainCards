@@ -25,4 +25,9 @@ sealed class Screen {
     data object ForgotPassword : Screen()
     @Serializable
     data class ResetPassword(val email: String) : Screen()
+    @Serializable
+    // codeJustSent: true si se llega justo tras registrarse (el email de confirmacion
+    // acaba de enviarse, asi que el boton "Reenviar" arranca con cooldown); false si se
+    // llega desde un login con cuenta sin confirmar (no se ha enviado nada).
+    data class ConfirmEmail(val email: String, val codeJustSent: Boolean = false) : Screen()
 }

@@ -2,6 +2,8 @@ package org.braincards.app.presentation.screens.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -12,17 +14,30 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import org.braincards.app.data.mapper.isEmailNotConfirmed
 import org.braincards.app.data.mapper.toAuthErrorMessage
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.usecase.Auth.ConfirmPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
+import org.braincards.app.domain.usecase.Auth.ResendSignUpCodeUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
+import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.presentation.sync.SyncCoordinator
+
+/**
+ * Segundos de espera en el boton "Reenviar codigo" tras cada envio de un codigo de
+ * confirmacion de registro. Es solo una ayuda de UI para no malgastar peticiones: el
+ * servidor valida su propio limite de envio por email igualmente (un minimo de ~60 s
+ * entre emails al mismo usuario, mas el limite por hora del proyecto), y si se
+ * supera responde over_email_send_rate_limit, que AuthErrorMapper ya traduce.
+ */
+const val RESEND_CODE_COOLDOWN_SECONDS = 60
 
 class AuthViewModel(
     authRepository: AuthRepository,
@@ -31,6 +46,8 @@ class AuthViewModel(
     private val signOutUseCase: SignOutUseCase,
     private val sendPasswordResetUseCase: SendPasswordResetUseCase,
     private val confirmPasswordResetUseCase: ConfirmPasswordResetUseCase,
+    private val verifySignUpCodeUseCase: VerifySignUpCodeUseCase,
+    private val resendSignUpCodeUseCase: ResendSignUpCodeUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val syncCoordinator: SyncCoordinator
 ) : ViewModel() {
@@ -63,6 +80,23 @@ class AuthViewModel(
     // deshabilite el campo del codigo y no pida reescribirlo en el reintento.
     private val _codeVerified = MutableStateFlow(false)
     val codeVerified: StateFlow<Boolean> = _codeVerified.asStateFlow()
+
+    // Confirmacion de registro por OTP. Cada pantalla tiene su propia instancia de
+    // este ViewModel (NavBackStackEntry), asi que los eventos los recoge la pantalla
+    // que los provoco y el cooldown se arranca desde la pantalla del codigo.
+    private val _signUpConfirmationRequiredEvent = MutableSharedFlow<String>()
+    val signUpConfirmationRequiredEvent: SharedFlow<String> = _signUpConfirmationRequiredEvent.asSharedFlow()
+
+    private val _emailNotConfirmedEvent = MutableSharedFlow<String>()
+    val emailNotConfirmedEvent: SharedFlow<String> = _emailNotConfirmedEvent.asSharedFlow()
+
+    private val _signUpConfirmedEvent = MutableSharedFlow<Unit>()
+    val signUpConfirmedEvent: SharedFlow<Unit> = _signUpConfirmedEvent.asSharedFlow()
+
+    private val _resendCooldownSeconds = MutableStateFlow(0)
+    val resendCooldownSeconds: StateFlow<Int> = _resendCooldownSeconds.asStateFlow()
+    private var resendCooldownJob: Job? = null
+    private var initialCooldownStarted = false
 
     // El sync automatico (login/arranque con sesion activa) y su Mutex viven ahora
     // en SyncCoordinator (singleton real, no per-pantalla como este ViewModel) --
@@ -102,12 +136,15 @@ class AuthViewModel(
         viewModelScope.launch {
             _isSubmitting.value = true
             try {
-                signUpUseCase(email, password)
+                // SessionStarted: la sesion ya esta importada y authState navega solo.
+                if (signUpUseCase(email, password) == SignUpOutcome.ConfirmationRequired) {
+                    _signUpConfirmationRequiredEvent.emit(email)
+                }
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al registrarse")
             } catch (e: Exception) {
                 println("Error al registrarse: $e")
-                _messageEvent.emit("No se pudo completar el registro")
+                _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
             }
@@ -124,7 +161,11 @@ class AuthViewModel(
                 _messageEvent.emit(e.message ?: "Error al iniciar sesión")
             } catch (e: Exception) {
                 println("Error al iniciar sesión: $e")
-                _messageEvent.emit("No se pudo iniciar sesión. Revisa tu email y contraseña")
+                if (e.isEmailNotConfirmed()) {
+                    _emailNotConfirmedEvent.emit(email)
+                } else {
+                    _messageEvent.emit(e.toAuthErrorMessage())
+                }
             } finally {
                 _isSubmitting.value = false
             }
@@ -185,6 +226,69 @@ class AuthViewModel(
             } finally {
                 _isSubmitting.value = false
             }
+        }
+    }
+
+    /** Verifica el codigo de confirmacion de registro. Al tener exito la sesion queda
+     * importada (authState pasa a Authenticated y el SyncCoordinator sincroniza solo);
+     * aqui solo se avisa a la pantalla para que cierre el flujo. */
+    fun confirmSignUp(email: String, code: String) {
+        if (_isSubmitting.value) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                verifySignUpCodeUseCase(email, code)
+                _messageEvent.emit("Cuenta confirmada")
+                _signUpConfirmedEvent.emit(Unit)
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al confirmar la cuenta")
+            } catch (e: Exception) {
+                println("Error al confirmar el registro: $e")
+                _messageEvent.emit(e.toAuthErrorMessage())
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+
+    /** Reenvia el codigo de confirmacion y reinicia el cooldown del boton. Si el
+     * servidor lo rechaza (rate limit), el cooldown no se reinicia. */
+    fun resendSignUpCode(email: String) {
+        if (_isSubmitting.value || _resendCooldownSeconds.value > 0) return
+        viewModelScope.launch {
+            _isSubmitting.value = true
+            try {
+                resendSignUpCodeUseCase(email)
+                _messageEvent.emit("Te hemos enviado un código nuevo")
+                startResendCooldown()
+            } catch (e: IllegalArgumentException) {
+                _messageEvent.emit(e.message ?: "Error al reenviar el código")
+            } catch (e: Exception) {
+                println("Error al reenviar el codigo de registro: $e")
+                _messageEvent.emit(e.toAuthErrorMessage())
+            } finally {
+                _isSubmitting.value = false
+            }
+        }
+    }
+
+    /** La pantalla del codigo lo llama al abrirse justo despues de registrarse (el
+     * email de confirmacion acaba de enviarse). Idempotente: sobrevive a rotaciones
+     * porque el ViewModel tambien, y no reinicia un cooldown ya consumido. */
+    fun startInitialResendCooldown() {
+        if (initialCooldownStarted) return
+        initialCooldownStarted = true
+        startResendCooldown()
+    }
+
+    private fun startResendCooldown() {
+        resendCooldownJob?.cancel()
+        resendCooldownJob = viewModelScope.launch {
+            for (remaining in RESEND_CODE_COOLDOWN_SECONDS downTo 1) {
+                _resendCooldownSeconds.value = remaining
+                delay(1000)
+            }
+            _resendCooldownSeconds.value = 0
         }
     }
 
