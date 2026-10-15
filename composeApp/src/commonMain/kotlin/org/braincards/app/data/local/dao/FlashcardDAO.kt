@@ -34,13 +34,16 @@ interface FlashcardDao {
     suspend fun softdeleteFlashcardById(id: String, deletedAt: Instant)
 
     // nextReview vive en card_scheduling desde que se separo el scheduling de Flashcard;
-    // "due" ahora se resuelve con un JOIN, seleccionando solo columnas de flashcards.
+    // "due" ahora se resuelve con un LEFT JOIN, seleccionando solo columnas de flashcards.
+    // LEFT JOIN + COALESCE: una tarjeta que nunca se ha repasado no tiene fila en
+    // card_scheduling (se crea en el primer repaso) y debe contar como vencida. El 0 es
+    // epoch en milisegundos, la misma unidad en la que Converters guarda el Instant.
     @Query(
         "SELECT flashcards.* FROM flashcards " +
-            "JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
             "WHERE flashcards.deckId = :deckId AND flashcards.deletedAt IS NULL " +
-            "AND card_scheduling.nextReview <= :now " +
-            "ORDER BY card_scheduling.nextReview ASC"
+            "AND COALESCE(card_scheduling.nextReview, 0) <= :now " +
+            "ORDER BY COALESCE(card_scheduling.nextReview, 0) ASC"
     )
     suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<FlashcardEntity>
 
@@ -50,9 +53,9 @@ interface FlashcardDao {
 
     @Query(
         "SELECT flashcards.* FROM flashcards " +
-            "JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
-            "WHERE flashcards.deletedAt IS NULL AND card_scheduling.nextReview <= :now " +
-            "ORDER BY card_scheduling.nextReview ASC"
+            "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            "WHERE flashcards.deletedAt IS NULL AND COALESCE(card_scheduling.nextReview, 0) <= :now " +
+            "ORDER BY COALESCE(card_scheduling.nextReview, 0) ASC"
     )
     suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
 

@@ -11,6 +11,7 @@ import org.braincards.app.domain.models.ReviewQuality
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 class ReviewFlashcardUseCaseTest {
 
@@ -136,6 +137,28 @@ class ReviewFlashcardUseCaseTest {
         assertEquals(6, log.previousInterval)
         // GOOD desde EF=2.5 no cambia el EF -> round(6*2.5) = 15
         assertEquals(15, log.newInterval)
+    }
+
+    // Tarjeta nueva: no tiene fila en card_scheduling hasta su primer repaso. El caso de uso
+    // debe partir de los valores SM-2 por defecto (EF 2.5, interval 0, repetitions 0) y crearla.
+    @Test
+    fun una_tarjeta_sin_fila_previa_parte_de_los_valores_por_defecto_y_se_crea_su_fila() = runBlocking {
+        val reviewLogRepository = FakeReviewLogRepository()
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        val useCase = ReviewFlashcardUseCase(reviewLogRepository, cardSchedulingRepository)
+        val flashcard = buildFlashcard()
+
+        assertEquals(null, cardSchedulingRepository.getByCardId(flashcard.id))
+
+        useCase(flashcard, ReviewQuality.GOOD)
+
+        val created = cardSchedulingRepository.getByCardId(flashcard.id)
+        assertNotNull(created)
+        assertEquals(1, cardSchedulingRepository.upsertCalls.size)
+        assertEquals(2.5, created.easeFactor)
+        assertEquals(1, created.repetitions)
+        assertEquals(1, created.interval)
+        assertEquals(0, reviewLogRepository.addedLogs.single().previousInterval)
     }
 
     // Renombrado respecto al original ("se_actualiza_la_flashcard..."): desde que
