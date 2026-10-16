@@ -114,7 +114,8 @@ fun appModule(
         BackfillLocalDataUseCase(
             decksRepository = get(),
             topicsRepository = get(),
-            flashcardRepository = get()
+            flashcardRepository = get(),
+            cardSchedulingRepository = get()
         )
     }
     factory {
@@ -124,6 +125,7 @@ fun appModule(
             decksRepository = get(),
             topicsRepository = get(),
             flashcardRepository = get(),
+            cardSchedulingRepository = get(),
             backfillLocalDataUseCase = get()
         )
     }
@@ -132,7 +134,8 @@ fun appModule(
             authRepository = get(),
             decksRepository = get(),
             topicsRepository = get(),
-            flashcardRepository = get()
+            flashcardRepository = get(),
+            cardSchedulingRepository = get()
         )
     }
 
@@ -147,6 +150,7 @@ fun appModule(
             decksRepository = get(),
             topicsRepository = get(),
             flashcardRepository = get(),
+            cardSchedulingRepository = get(),
             dataStore = get()
         )
     }

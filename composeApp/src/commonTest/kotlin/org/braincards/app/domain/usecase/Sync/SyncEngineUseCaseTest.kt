@@ -4,13 +4,16 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeAuthRepository
 import org.braincards.app.domain.fakes.FakeDecksRepository
+import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
 import org.braincards.app.domain.fakes.FakeRemoteDataSource
 import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
+import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
@@ -78,6 +81,24 @@ private class OrderTrackingFlashcardRepository(
     }
 }
 
+private class OrderTrackingCardSchedulingRepository(
+    private val delegate: CardSchedulingRepository,
+    private val callLog: MutableList<String>
+) : CardSchedulingRepository by delegate {
+    override suspend fun claimOrphanedScheduling(userId: String): Int {
+        callLog.add("backfill:scheduling")
+        return delegate.claimOrphanedScheduling(userId)
+    }
+    override suspend fun applyRemotePull(schedulings: List<CardScheduling>): Int {
+        callLog.add("pull:scheduling")
+        return delegate.applyRemotePull(schedulings)
+    }
+    override suspend fun getPendingSync(userId: String): List<CardScheduling> {
+        callLog.add("push:scheduling")
+        return delegate.getPendingSync(userId)
+    }
+}
+
 class SyncEngineUseCaseTest {
 
     private val userId = "user-1"
@@ -103,6 +124,7 @@ class SyncEngineUseCaseTest {
         decksRepository: DecksRepository,
         topicsRepository: TopicsRepository,
         flashcardRepository: FlashcardRepository,
+        cardSchedulingRepository: CardSchedulingRepository,
         backfillLocalDataUseCase: BackfillLocalDataUseCase
     ) = SyncEngineUseCase(
         authRepository = authRepository,
@@ -110,6 +132,7 @@ class SyncEngineUseCaseTest {
         decksRepository = decksRepository,
         topicsRepository = topicsRepository,
         flashcardRepository = flashcardRepository,
+        cardSchedulingRepository = cardSchedulingRepository,
         backfillLocalDataUseCase = backfillLocalDataUseCase
     )
 
@@ -120,13 +143,14 @@ class SyncEngineUseCaseTest {
         val decksRepository = FakeDecksRepository()
         val topicsRepository = FakeTopicsRepository()
         val flashcardRepository = FakeFlashcardRepository()
-        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository)
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
 
         // Fila huerfana sembrada a proposito: si el backfill se ejecutara por error
         // pese a no haber sesion, esto lo detectaria (seguiria con userId null).
         decksRepository.addDeck(buildDeck(id = "deck-orphan", userId = null))
 
-        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, backfillLocalDataUseCase)
+        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository, backfillLocalDataUseCase)
 
         val result = useCase()
 
@@ -143,17 +167,20 @@ class SyncEngineUseCaseTest {
         val decksRepository = OrderTrackingDecksRepository(FakeDecksRepository(), callLog)
         val topicsRepository = OrderTrackingTopicsRepository(FakeTopicsRepository(), callLog)
         val flashcardRepository = OrderTrackingFlashcardRepository(FakeFlashcardRepository(), callLog)
-        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository)
+        val cardSchedulingRepository = OrderTrackingCardSchedulingRepository(FakeCardSchedulingRepository(), callLog)
+        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
 
-        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, backfillLocalDataUseCase)
+        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository, backfillLocalDataUseCase)
 
         useCase()
 
+        // scheduling siempre el ULTIMO de cada fase: su reclamo exige la flashcard ya
+        // reclamada, su pull descarta filas sin flashcard local y su push exige la flashcard subida.
         assertEquals(
             listOf(
-                "backfill:decks", "backfill:topics", "backfill:flashcards",
-                "pull:decks", "pull:topics", "pull:flashcards",
-                "push:decks", "push:topics", "push:flashcards"
+                "backfill:decks", "backfill:topics", "backfill:flashcards", "backfill:scheduling",
+                "pull:decks", "pull:topics", "pull:flashcards", "pull:scheduling",
+                "push:decks", "push:topics", "push:flashcards", "push:scheduling"
             ),
             callLog
         )
@@ -168,13 +195,14 @@ class SyncEngineUseCaseTest {
         val decksRepository = FakeDecksRepository()
         val topicsRepository = FakeTopicsRepository()
         val flashcardRepository = FakeFlashcardRepository()
-        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository)
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
 
         // Deck pendiente de subir -- si el push no se ejecutara tras el fallo del
         // pull, este deck nunca llegaria a remoteDataSource.pushedDeckIds.
         decksRepository.addDeck(buildDeck(id = "deck-pending"))
 
-        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, backfillLocalDataUseCase)
+        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository, backfillLocalDataUseCase)
 
         val result = useCase()
 
@@ -195,12 +223,13 @@ class SyncEngineUseCaseTest {
         val decksRepository = FakeDecksRepository()
         val topicsRepository = FakeTopicsRepository()
         val flashcardRepository = FakeFlashcardRepository()
-        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository)
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
 
         decksRepository.addDeck(buildDeck(id = "deck-ok"))
         decksRepository.addDeck(buildDeck(id = "deck-fails"))
 
-        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, backfillLocalDataUseCase)
+        val useCase = buildUseCase(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository, backfillLocalDataUseCase)
 
         val result = useCase()
 

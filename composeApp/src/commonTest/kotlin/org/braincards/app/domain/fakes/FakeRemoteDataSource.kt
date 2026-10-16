@@ -35,6 +35,10 @@ class FakeRemoteDataSource : RemoteDataSource {
     var pushCardSchedulingIdsThatFail: Set<String> = emptySet()
     val pushedCardSchedulingIds = mutableListOf<String>()
 
+    /** Cada llamada a pushCardScheduling (con exito o no), con los cardId que llevaba. */
+    val pushCardSchedulingAttempts = mutableListOf<List<String>>()
+    var pushCardSchedulingCallFailures: Map<Int, Throwable> = emptyMap()
+
     var pushDeckIdsThatFail: Set<String> = emptySet()
     var pushTopicIdsThatFail: Set<String> = emptySet()
     var pushFlashcardIdsThatFail: Set<String> = emptySet()
@@ -114,6 +118,10 @@ class FakeRemoteDataSource : RemoteDataSource {
 
     override suspend fun pushCardScheduling(schedulings: List<CardScheduling>) {
         calls.add("pushCardScheduling")
+        pushCardSchedulingAttempts.add(schedulings.map { it.cardId })
+        // Fallo forzado por numero de llamada (1 = la primera): permite simular, p. ej., un
+        // error de red solo en el 2.o lote.
+        pushCardSchedulingCallFailures[pushCardSchedulingAttempts.size]?.let { throw it }
         if (schedulings.any { it.cardId in pushCardSchedulingIdsThatFail }) throw pushFailureFactory()
         schedulings.forEach { pushedCardSchedulingIds.add(it.cardId) }
     }

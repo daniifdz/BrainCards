@@ -169,6 +169,25 @@ class CardSchedulingDaoSyncTest {
         assertEquals("user-2", dao.getByCardId("b")!!.userId)
     }
 
+    // El motor captura `now` ANTES de leer los pendientes y llama a markPushed(ids, now). Una
+    // fila repasada durante el push tiene updatedAt > now: debe SEGUIR pendiente aunque su id
+    // vaya en la lista de marcados (updatedAt > lastSyncedAt).
+    @Test
+    fun markPushed_con_now_deja_de_ser_pendiente_la_fila_anterior_y_sigue_pendiente_la_repasada_durante_el_push() = runBlocking {
+        addCard("antes", userId = "user-1", lastSyncedAt = ms(10))
+        addCard("durante", userId = "user-1", lastSyncedAt = ms(10))
+        val now = ms(2000)
+        dao.insert(entity("antes", userId = "user-1", updatedAt = 1000)) // anterior a now
+        dao.insert(entity("durante", userId = "user-1", updatedAt = 3000)) // repaso posterior a now
+        assertEquals(setOf("antes", "durante"), dao.getPendingSyncScheduling("user-1").map { it.cardId }.toSet())
+
+        dao.markSchedulingPushed(listOf("antes", "durante"), now)
+
+        assertEquals(setOf("durante"), dao.getPendingSyncScheduling("user-1").map { it.cardId }.toSet())
+        assertEquals(now, dao.getByCardId("antes")!!.lastSyncedAt)
+        assertEquals(now, dao.getByCardId("durante")!!.lastSyncedAt)
+    }
+
     @Test
     fun getExistingFlashcardIds_incluye_las_borradas_logicamente() = runBlocking {
         addCard("viva")

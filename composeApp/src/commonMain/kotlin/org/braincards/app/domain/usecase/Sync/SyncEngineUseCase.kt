@@ -9,6 +9,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
+import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.RemoteDataSource
@@ -24,23 +25,31 @@ sealed interface SyncResult {
 // si persistir "ultima sincronizacion correcta". No reemplaza la logica mas fina
 // de AuthViewModel.toUserMessage() (esa necesita los conteos por separado para
 // distinguir pull parcial de push parcial en el mensaje al usuario).
-fun SyncResult.Completed.isFullySuccessful(): Boolean {
-    val pullAbortedCount = listOf(pull.decks, pull.topics, pull.flashcards).count { it.aborted }
-    val pushFailedCount = push.decks.failed + push.topics.failed + push.flashcards.failed
-    return pullAbortedCount == 0 && pushFailedCount == 0
-}
+fun SyncResult.Completed.isFullySuccessful(): Boolean =
+    pull.abortedTableCount() == 0 && push.failedRowCount() == 0
 
 data class PullResult(
     val decks: PullTableResult,
     val topics: PullTableResult,
-    val flashcards: PullTableResult
+    val flashcards: PullTableResult,
+    val cardScheduling: PullTableResult
 )
 
 data class PushResult(
     val decks: PushTableResult,
     val topics: PushTableResult,
-    val flashcards: PushTableResult
+    val flashcards: PushTableResult,
+    val cardScheduling: PushTableResult
 )
+
+/** Tablas (de las cuatro) cuyo pull se aborto. Unico sitio donde se cuentan: lo usan
+ * isFullySuccessful() y AuthViewModel.toUserMessage(). */
+fun PullResult.abortedTableCount(): Int =
+    listOf(decks, topics, flashcards, cardScheduling).count { it.aborted }
+
+/** Filas (de las cuatro tablas) que quedaron pendientes de subir. */
+fun PushResult.failedRowCount(): Int =
+    decks.failed + topics.failed + flashcards.failed + cardScheduling.failed
 
 /**
  * [applied] son las filas remotas que se aplicaron localmente. Si [aborted] es true,
@@ -75,13 +84,14 @@ class SyncEngineUseCase(
     private val decksRepository: DecksRepository,
     private val topicsRepository: TopicsRepository,
     private val flashcardRepository: FlashcardRepository,
+    private val cardSchedulingRepository: CardSchedulingRepository,
     private val backfillLocalDataUseCase: BackfillLocalDataUseCase
 ) {
 
     suspend operator fun invoke(): SyncResult {
         val userId = currentUserId() ?: return SyncResult.NotAuthenticated
-        // AuthViewModel ya llama a esto una vez en el login, pero cualquier
-        // deck/topic/flashcard creado despues (con sesion ya activa) nace con
+        // Unico sitio que llama al backfill (AuthViewModel ya no lo hace): cualquier
+        // deck/topic/flashcard/scheduling creado con sesion ya activa nace con
         // userId = null -- nada mas lo asigna al crear. Sin este repaso aqui, esas
         // filas se quedan huerfanas para siempre: getPendingSync(userId) nunca las
         // ve porque su userId sigue siendo null. Idempotente (WHERE userId IS NULL),
@@ -101,8 +111,10 @@ class SyncEngineUseCase(
             else -> null
         }
 
-    // decks -> topics -> flashcards, secuencial y bloqueante: una flashcard no se
-    // puede insertar localmente si su deck (FK real en Room) todavia no existe.
+    // decks -> topics -> flashcards -> scheduling: una flashcard no se puede insertar
+    // localmente si su deck (FK real en Room) todavia no existe, ni un scheduling sin su
+    // flashcard (el repositorio descarta esas filas sin error). Cada tabla es
+    // independiente: si una se aborta, las siguientes se intentan igualmente.
     private suspend fun pull(userId: String): PullResult {
         val decksResult = pullTable(
             fetch = { remoteDataSource.pullDecks(userId, PULL_SINCE_EPOCH) },
@@ -116,30 +128,48 @@ class SyncEngineUseCase(
             fetch = { remoteDataSource.pullFlashcards(userId, PULL_SINCE_EPOCH) },
             apply = { flashcardRepository.applyRemotePull(it) }
         )
-        return PullResult(decksResult, topicsResult, flashcardsResult)
+        val cardSchedulingResult = pullTable(
+            fetch = { remoteDataSource.pullCardScheduling(userId, PULL_SINCE_EPOCH) },
+            apply = { cardSchedulingRepository.applyRemotePull(it) }
+        )
+        return PullResult(decksResult, topicsResult, flashcardsResult, cardSchedulingResult)
     }
 
     private suspend fun push(userId: String): PushResult {
+        // `now` se captura ANTES de cualquier getPendingSync: markPushed fija
+        // lastSyncedAt = now, y una fila editada/repasada despues tiene updatedAt > now,
+        // asi que sigue pendiente (updatedAt > lastSyncedAt) en vez de darse por subida.
         val now = Clock.System.now()
         val decksResult = pushTable(
             pending = decksRepository.getPendingSync(userId),
             rowId = { it.id },
-            pushOne = { remoteDataSource.pushDecks(listOf(it)) },
+            pushBatch = { remoteDataSource.pushDecks(it) },
             markPushed = { ids -> decksRepository.markPushed(ids, now) }
         )
         val topicsResult = pushTable(
             pending = topicsRepository.getPendingSync(userId),
             rowId = { it.id },
-            pushOne = { remoteDataSource.pushTopics(listOf(it)) },
+            pushBatch = { remoteDataSource.pushTopics(it) },
             markPushed = { ids -> topicsRepository.markPushed(ids, now) }
         )
         val flashcardsResult = pushTable(
             pending = flashcardRepository.getPendingSync(userId),
             rowId = { it.id },
-            pushOne = { remoteDataSource.pushFlashcards(listOf(it)) },
+            pushBatch = { remoteDataSource.pushFlashcards(it) },
             markPushed = { ids -> flashcardRepository.markPushed(ids, now) }
         )
-        return PushResult(decksResult, topicsResult, flashcardsResult)
+        // Scheduling es la tabla de mayor rotacion (una fila por tarjeta repasada): se sube
+        // en lotes de 100. Un fallo de red corta la tabla a la primera (limite 1): con 100
+        // filas por peticion no tiene sentido esperar a 3 lotes fallidos sin conexion.
+        val cardSchedulingResult = pushTable(
+            pending = cardSchedulingRepository.getPendingSync(userId),
+            rowId = { it.cardId },
+            pushBatch = { remoteDataSource.pushCardScheduling(it) },
+            markPushed = { ids -> cardSchedulingRepository.markPushed(ids, now) },
+            batchSize = CARD_SCHEDULING_PUSH_BATCH_SIZE,
+            networkFailureLimit = 1
+        )
+        return PushResult(decksResult, topicsResult, flashcardsResult, cardSchedulingResult)
     }
 
     /**
@@ -165,26 +195,38 @@ class SyncEngineUseCase(
     }
 
     /**
-     * Resiliente fila a fila: una fila que falla no bloquea las siguientes y
+     * Resiliente por fila (o por lote): una fila que falla no bloquea las siguientes y
      * simplemente no se marca pushed (se reintenta sola en el siguiente sync()).
-     * Corta el bucle tras CONSECUTIVE_NETWORK_FAILURE_LIMIT fallos CONSECUTIVOS de
-     * tipo red/timeout/5xx -- un fallo de validacion (4xx) resetea ese contador sin
-     * cortar, porque no indica que estemos sin conexion.
+     *
+     * - [batchSize] = 1 (decks/topics/flashcards): una peticion por fila. Corta el bucle
+     *   tras [networkFailureLimit] (3) fallos CONSECUTIVOS de tipo red/timeout/5xx -- un
+     *   fallo de validacion (4xx) resetea ese contador sin cortar, porque no indica que
+     *   estemos sin conexion.
+     * - [batchSize] > 1 (card_scheduling, 100): una peticion por lote (upsert atomico).
+     *   Si el lote falla por error NO de red (4xx, o una fila invalida), se reintenta
+     *   fila a fila SOLO ese lote para que las filas buenas no se pierdan por una mala.
+     *   Si falla por red/timeout/5xx NO hay reintento fila a fila: con limite 1 se aborta
+     *   la tabla; lo no subido queda pendiente (cuenta como failed).
+     *
+     * [markPushed] se llama una sola vez, al final, SOLO con los ids que se subieron.
      */
     private suspend fun <T> pushTable(
         pending: List<T>,
         rowId: (T) -> String,
-        pushOne: suspend (T) -> Unit,
-        markPushed: suspend (List<String>) -> Unit
+        pushBatch: suspend (List<T>) -> Unit,
+        markPushed: suspend (List<String>) -> Unit,
+        batchSize: Int = 1,
+        networkFailureLimit: Int = CONSECUTIVE_NETWORK_FAILURE_LIMIT
     ): PushTableResult {
         var consecutiveNetworkFailures = 0
         val pushedIds = mutableListOf<String>()
-        for (row in pending) {
-            if (consecutiveNetworkFailures >= CONSECUTIVE_NETWORK_FAILURE_LIMIT) break
+
+        suspend fun attempt(rows: List<T>): PushAttempt {
             try {
-                pushOne(row)
-                pushedIds.add(rowId(row))
+                pushBatch(rows)
+                pushedIds.addAll(rows.map(rowId))
                 consecutiveNetworkFailures = 0
+                return PushAttempt.UPLOADED
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -195,15 +237,34 @@ class SyncEngineUseCase(
                 } else {
                     "${e::class.simpleName}: ${e.message}"
                 }
-                println("SyncEngineUseCase.pushTable FALLO fila id=${rowId(row)}: $detail")
+                val rowsLabel = if (rows.size == 1) rowId(rows.single()) else "lote de ${rows.size} filas"
+                println("SyncEngineUseCase.pushTable FALLO fila id=$rowsLabel: $detail")
                 e.printStackTrace()
-                consecutiveNetworkFailures =
-                    if (e.isNetworkOrServerFailure()) consecutiveNetworkFailures + 1 else 0
+                return if (e.isNetworkOrServerFailure()) {
+                    consecutiveNetworkFailures++
+                    PushAttempt.NETWORK_FAILURE
+                } else {
+                    consecutiveNetworkFailures = 0
+                    PushAttempt.REJECTED
+                }
+            }
+        }
+
+        for (batch in pending.chunked(batchSize)) {
+            if (consecutiveNetworkFailures >= networkFailureLimit) break
+            val outcome = attempt(batch)
+            if (outcome == PushAttempt.REJECTED && batch.size > 1) {
+                for (row in batch) {
+                    if (consecutiveNetworkFailures >= networkFailureLimit) break
+                    attempt(listOf(row))
+                }
             }
         }
         if (pushedIds.isNotEmpty()) markPushed(pushedIds)
         return PushTableResult(succeeded = pushedIds.size, failed = pending.size - pushedIds.size)
     }
+
+    private enum class PushAttempt { UPLOADED, REJECTED, NETWORK_FAILURE }
 
     /**
      * Clasificacion verificada contra el codigo fuente real de supabase-kt 3.1.4 y
@@ -225,6 +286,7 @@ class SyncEngineUseCase(
 
     private companion object {
         const val CONSECUTIVE_NETWORK_FAILURE_LIMIT = 3
+        const val CARD_SCHEDULING_PUSH_BATCH_SIZE = 100
 
         // "Desde siempre": evita Instant.DISTANT_PAST, cuyo año está fuera del rango
         // que Postgres acepta para timestamptz. TODO (no bloqueante, no v1.1): sin un

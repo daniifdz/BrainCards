@@ -20,6 +20,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
+import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
@@ -50,6 +51,7 @@ class SyncCoordinator(
     private val decksRepository: DecksRepository,
     private val topicsRepository: TopicsRepository,
     private val flashcardRepository: FlashcardRepository,
+    private val cardSchedulingRepository: CardSchedulingRepository,
     private val dataStore: DataStore<Preferences>,
     coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) {
@@ -126,7 +128,8 @@ class SyncCoordinator(
         } else {
             decksRepository.getPendingSync(userId).size +
                 topicsRepository.getPendingSync(userId).size +
-                flashcardRepository.getPendingSync(userId).size
+                flashcardRepository.getPendingSync(userId).size +
+                cardSchedulingRepository.getPendingSync(userId).size
         }
     }
 

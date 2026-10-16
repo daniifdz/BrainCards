@@ -28,6 +28,8 @@ import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
 import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncResult
+import org.braincards.app.domain.usecase.Sync.abortedTableCount
+import org.braincards.app.domain.usecase.Sync.failedRowCount
 import org.braincards.app.presentation.sync.SyncCoordinator
 
 /**
@@ -117,8 +119,8 @@ class AuthViewModel(
     private fun SyncResult.toUserMessage(): String = when (this) {
         is SyncResult.NotAuthenticated -> "Inicia sesión para sincronizar"
         is SyncResult.Completed -> {
-            val pullAbortedCount = listOf(pull.decks, pull.topics, pull.flashcards).count { it.aborted }
-            val pushFailedCount = push.decks.failed + push.topics.failed + push.flashcards.failed
+            val pullAbortedCount = pull.abortedTableCount()
+            val pushFailedCount = push.failedRowCount()
             when {
                 pullAbortedCount > 0 && pushFailedCount > 0 ->
                     "No se pudo sincronizar del todo. Se reintentará más tarde"

@@ -8,11 +8,13 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.data.fakes.FakeSettingsDataStore
 import org.braincards.app.domain.fakes.FakeAuthRepository
+import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
 import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
 import org.braincards.app.domain.fakes.FakeRemoteDataSource
 import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
 import org.braincards.app.presentation.sync.SyncCoordinator
@@ -48,15 +50,17 @@ class SyncCoordinatorTest {
         decksRepository: FakeDecksRepository,
         topicsRepository: FakeTopicsRepository,
         flashcardRepository: FakeFlashcardRepository,
+        cardSchedulingRepository: FakeCardSchedulingRepository,
         dataStore: FakeSettingsDataStore
     ): SyncCoordinator {
-        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository)
+        val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
         val syncEngineUseCase = SyncEngineUseCase(
             authRepository = authRepository,
             remoteDataSource = remoteDataSource,
             decksRepository = decksRepository,
             topicsRepository = topicsRepository,
             flashcardRepository = flashcardRepository,
+            cardSchedulingRepository = cardSchedulingRepository,
             backfillLocalDataUseCase = backfillLocalDataUseCase
         )
         return SyncCoordinator(
@@ -65,6 +69,7 @@ class SyncCoordinatorTest {
             decksRepository = decksRepository,
             topicsRepository = topicsRepository,
             flashcardRepository = flashcardRepository,
+            cardSchedulingRepository = cardSchedulingRepository,
             dataStore = dataStore,
             coroutineScope = CoroutineScope(Dispatchers.Unconfined)
         )
@@ -79,7 +84,7 @@ class SyncCoordinatorTest {
         val flashcardRepository = FakeFlashcardRepository()
         val dataStore = FakeSettingsDataStore()
 
-        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, dataStore)
+        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
 
         // El init ya dispara un sync automatico al construirse (Authenticated
         // confirmado) -- lanzamos ademas 2 manuales concurrentes, para estresar el
@@ -101,7 +106,7 @@ class SyncCoordinatorTest {
         val flashcardRepository = FakeFlashcardRepository()
         val dataStore = FakeSettingsDataStore()
 
-        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, dataStore)
+        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
 
         assertTrue(remoteDataSource.calls.isEmpty())
         assertEquals(0, coordinator.pendingChangesCount.value)
@@ -122,7 +127,7 @@ class SyncCoordinatorTest {
 
         // El sync automatico del init ya corre con el push fallando -- deja la fila
         // pendiente y no persiste lastSuccessfulSyncAt.
-        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, dataStore)
+        val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
 
         assertTrue(coordinator.pendingChangesCount.value > 0)
         assertNull(coordinator.lastSuccessfulSyncAt.value)
@@ -149,7 +154,7 @@ class SyncCoordinatorTest {
         decksRepository.addDeck(buildDeck("deck-fails"))
 
         // Primer sync (automatico del init) falla parcialmente -- no se persiste nada.
-        val firstCoordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, dataStore)
+        val firstCoordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
         assertNull(firstCoordinator.lastSuccessfulSyncAt.value)
 
         // Se arregla la red y se reintenta -- ahora si tiene exito completo.
@@ -167,9 +172,41 @@ class SyncCoordinatorTest {
             FakeDecksRepository(),
             FakeTopicsRepository(),
             FakeFlashcardRepository(),
+            FakeCardSchedulingRepository(),
             dataStore
         )
         assertNotNull(secondCoordinator.lastSuccessfulSyncAt.value)
+        Unit
+    }
+
+    @Test
+    fun `el contador de pendientes incluye el scheduling que no se pudo subir`() = runBlocking {
+        val authRepository = FakeAuthRepository(initialState = AuthState.Authenticated(userId, "a@b.com", sessionConfirmed = true))
+        val remoteDataSource = FakeRemoteDataSource().apply {
+            pushCardSchedulingIdsThatFail = setOf("card-1")
+        }
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(
+            CardScheduling(
+                cardId = "card-1", easeFactor = 2.5, interval = 1, repetitions = 1,
+                nextReview = Instant.fromEpochMilliseconds(5000), updatedAt = Instant.fromEpochMilliseconds(2000),
+                userId = userId, lastSyncedAt = null
+            )
+        )
+
+        // Solo hay scheduling pendiente (ningun deck/topic/flashcard): si el contador no lo
+        // sumara, valdria 0. El sync automatico del init falla en su push y lo deja pendiente.
+        val coordinator = buildCoordinator(
+            authRepository, remoteDataSource, FakeDecksRepository(), FakeTopicsRepository(),
+            FakeFlashcardRepository(), cardSchedulingRepository, FakeSettingsDataStore()
+        )
+
+        assertEquals(1, coordinator.pendingChangesCount.value)
+
+        remoteDataSource.pushCardSchedulingIdsThatFail = emptySet()
+        coordinator.syncNow()
+
+        assertEquals(0, coordinator.pendingChangesCount.value)
         Unit
     }
 }

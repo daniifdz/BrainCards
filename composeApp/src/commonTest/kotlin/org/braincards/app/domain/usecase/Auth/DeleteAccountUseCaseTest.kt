@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeAuthRepository
+import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
 import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
 import org.braincards.app.domain.fakes.FakeTopicsRepository
@@ -32,12 +33,14 @@ class DeleteAccountUseCaseTest {
         authRepository: FakeAuthRepository,
         decksRepository: FakeDecksRepository,
         topicsRepository: FakeTopicsRepository,
-        flashcardRepository: FakeFlashcardRepository
+        flashcardRepository: FakeFlashcardRepository,
+        cardSchedulingRepository: FakeCardSchedulingRepository = FakeCardSchedulingRepository()
     ) = DeleteAccountUseCase(
         authRepository = authRepository,
         decksRepository = decksRepository,
         topicsRepository = topicsRepository,
-        flashcardRepository = flashcardRepository
+        flashcardRepository = flashcardRepository,
+        cardSchedulingRepository = cardSchedulingRepository
     )
 
     @Test

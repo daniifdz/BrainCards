@@ -58,8 +58,11 @@ class FakeCardSchedulingRepository : CardSchedulingRepository {
         ids.forEach { id -> schedulings[id]?.let { schedulings[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
 
+    var releaseFailure: Throwable? = null
+
     override suspend fun releaseFromUser(userId: String): Int {
         releaseFromUserCalls.add(userId)
+        releaseFailure?.let { throw it }
         val owned = schedulings.values.filter { it.userId == userId }
         owned.forEach { schedulings[it.cardId] = it.copy(userId = null, lastSyncedAt = null) }
         return owned.size
