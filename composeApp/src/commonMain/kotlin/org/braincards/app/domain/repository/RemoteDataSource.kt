@@ -1,6 +1,7 @@
 package org.braincards.app.domain.repository
 
 import kotlinx.datetime.Instant
+import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
@@ -18,4 +19,7 @@ interface RemoteDataSource {
 
     suspend fun pullFlashcards(userId: String, since: Instant): List<Flashcard>
     suspend fun pushFlashcards(flashcards: List<Flashcard>)
+
+    suspend fun pullCardScheduling(userId: String, since: Instant): List<CardScheduling>
+    suspend fun pushCardScheduling(schedulings: List<CardScheduling>)
 }

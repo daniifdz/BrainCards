@@ -2,6 +2,7 @@ package org.braincards.app.domain.fakes
 
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Instant
+import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
@@ -28,6 +29,11 @@ class FakeRemoteDataSource : RemoteDataSource {
     var pullDecksFailure: Throwable? = null
     var pullTopicsFailure: Throwable? = null
     var pullFlashcardsFailure: Throwable? = null
+
+    var cardSchedulingToPull: List<CardScheduling> = emptyList()
+    var pullCardSchedulingFailure: Throwable? = null
+    var pushCardSchedulingIdsThatFail: Set<String> = emptySet()
+    val pushedCardSchedulingIds = mutableListOf<String>()
 
     var pushDeckIdsThatFail: Set<String> = emptySet()
     var pushTopicIdsThatFail: Set<String> = emptySet()
@@ -95,5 +101,20 @@ class FakeRemoteDataSource : RemoteDataSource {
             if (flashcard.id in pushFlashcardIdsThatFail) throw pushFailureFactory()
             pushedFlashcardIds.add(flashcard.id)
         }
+    }
+
+    // card_scheduling (mismo patron). pushCardScheduling recibe la lista entera (el lote y el
+    // reintento fila a fila son cosa del SyncEngine, paso 5): si algun cardId esta en
+    // pushCardSchedulingIdsThatFail lanza antes de registrar nada, como un upsert atomico.
+    override suspend fun pullCardScheduling(userId: String, since: Instant): List<CardScheduling> {
+        calls.add("pullCardScheduling")
+        pullCardSchedulingFailure?.let { throw it }
+        return cardSchedulingToPull
+    }
+
+    override suspend fun pushCardScheduling(schedulings: List<CardScheduling>) {
+        calls.add("pushCardScheduling")
+        if (schedulings.any { it.cardId in pushCardSchedulingIdsThatFail }) throw pushFailureFactory()
+        schedulings.forEach { pushedCardSchedulingIds.add(it.cardId) }
     }
 }
