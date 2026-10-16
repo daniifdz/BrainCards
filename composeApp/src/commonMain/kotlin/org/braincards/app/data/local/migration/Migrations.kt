@@ -301,3 +301,18 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         connection.execSQL("CREATE INDEX IF NOT EXISTS `index_flashcards_topicId` ON `flashcards` (`topicId`)")
     }
 }
+
+/**
+ * v5 -> v6: columnas de sync en card_scheduling (Sprint 12), mismas que ya tienen decks,
+ * topics y flashcards. A diferencia de la 3->4 y la 4->5, aqui NO hay que reconstruir la
+ * tabla ni copiar datos: ADD COLUMN de columnas nullables basta, y las filas existentes
+ * quedan con userId = NULL (las adopta el backfill) y lastSyncedAt = NULL (pendientes de
+ * subir). SQLite solo admite una columna por ALTER TABLE ... ADD COLUMN, de ahi las dos
+ * sentencias. SQL equivalente a composeApp/schemas/.../6.json.
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `card_scheduling` ADD COLUMN `userId` TEXT")
+        connection.execSQL("ALTER TABLE `card_scheduling` ADD COLUMN `lastSyncedAt` INTEGER")
+    }
+}

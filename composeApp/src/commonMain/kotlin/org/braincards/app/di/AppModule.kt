@@ -13,6 +13,7 @@ import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.local.migration.MIGRATION_4_5
+import org.braincards.app.data.local.migration.MIGRATION_5_6
 import org.braincards.app.data.remote.RemoteDataSourceImpl
 import org.braincards.app.data.repository.AuthRepositoryImpl
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
@@ -168,7 +169,7 @@ fun appModule(
         databaseBuilder
             .setDriver(BundledSQLiteDriver()) //necesario para el funcionamineto con KMP
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.IO)
-            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
+            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 

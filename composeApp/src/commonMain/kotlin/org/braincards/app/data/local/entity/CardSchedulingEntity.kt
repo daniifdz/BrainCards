@@ -21,5 +21,10 @@ data class CardSchedulingEntity(
     val interval: Int,
     val repetitions: Int,
     val nextReview: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+
+    // sync (Sprint 12) -- mismo criterio que decks/topics/flashcards. Sin valores por
+    // defecto a proposito: el compilador senala cada sitio que construye la entidad.
+    val userId: String?,
+    val lastSyncedAt: Instant?
 )

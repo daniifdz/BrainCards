@@ -55,7 +55,8 @@ class FlashcardDaoDueQueriesTest {
         db.cardSchedulingDao().insert(
             CardSchedulingEntity(
                 cardId = cardId, easeFactor = 2.5, interval = 1, repetitions = 1,
-                nextReview = nextReview, updatedAt = past
+                nextReview = nextReview, updatedAt = past,
+                userId = null, lastSyncedAt = null
             )
         )
     }

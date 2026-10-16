@@ -71,7 +71,12 @@ class ReviewFlashcardUseCase(
                 interval = newInterval,
                 repetitions = newRepetitions,
                 nextReview = nextReviewDate,
-                updatedAt = now
+                updatedAt = now,
+                // El scheduling siempre hereda el dueno de su flashcard (la RLS de Supabase
+                // exige que coincida), nunca el del scheduling previo. lastSyncedAt = null:
+                // cada repaso deja la fila pendiente de subir (el upsert es REPLACE).
+                userId = flashcard.userId,
+                lastSyncedAt = null
             )
         )
 

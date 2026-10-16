@@ -15,14 +15,15 @@ import kotlin.test.assertNotNull
 
 class ReviewFlashcardUseCaseTest {
 
-    private fun buildFlashcard(): Flashcard = Flashcard(
+    private fun buildFlashcard(userId: String? = null): Flashcard = Flashcard(
         id = "card-1",
         deckId = "deck-1",
         question = "Pregunta de prueba",
         answer = "Respuesta de prueba",
         createdAt = Instant.fromEpochMilliseconds(0),
         updatedAt = Instant.fromEpochMilliseconds(0),
-        cardType = CardType.FLIP
+        cardType = CardType.FLIP,
+        userId = userId
     )
 
     // Semilla del CardScheduling ya existente para la tarjeta (el punto de partida que
@@ -32,14 +33,18 @@ class ReviewFlashcardUseCaseTest {
         easeFactor: Double = 2.5,
         interval: Int = 0,
         repetitions: Int = 0,
-        nextReview: Instant = Instant.fromEpochMilliseconds(0)
+        nextReview: Instant = Instant.fromEpochMilliseconds(0),
+        userId: String? = null,
+        lastSyncedAt: Instant? = null
     ): CardScheduling = CardScheduling(
         cardId = "card-1",
         easeFactor = easeFactor,
         interval = interval,
         repetitions = repetitions,
         nextReview = nextReview,
-        updatedAt = Instant.fromEpochMilliseconds(0)
+        updatedAt = Instant.fromEpochMilliseconds(0),
+        userId = userId,
+        lastSyncedAt = lastSyncedAt
     )
 
     @Test
@@ -159,6 +164,52 @@ class ReviewFlashcardUseCaseTest {
         assertEquals(1, created.repetitions)
         assertEquals(1, created.interval)
         assertEquals(0, reviewLogRepository.addedLogs.single().previousInterval)
+    }
+
+    // El scheduling resultante hereda SIEMPRE el userId de su flashcard (la RLS de Supabase
+    // exige que coincida), nunca el del scheduling previo.
+    @Test
+    fun el_scheduling_hereda_el_userId_de_la_flashcard_aunque_el_previo_tenga_otro() = runBlocking {
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(buildScheduling(userId = "otro-usuario"))
+        val useCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), cardSchedulingRepository)
+
+        useCase(buildFlashcard(userId = "user-1"), ReviewQuality.GOOD)
+
+        assertEquals("user-1", cardSchedulingRepository.upsertCalls.last().userId)
+    }
+
+    @Test
+    fun el_scheduling_hereda_el_userId_de_la_flashcard_cuando_el_previo_es_null() = runBlocking {
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(buildScheduling(userId = null))
+        val useCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), cardSchedulingRepository)
+
+        useCase(buildFlashcard(userId = "user-1"), ReviewQuality.GOOD)
+
+        assertEquals("user-1", cardSchedulingRepository.upsertCalls.last().userId)
+    }
+
+    @Test
+    fun si_la_flashcard_no_tiene_userId_el_scheduling_tampoco_aunque_el_previo_lo_tuviera() = runBlocking {
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(buildScheduling(userId = "otro-usuario"))
+        val useCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), cardSchedulingRepository)
+
+        useCase(buildFlashcard(userId = null), ReviewQuality.GOOD)
+
+        assertEquals(null, cardSchedulingRepository.upsertCalls.last().userId)
+    }
+
+    @Test
+    fun cada_repaso_deja_el_scheduling_pendiente_de_subir_con_lastSyncedAt_null() = runBlocking {
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(buildScheduling(lastSyncedAt = Instant.fromEpochMilliseconds(5_000)))
+        val useCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), cardSchedulingRepository)
+
+        useCase(buildFlashcard(userId = "user-1"), ReviewQuality.GOOD)
+
+        assertEquals(null, cardSchedulingRepository.upsertCalls.last().lastSyncedAt)
     }
 
     // Renombrado respecto al original ("se_actualiza_la_flashcard..."): desde que

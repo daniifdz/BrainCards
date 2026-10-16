@@ -10,7 +10,9 @@ fun CardSchedulingEntity.toDomain(): CardScheduling {
         interval = interval,
         repetitions = repetitions,
         nextReview = nextReview,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        userId = userId,
+        lastSyncedAt = lastSyncedAt
     )
 }
 
@@ -21,6 +23,8 @@ fun CardScheduling.toEntity(): CardSchedulingEntity {
         interval = interval,
         repetitions = repetitions,
         nextReview = nextReview,
-        updatedAt = updatedAt
+        updatedAt = updatedAt,
+        userId = userId,
+        lastSyncedAt = lastSyncedAt
     )
 }

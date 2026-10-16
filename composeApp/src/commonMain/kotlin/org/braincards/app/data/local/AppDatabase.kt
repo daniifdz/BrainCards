@@ -18,7 +18,7 @@ import org.braincards.app.data.local.entity.TopicEntity
 
 @Database(
     entities = [DeckEntity::class, FlashcardEntity::class, TopicEntity::class, ReviewLogEntity::class, CardSchedulingEntity::class],
-    version = 5
+    version = 6
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
