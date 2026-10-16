@@ -16,6 +16,8 @@ import org.braincards.app.data.local.migration.MIGRATION_4_5
 import org.braincards.app.data.local.migration.MIGRATION_5_6
 import org.braincards.app.data.remote.RemoteDataSourceImpl
 import org.braincards.app.data.repository.AuthRepositoryImpl
+import org.braincards.app.data.local.RoomTransactionRunner
+import org.braincards.app.data.local.TransactionRunner
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
@@ -185,7 +187,8 @@ fun appModule(
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
     single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get()) }
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
-    single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get()) }
+    single<TransactionRunner> { RoomTransactionRunner(get<AppDatabase>()) }
+    single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get(), transactionRunner = get()) }
 
 
     //usecasess deck
