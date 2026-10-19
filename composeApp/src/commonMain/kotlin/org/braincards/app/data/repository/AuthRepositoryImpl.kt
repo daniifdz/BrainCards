@@ -91,4 +91,10 @@ class AuthRepositoryImpl(
     override suspend fun deleteAccount() {
         client.postgrest.rpc("delete_own_account")
     }
+
+    // clearSession() no usa red: borra la sesion guardada y el code verifier, cancela el
+    // refresco y emite NotAuthenticated (auth-kt 3.1.4, AuthImpl.clearSession).
+    override suspend fun clearLocalSession() {
+        client.auth.clearSession()
+    }
 }

@@ -30,4 +30,9 @@ interface AuthRepository {
     // llama desde aqui para que el caller (DeleteAccountUseCase) pueda decidir que
     // hacer si signOut() falla despues de un borrado remoto ya consumado.
     suspend fun deleteAccount()
+
+    // Cierra la sesion SOLO en local (borra la sesion guardada y pasa a NotAuthenticated), sin
+    // red. Respaldo de signOut(), que hace una peticion de logout al servidor y, si no hay
+    // conexion, lanza antes de limpiar nada (verificado en auth-kt 3.1.4, AuthImpl.signOut).
+    suspend fun clearLocalSession()
 }

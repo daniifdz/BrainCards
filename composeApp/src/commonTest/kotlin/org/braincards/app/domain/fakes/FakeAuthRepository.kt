@@ -1,10 +1,12 @@
 package org.braincards.app.domain.fakes
 
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository
+import kotlin.time.Duration
 
 /**
  * Fake en memoria de AuthRepository -- el estado se controla desde el test
@@ -13,7 +15,10 @@ import org.braincards.app.domain.repository.AuthRepository
  * de sync todavia, asi que fallan alto si alguna vez se llaman por error.
  */
 class FakeAuthRepository(
-    initialState: AuthState = AuthState.NotAuthenticated
+    initialState: AuthState = AuthState.NotAuthenticated,
+    // Registro compartido con otros fakes para comprobar el orden entre llamadas
+    // (SignOutAndWipeUseCaseTest). null = no se registra nada.
+    private val callLog: MutableList<String>? = null
 ) : AuthRepository {
 
     private val state = MutableStateFlow(initialState)
@@ -23,6 +28,11 @@ class FakeAuthRepository(
     // el metodo correspondiente lanza esa excepcion en vez de "tener exito".
     var deleteAccountFailure: Throwable? = null
     var signOutFailure: Throwable? = null
+    // Si no es null, signOut() espera este tiempo (delay, respeta el tiempo virtual de runTest)
+    // antes de cerrar la sesion: simula un logout remoto lento o colgado.
+    var signOutDelay: Duration? = null
+    var clearLocalSessionFailure: Throwable? = null
+    var clearLocalSessionCalled = false
     var verifyPasswordResetCodeFailure: Throwable? = null
     var updatePasswordFailure: Throwable? = null
 
@@ -62,8 +72,17 @@ class FakeAuthRepository(
     // Antes lanzaba siempre (nadie lo necesitaba) -- DeleteAccountUseCaseTest si lo
     // necesita funcionando, como ultimo paso tras un borrado remoto exitoso.
     override suspend fun signOut() {
+        callLog?.add("signOut")
         signOutCalled = true
+        signOutDelay?.let { delay(it) }
         signOutFailure?.let { throw it }
+        state.value = AuthState.NotAuthenticated
+    }
+
+    override suspend fun clearLocalSession() {
+        callLog?.add("clearLocalSession")
+        clearLocalSessionCalled = true
+        clearLocalSessionFailure?.let { throw it }
         state.value = AuthState.NotAuthenticated
     }
 
