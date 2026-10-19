@@ -48,4 +48,11 @@ interface TopicDao {
     // Bloque F (borrado de cuenta) -- ver comentario en DeckDao.releaseDecksFromUser.
     @Query("UPDATE topics SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseTopicsFromUser(userId: String): Int
+
+    // Cierre de sesion -- ver comentario en DeckDao.deleteAllDecks.
+    @Query("DELETE FROM topics")
+    suspend fun deleteAllTopics()
+
+    @Query("SELECT COUNT(*) FROM topics WHERE userId IS NULL")
+    suspend fun countUnownedTopics(): Int
 }

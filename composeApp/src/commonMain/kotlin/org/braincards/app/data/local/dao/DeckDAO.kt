@@ -57,4 +57,12 @@ interface DeckDao {
     // deletedAt IS NULL a proposito: un tombstone tambien debe liberarse.
     @Query("UPDATE decks SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseDecksFromUser(userId: String): Int
+
+    // Cierre de sesion (aislamiento entre cuentas) -- ver LocalDataRepository. Sin filtro
+    // deletedAt a proposito: el borrado es fisico y total, tombstones incluidos.
+    @Query("DELETE FROM decks")
+    suspend fun deleteAllDecks()
+
+    @Query("SELECT COUNT(*) FROM decks WHERE userId IS NULL")
+    suspend fun countUnownedDecks(): Int
 }

@@ -62,4 +62,10 @@ class FakeDeckDao : DeckDao {
         owned.forEach { decks[it.id] = it.copy(userId = null, lastSyncedAt = null) }
         return owned.size
     }
+
+    override suspend fun deleteAllDecks() {
+        decks.clear()
+    }
+
+    override suspend fun countUnownedDecks(): Int = decks.values.count { it.userId == null }
 }

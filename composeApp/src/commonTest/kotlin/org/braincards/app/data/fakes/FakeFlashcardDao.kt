@@ -67,4 +67,10 @@ class FakeFlashcardDao : FlashcardDao {
         owned.forEach { flashcards[it.id] = it.copy(userId = null, lastSyncedAt = null) }
         return owned.size
     }
+
+    override suspend fun deleteAllFlashcards() {
+        flashcards.clear()
+    }
+
+    override suspend fun countUnownedFlashcards(): Int = flashcards.values.count { it.userId == null }
 }

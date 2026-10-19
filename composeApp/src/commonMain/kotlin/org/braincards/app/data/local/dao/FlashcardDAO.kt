@@ -76,4 +76,11 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseFlashcardsFromUser(userId: String): Int
 
+    // Cierre de sesion -- ver comentario en DeckDao.deleteAllDecks.
+    @Query("DELETE FROM flashcards")
+    suspend fun deleteAllFlashcards()
+
+    @Query("SELECT COUNT(*) FROM flashcards WHERE userId IS NULL")
+    suspend fun countUnownedFlashcards(): Int
+
 }

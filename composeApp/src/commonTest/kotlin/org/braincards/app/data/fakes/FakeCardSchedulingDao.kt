@@ -68,4 +68,10 @@ class FakeCardSchedulingDao : CardSchedulingDao {
 
     override suspend fun getExistingFlashcardIds(ids: List<String>): List<String> =
         ids.filter { it in flashcards }
+
+    override suspend fun deleteAllScheduling() {
+        schedulings.clear()
+    }
+
+    override suspend fun countUnownedScheduling(): Int = schedulings.values.count { it.userId == null }
 }

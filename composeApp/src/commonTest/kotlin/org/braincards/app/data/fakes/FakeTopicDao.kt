@@ -58,4 +58,10 @@ class FakeTopicDao : TopicDao {
         owned.forEach { topics[it.id] = it.copy(userId = null, lastSyncedAt = null) }
         return owned.size
     }
+
+    override suspend fun deleteAllTopics() {
+        topics.clear()
+    }
+
+    override suspend fun countUnownedTopics(): Int = topics.values.count { it.userId == null }
 }

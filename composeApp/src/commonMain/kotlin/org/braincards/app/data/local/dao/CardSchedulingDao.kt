@@ -57,4 +57,11 @@ interface CardSchedulingDao {
     // logicamente). Con foreign_keys = ON un scheduling huerfano aborta todo el lote.
     @Query("SELECT id FROM flashcards WHERE id IN (:ids)")
     suspend fun getExistingFlashcardIds(ids: List<String>): List<String>
+
+    // Cierre de sesion -- ver comentario en DeckDao.deleteAllDecks.
+    @Query("DELETE FROM card_scheduling")
+    suspend fun deleteAllScheduling()
+
+    @Query("SELECT COUNT(*) FROM card_scheduling WHERE userId IS NULL")
+    suspend fun countUnownedScheduling(): Int
 }
