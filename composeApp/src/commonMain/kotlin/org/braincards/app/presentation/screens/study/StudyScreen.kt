@@ -21,7 +21,6 @@ import org.koin.compose.viewmodel.koinViewModel
 fun StudyScreen(
     deckId: String?,
     onBackClick: () -> Unit,
-    onGoToDecksClick: () -> Unit,
     viewModel: StudyViewModel = koinViewModel()
 ) {
 
@@ -41,7 +40,7 @@ fun StudyScreen(
             TopAppBar(
                 title = { Text("Sesión de estudio") },
                 navigationIcon = {
-                    IconButton(onClick = onGoToDecksClick) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }

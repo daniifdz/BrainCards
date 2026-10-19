@@ -92,9 +92,6 @@ fun App() {
 
                     onBackClick = {
                         navController.popBackStack()
-                    },
-                    onGoToDecksClick = {
-                        navController.navigate(Screen.DecksList)
                     }
                 )
             }
