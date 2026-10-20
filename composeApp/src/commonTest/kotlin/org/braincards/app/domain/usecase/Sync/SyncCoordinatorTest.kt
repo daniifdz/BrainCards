@@ -11,12 +11,14 @@ import org.braincards.app.domain.fakes.FakeAuthRepository
 import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
 import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
+import org.braincards.app.domain.fakes.FakeLocalDataRepository
 import org.braincards.app.domain.fakes.FakeRemoteDataSource
 import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import org.braincards.app.domain.usecase.Auth.SignOutAndWipeUseCase
 import org.braincards.app.presentation.sync.SyncCoordinator
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,6 +55,7 @@ class SyncCoordinatorTest {
         cardSchedulingRepository: FakeCardSchedulingRepository,
         dataStore: FakeSettingsDataStore
     ): SyncCoordinator {
+        val localDataRepository = FakeLocalDataRepository()
         val backfillLocalDataUseCase = BackfillLocalDataUseCase(decksRepository, topicsRepository, flashcardRepository, cardSchedulingRepository)
         val syncEngineUseCase = SyncEngineUseCase(
             authRepository = authRepository,
@@ -71,6 +74,8 @@ class SyncCoordinatorTest {
             flashcardRepository = flashcardRepository,
             cardSchedulingRepository = cardSchedulingRepository,
             dataStore = dataStore,
+            localDataRepository = localDataRepository,
+            signOutAndWipeUseCase = SignOutAndWipeUseCase(authRepository, localDataRepository),
             coroutineScope = CoroutineScope(Dispatchers.Unconfined)
         )
     }

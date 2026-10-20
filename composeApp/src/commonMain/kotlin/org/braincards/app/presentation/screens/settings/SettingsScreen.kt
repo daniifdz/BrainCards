@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
@@ -20,9 +21,16 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import braincards.composeapp.generated.resources.*
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.presentation.screens.auth.AuthViewModel
+import org.braincards.app.presentation.screens.auth.SignOutEvent
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -58,6 +66,8 @@ fun SettingsScreen(
     val lastSuccessfulSyncAt by authViewModel.lastSuccessfulSyncAt.collectAsState()
     val pendingChangesCount by authViewModel.pendingChangesCount.collectAsState()
     val isDeletingAccount by authViewModel.isDeletingAccount.collectAsState()
+    val signOutPrompt by authViewModel.signOutPrompt.collectAsState()
+    val isSigningOut by authViewModel.isSigningOut.collectAsState()
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -69,12 +79,25 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        authViewModel.signOutEvent.collectLatest { event ->
+            val message = when (event) {
+                SignOutEvent.SignedOut -> getString(Res.string.sign_out_signed_out)
+                SignOutEvent.SessionCloseFailed -> getString(Res.string.sign_out_session_close_failed)
+                SignOutEvent.WipeFailed -> getString(Res.string.sign_out_wipe_failed)
+                SignOutEvent.SessionChanged -> getString(Res.string.sign_out_session_changed)
+            }
+            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Ajustes") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    // Desactivada a mitad del cierre de sesion: no se sale de Ajustes mientras se borra.
+                    IconButton(onClick = onBackClick, enabled = !isSigningOut) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -173,8 +196,19 @@ fun SettingsScreen(
                     )
                     ListItem(
                         headlineContent = { Text("Cerrar sesión") },
-                        leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-                        modifier = Modifier.clickable { authViewModel.signOut() }
+                        supportingContent = if (isSigningOut) {
+                            { Text(stringResource(Res.string.sign_out_progress)) }
+                        } else {
+                            null
+                        },
+                        leadingContent = {
+                            if (isSigningOut) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
+                            }
+                        },
+                        modifier = Modifier.clickable(enabled = !isSigningOut) { authViewModel.requestSignOut() }
                     )
                     ListItem(
                         headlineContent = {
@@ -256,6 +290,71 @@ fun SettingsScreen(
                 supportingContent = { Text("© 2024 BrainCards. Todos los derechos reservados.") },
                 leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
             )
+        }
+    }
+
+    // Confirmacion de cierre de sesion: solo si hay cambios sin sincronizar que se perderian.
+    // Con isSigningOut (borrado en curso) el dialogo no se puede cerrar ni volver a pulsar.
+    signOutPrompt?.let { prompt ->
+        AlertDialog(
+            onDismissRequest = { if (!isSigningOut) authViewModel.dismissSignOut() },
+            properties = DialogProperties(
+                dismissOnBackPress = !isSigningOut,
+                dismissOnClickOutside = !isSigningOut
+            ),
+            title = { Text(stringResource(Res.string.sign_out_dialog_title)) },
+            text = {
+                Column {
+                    Text(
+                        pluralStringResource(
+                            Res.plurals.sign_out_dialog_text,
+                            prompt.unsyncedChanges,
+                            prompt.unsyncedChanges
+                        )
+                    )
+                    if (isSigningOut) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(stringResource(Res.string.sign_out_progress))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { authViewModel.confirmSignOut() }, enabled = !isSigningOut) {
+                    Text(
+                        stringResource(Res.string.sign_out_dialog_confirm),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { authViewModel.dismissSignOut() }, enabled = !isSigningOut) {
+                    Text(stringResource(Res.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Sin dialogo de confirmacion pero con cierre en curso (sync previo, o nada que perder):
+    // progreso modal no descartable para que no se pueda lanzar nada a mitad.
+    if (signOutPrompt == null && isSigningOut) {
+        Dialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
+        ) {
+            Surface(shape = MaterialTheme.shapes.medium) {
+                Row(
+                    modifier = Modifier.padding(24.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(stringResource(Res.string.sign_out_progress))
+                }
+            }
         }
     }
 

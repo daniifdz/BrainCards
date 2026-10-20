@@ -1,5 +1,6 @@
 package org.braincards.app.domain.fakes
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,10 @@ class FakeAuthRepository(
     // Si no es null, signOut() espera este tiempo (delay, respeta el tiempo virtual de runTest)
     // antes de cerrar la sesion: simula un logout remoto lento o colgado.
     var signOutDelay: Duration? = null
+    // Compuerta: si no es null, signOut() espera a que el test la abra (sin tiempo, ni real ni
+    // virtual). signOutEntered avisa de que signOut() ya esta parado ahi (SignOutFlowRoomTest).
+    var signOutGate: CompletableDeferred<Unit>? = null
+    val signOutEntered = CompletableDeferred<Unit>()
     var clearLocalSessionFailure: Throwable? = null
     var clearLocalSessionCalled = false
     var verifyPasswordResetCodeFailure: Throwable? = null
@@ -74,6 +79,8 @@ class FakeAuthRepository(
     override suspend fun signOut() {
         callLog?.add("signOut")
         signOutCalled = true
+        signOutEntered.complete(Unit)
+        signOutGate?.await()
         signOutDelay?.let { delay(it) }
         signOutFailure?.let { throw it }
         state.value = AuthState.NotAuthenticated

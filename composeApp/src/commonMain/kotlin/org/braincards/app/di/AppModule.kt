@@ -21,12 +21,14 @@ import org.braincards.app.data.local.TransactionRunner
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
+import org.braincards.app.data.repository.LocalDataRepositoryImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
@@ -35,6 +37,7 @@ import org.braincards.app.domain.usecase.Auth.ConfirmPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
 import org.braincards.app.domain.usecase.Auth.SignInUseCase
+import org.braincards.app.domain.usecase.Auth.SignOutAndWipeUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutUseCase
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
 import org.braincards.app.domain.usecase.Auth.UpdatePasswordUseCase
@@ -151,7 +154,9 @@ fun appModule(
             topicsRepository = get(),
             flashcardRepository = get(),
             cardSchedulingRepository = get(),
-            dataStore = get()
+            dataStore = get(),
+            localDataRepository = get(),
+            signOutAndWipeUseCase = get()
         )
     }
 
@@ -160,7 +165,6 @@ fun appModule(
             authRepository = get(),
             signUpUseCase = get(),
             signInUseCase = get(),
-            signOutUseCase = get(),
             sendPasswordResetUseCase = get(),
             confirmPasswordResetUseCase = get(),
             verifySignUpCodeUseCase = get(),
@@ -193,6 +197,17 @@ fun appModule(
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
     single<TransactionRunner> { RoomTransactionRunner(get<AppDatabase>()) }
     single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get(), transactionRunner = get()) }
+    single<LocalDataRepository> {
+        LocalDataRepositoryImpl(
+            deckDao = get(),
+            topicDao = get(),
+            flashcardDao = get(),
+            cardSchedulingDao = get(),
+            reviewLogDao = get(),
+            transactionRunner = get()
+        )
+    }
+    factory { SignOutAndWipeUseCase(authRepository = get(), localDataRepository = get()) }
 
 
     //usecasess deck

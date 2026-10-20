@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
@@ -23,12 +25,48 @@ import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.TopicsRepository
+import org.braincards.app.domain.usecase.Auth.SignOutAndWipeResult
+import org.braincards.app.domain.usecase.Auth.SignOutAndWipeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.isFullySuccessful
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 private val LAST_SUCCESSFUL_SYNC_KEY = stringPreferencesKey("last_successful_sync_at")
+
+/**
+ * TODAS las claves del DataStore que son estado de sync (no preferencias del dispositivo como
+ * app_theme). resetSyncState() borra exactamente estas, una a una. Una marca de agua futura
+ * (p. ej. un watermark de pull por tabla) se anade aqui y nada mas.
+ */
+private val SYNC_PREFS_KEYS: List<Preferences.Key<*>> = listOf(LAST_SUCCESSFUL_SYNC_KEY)
+
+/**
+ * Tiempo maximo del sync previo al cierre de sesion. Si se agota (o falla), se sigue con el
+ * conteo local: el usuario nunca espera indefinidamente para poder cerrar sesion.
+ */
+val SYNC_BEFORE_SIGN_OUT_TIMEOUT: Duration = 12.seconds
+
+/** Resultado de [SyncCoordinator.prepareSignOut]: lo que la UI debe hacer a continuacion. */
+sealed interface SignOutPrompt {
+    /** Nada que perder: se puede llamar a finishSignOut directamente (sin dialogo). */
+    data object ReadyToSignOut : SignOutPrompt
+
+    /** Hay [unsyncedChanges] cambios sin sincronizar que se perderian: pedir confirmacion. */
+    data class NeedsConfirmation(val unsyncedChanges: Int) : SignOutPrompt
+}
+
+/** Resultado de [SyncCoordinator.finishSignOut]. */
+sealed interface FinishSignOutResult {
+    /** Se intento el cierre; [outcome] dice como acabo (SignedOut, SessionChanged, WipeFailed...). */
+    data class Finished(val outcome: SignOutAndWipeResult) : FinishSignOutResult
+
+    /** Entraron mas cambios sin sincronizar que los confirmados: NO se borro nada. */
+    data class NeedsReconfirmation(val unsyncedChanges: Int) : FinishSignOutResult
+}
 
 /**
  * Coordinador unico de sync para toda la app (Bloque D: "sin conexion y
@@ -53,6 +91,8 @@ class SyncCoordinator(
     private val flashcardRepository: FlashcardRepository,
     private val cardSchedulingRepository: CardSchedulingRepository,
     private val dataStore: DataStore<Preferences>,
+    private val localDataRepository: LocalDataRepository,
+    private val signOutAndWipeUseCase: SignOutAndWipeUseCase,
     coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) {
     private val scope = coroutineScope
@@ -103,9 +143,81 @@ class SyncCoordinator(
      * AuthViewModel.deleteAccount() para no correr a la vez que un sync. */
     suspend fun <T> withSyncLock(block: suspend () -> T): T = syncMutex.withLock { block() }
 
-    private suspend fun runSync(): SyncResult = syncMutex.withLock {
-        _isSyncing.value = true
+    /**
+     * Cierre de sesion, paso 1: sincroniza (con tiempo limite) y cuenta lo que se perderia.
+     * Toma el Mutex SOLO durante el sync previo y el conteo, y lo suelta al devolver: nunca se
+     * mantiene mientras la UI muestra el dialogo de confirmacion. NO borra nada.
+     *
+     * Sin sesion confirmada (arranque en frio sin red) o sin sesion no se intenta el sync: solo
+     * conteo local. Si el sync falla o se agota, tambien se sigue con el conteo local.
+     */
+    suspend fun prepareSignOut(): SignOutPrompt = syncMutex.withLock {
+        val state = authRepository.authState.first()
+        val userId = (state as? AuthState.Authenticated)?.userId
+        if (state is AuthState.Authenticated && state.sessionConfirmed) {
+            try {
+                withTimeoutOrNull(SYNC_BEFORE_SIGN_OUT_TIMEOUT) { syncLocked() }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                println("El sync previo al cierre de sesion fallo, se sigue con el conteo local: $e")
+            }
+        }
+        val unsynced = countUnsynced(userId)
+        if (unsynced == 0) SignOutPrompt.ReadyToSignOut else SignOutPrompt.NeedsConfirmation(unsynced)
+    }
+
+    /**
+     * Cierre de sesion, paso 2 (tras confirmar, o directamente si prepareSignOut dio
+     * ReadyToSignOut). Toma el Mutex, recuenta y, si entraron mas cambios que
+     * [confirmedCount], devuelve NeedsReconfirmation SIN borrar. Si no, ejecuta
+     * SignOutAndWipeUseCase manteniendo el Mutex hasta que termina (clearSession incluido):
+     * un sync lanzado entre el borrado y el cierre de sesion esperaria y no repoblaria la BD.
+     */
+    suspend fun finishSignOut(userId: String, confirmedCount: Int): FinishSignOutResult =
+        syncMutex.withLock {
+            val current = authRepository.authState.first()
+            if ((current as? AuthState.Authenticated)?.userId != userId) {
+                return@withLock FinishSignOutResult.Finished(SignOutAndWipeResult.SessionChanged)
+            }
+            val unsynced = countUnsynced(userId)
+            if (unsynced > confirmedCount) {
+                return@withLock FinishSignOutResult.NeedsReconfirmation(unsynced)
+            }
+            val outcome = signOutAndWipeUseCase(userId)
+            // La BD ya esta vacia en SignedOut y en SessionCloseFailed: el estado de sync
+            // (ultima sync, pendientes) ya no describe nada. Con WipeFailed/SessionChanged no
+            // se toco nada y se conserva.
+            if (outcome is SignOutAndWipeResult.SignedOut || outcome is SignOutAndWipeResult.SessionCloseFailed) {
+                resetSyncState()
+            }
+            FinishSignOutResult.Finished(outcome)
+        }
+
+    /**
+     * Olvida el estado de sync: flows a null/0 y borra del DataStore, clave a clave, las de
+     * [SYNC_PREFS_KEYS] (nunca clear(): app_theme y demas preferencias se conservan). No toma el
+     * Mutex (lo llaman quienes ya lo tienen). Best-effort con el DataStore: si falla, el cierre
+     * de sesion/borrado de cuenta que ya ocurrio no debe parecer fallido.
+     */
+    suspend fun resetSyncState() {
+        _lastSuccessfulSyncAt.value = null
+        _pendingChangesCount.value = 0
         try {
+            dataStore.edit { prefs -> SYNC_PREFS_KEYS.forEach { key -> prefs -= key } }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            println("No se pudo borrar el estado de sync del DataStore: $e")
+        }
+    }
+
+    private suspend fun runSync(): SyncResult = syncMutex.withLock { syncLocked() }
+
+    /** Cuerpo de runSync SIN tomar el Mutex: el caller ya lo tiene (Mutex no reentrante). */
+    private suspend fun syncLocked(): SyncResult {
+        _isSyncing.value = true
+        return try {
             // syncEngineUseCase() ya ejecuta el backfill como primer paso de cada
             // llamada (ver SyncEngineUseCase.invoke) -- no hace falta repetirlo aqui.
             val result = syncEngineUseCase()
@@ -123,15 +235,24 @@ class SyncCoordinator(
     }
 
     private suspend fun refreshPendingChangesCount(userId: String?) {
-        _pendingChangesCount.value = if (userId == null) {
-            0
-        } else {
-            decksRepository.getPendingSync(userId).size +
-                topicsRepository.getPendingSync(userId).size +
-                flashcardRepository.getPendingSync(userId).size +
-                cardSchedulingRepository.getPendingSync(userId).size
-        }
+        _pendingChangesCount.value = if (userId == null) 0 else countPending(userId)
     }
+
+    // Tombstones incluidos: getPendingSync no filtra deletedAt (un borrado sin subir es un
+    // cambio que se perderia).
+    private suspend fun countPending(userId: String): Int =
+        decksRepository.getPendingSync(userId).size +
+            topicsRepository.getPendingSync(userId).size +
+            flashcardRepository.getPendingSync(userId).size +
+            cardSchedulingRepository.getPendingSync(userId).size
+
+    /**
+     * Lo que se perderia al borrar la BD local: pendientes de subir de [userId] + filas sin dueno
+     * (userId NULL, creadas desde el ultimo sync y aun sin adoptar: getPendingSync no las ve).
+     * Sin sesion no hay wipe, asi que no hay nada que perder (0).
+     */
+    private suspend fun countUnsynced(userId: String?): Int =
+        if (userId == null) 0 else countPending(userId) + localDataRepository.countUnownedRows()
 
     private suspend fun readLastSuccessfulSyncAt(): Instant? =
         dataStore.data.first()[LAST_SUCCESSFUL_SYNC_KEY]?.let { Instant.parse(it) }
