@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
@@ -47,15 +48,41 @@ data class PushResult(
 fun PullResult.abortedTableCount(): Int =
     listOf(decks, topics, flashcards, cardScheduling).count { it.aborted }
 
+/** Filas (de las cuatro tablas) descartadas por la guarda de padres del pull. */
+fun PullResult.discardedRowCount(): Int =
+    listOf(decks, topics, flashcards, cardScheduling).sumOf { it.discarded }
+
 /** Filas (de las cuatro tablas) que quedaron pendientes de subir. */
 fun PushResult.failedRowCount(): Int =
     decks.failed + topics.failed + flashcards.failed + cardScheduling.failed
 
+/** Por que se aborto el pull de una tabla (lo rellena la clasificacion de pullTable). */
+enum class PullFailure {
+    /** Sin conexion, timeout o error 5xx del servidor. */
+    NETWORK,
+
+    /** El servidor rechazo la peticion (4xx: sesion o permisos). */
+    REJECTED,
+
+    /** Fallo al guardar las filas descargadas en la BD local. */
+    LOCAL
+}
+
 /**
  * [applied] son las filas remotas que se aplicaron localmente. Si [aborted] es true,
  * [applied] siempre es 0 -- la tabla es todo o nada (ver comentario en pullTable).
+ *
+ * [failure] es la causa cuando [aborted] es true (null = sin clasificar). [discarded] son las
+ * filas descargadas que se DESCARTARON sin abortar la tabla porque su padre (deck/topic) no
+ * existe en la BD local; un pull con descartes sigue contando como correcto. Ambos con valor
+ * por defecto para no tocar a quien construye PullTableResult(applied, aborted).
  */
-data class PullTableResult(val applied: Int, val aborted: Boolean)
+data class PullTableResult(
+    val applied: Int,
+    val aborted: Boolean,
+    val failure: PullFailure? = null,
+    val discarded: Int = 0
+)
 
 /**
  * [failed] incluye tanto las filas que se intentaron y fallaron como las que ni
@@ -118,19 +145,19 @@ class SyncEngineUseCase(
     private suspend fun pull(userId: String): PullResult {
         val decksResult = pullTable(
             fetch = { remoteDataSource.pullDecks(userId, PULL_SINCE_EPOCH) },
-            apply = { decksRepository.applyRemotePull(it) }
+            apply = { PullApplyReport(decksRepository.applyRemotePull(it)) }
         )
         val topicsResult = pullTable(
             fetch = { remoteDataSource.pullTopics(userId, PULL_SINCE_EPOCH) },
-            apply = { topicsRepository.applyRemotePull(it) }
+            apply = { topicsRepository.applyRemotePullReporting(it) }
         )
         val flashcardsResult = pullTable(
             fetch = { remoteDataSource.pullFlashcards(userId, PULL_SINCE_EPOCH) },
-            apply = { flashcardRepository.applyRemotePull(it) }
+            apply = { flashcardRepository.applyRemotePullReporting(it) }
         )
         val cardSchedulingResult = pullTable(
             fetch = { remoteDataSource.pullCardScheduling(userId, PULL_SINCE_EPOCH) },
-            apply = { cardSchedulingRepository.applyRemotePull(it) }
+            apply = { PullApplyReport(cardSchedulingRepository.applyRemotePull(it)) }
         )
         return PullResult(decksResult, topicsResult, flashcardsResult, cardSchedulingResult)
     }
@@ -181,12 +208,12 @@ class SyncEngineUseCase(
      */
     private suspend fun <T> pullTable(
         fetch: suspend () -> List<T>,
-        apply: suspend (List<T>) -> Int
+        apply: suspend (List<T>) -> PullApplyReport
     ): PullTableResult {
         return try {
             val remoteRows = fetch()
-            val appliedCount = apply(remoteRows)
-            PullTableResult(applied = appliedCount, aborted = false)
+            val report = apply(remoteRows)
+            PullTableResult(applied = report.applied, aborted = false, discarded = report.discarded)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

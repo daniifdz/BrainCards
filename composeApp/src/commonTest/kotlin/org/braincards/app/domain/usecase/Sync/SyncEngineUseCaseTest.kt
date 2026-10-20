@@ -12,6 +12,7 @@ import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.Flashcard
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
@@ -57,6 +58,11 @@ private class OrderTrackingTopicsRepository(
         callLog.add("pull:topics")
         return delegate.applyRemotePull(topics)
     }
+    // El motor aplica el pull de topics con applyRemotePullReporting (guarda de padres).
+    override suspend fun applyRemotePullReporting(topics: List<Topic>): PullApplyReport {
+        callLog.add("pull:topics")
+        return delegate.applyRemotePullReporting(topics)
+    }
     override suspend fun getPendingSync(userId: String): List<Topic> {
         callLog.add("push:topics")
         return delegate.getPendingSync(userId)
@@ -74,6 +80,11 @@ private class OrderTrackingFlashcardRepository(
     override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int {
         callLog.add("pull:flashcards")
         return delegate.applyRemotePull(flashcards)
+    }
+    // El motor aplica el pull de flashcards con applyRemotePullReporting (guarda de padres).
+    override suspend fun applyRemotePullReporting(flashcards: List<Flashcard>): PullApplyReport {
+        callLog.add("pull:flashcards")
+        return delegate.applyRemotePullReporting(flashcards)
     }
     override suspend fun getPendingSync(userId: String): List<Flashcard> {
         callLog.add("push:flashcards")

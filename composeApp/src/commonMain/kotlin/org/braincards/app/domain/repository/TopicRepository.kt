@@ -2,6 +2,7 @@ package org.braincards.app.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.models.Topic
 
 interface TopicsRepository {
@@ -18,6 +19,13 @@ interface TopicsRepository {
 
     // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
     suspend fun applyRemotePull(topics: List<Topic>): Int
+
+    // Igual que applyRemotePull, pero informa tambien de las filas descartadas por no tener
+    // su deck en la BD local. Por defecto delega en applyRemotePull (sin descartes): solo las
+    // implementaciones con guarda de padres lo sobrescriben.
+    suspend fun applyRemotePullReporting(topics: List<Topic>): PullApplyReport =
+        PullApplyReport(applied = applyRemotePull(topics))
+
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
     // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.

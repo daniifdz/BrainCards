@@ -9,6 +9,7 @@ import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
 import org.braincards.app.domain.models.Flashcard
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.repository.FlashcardRepository
 
 class FlashcardRepositoryImpl(
@@ -59,15 +60,36 @@ class FlashcardRepositoryImpl(
     }
 
     // LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
-    override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int {
-        val toApply = flashcards.filter { remote ->
+    override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int =
+        applyRemotePullReporting(flashcards).applied
+
+    // Guarda de padres: se descartan (y cuentan) las flashcards cuyo deck, o su topic si tienen,
+    // no existe localmente, sin abortar la tabla -- con foreign_keys = ON, una sola huerfana
+    // haria fallar el insert de todo el lote. Un padre borrado logicamente (tombstone) SI cuenta
+    // como existente. Las filas descartadas no se escriben, asi que no se marcan como
+    // sincronizadas (y su card_scheduling se descarta solo por la guarda de ese repositorio).
+    override suspend fun applyRemotePullReporting(flashcards: List<Flashcard>): PullApplyReport {
+        if (flashcards.isEmpty()) return PullApplyReport(applied = 0)
+        val existingDeckIds = flashcards.map { it.deckId }.distinct()
+            .chunked(EXISTING_IDS_CHUNK)
+            .flatMap { flashcardDao.getExistingDeckIds(it) }
+            .toSet()
+        val existingTopicIds = flashcards.mapNotNull { it.topicId }.distinct()
+            .chunked(EXISTING_IDS_CHUNK)
+            .flatMap { flashcardDao.getExistingTopicIds(it) }
+            .toSet()
+        val (withParents, orphans) = flashcards.partition {
+            it.deckId in existingDeckIds && (it.topicId == null || it.topicId in existingTopicIds)
+        }
+        val toApply = withParents.filter { remote ->
             val local = flashcardDao.getFlashcardByIdIncludingDeleted(remote.id)
             local == null || remote.updatedAt > local.updatedAt
         }
-        if (toApply.isEmpty()) return 0
-        val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
-        flashcardDao.insertAllFlashcards(entities)
-        return toApply.size
+        if (toApply.isNotEmpty()) {
+            val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+            flashcardDao.insertAllFlashcards(entities)
+        }
+        return PullApplyReport(applied = toApply.size, discarded = orphans.size)
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
@@ -76,6 +98,11 @@ class FlashcardRepositoryImpl(
 
     override suspend fun releaseFromUser(userId: String): Int {
         return flashcardDao.releaseFlashcardsFromUser(userId)
+    }
+
+    private companion object {
+        // Limite de variables de SQLite por sentencia (conservador), como CardSchedulingRepositoryImpl.
+        const val EXISTING_IDS_CHUNK = 500
     }
 
 }

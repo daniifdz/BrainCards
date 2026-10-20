@@ -3,6 +3,7 @@ package org.braincards.app.domain.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.Flashcard
+import org.braincards.app.domain.models.PullApplyReport
 
 interface FlashcardRepository {
     suspend fun addFlashcard(flashcard: Flashcard)
@@ -23,6 +24,13 @@ interface FlashcardRepository {
 
     // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
     suspend fun applyRemotePull(flashcards: List<Flashcard>): Int
+
+    // Igual que applyRemotePull, pero informa tambien de las filas descartadas por no tener
+    // su deck (o su topic) en la BD local. Por defecto delega en applyRemotePull (sin
+    // descartes): solo las implementaciones con guarda de padres lo sobrescriben.
+    suspend fun applyRemotePullReporting(flashcards: List<Flashcard>): PullApplyReport =
+        PullApplyReport(applied = applyRemotePull(flashcards))
+
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
     // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.

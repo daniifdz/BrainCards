@@ -83,4 +83,13 @@ interface FlashcardDao {
     @Query("SELECT COUNT(*) FROM flashcards WHERE userId IS NULL")
     suspend fun countUnownedFlashcards(): Int
 
+    // Guarda del pull: ids de decks / topics que existen localmente (tambien los borrados
+    // logicamente). Una flashcard cuyo deck o topic no esta aqui no se puede insertar
+    // (foreign_keys = ON).
+    @Query("SELECT id FROM decks WHERE id IN (:ids)")
+    suspend fun getExistingDeckIds(ids: List<String>): List<String>
+
+    @Query("SELECT id FROM topics WHERE id IN (:ids)")
+    suspend fun getExistingTopicIds(ids: List<String>): List<String>
+
 }

@@ -55,4 +55,9 @@ interface TopicDao {
 
     @Query("SELECT COUNT(*) FROM topics WHERE userId IS NULL")
     suspend fun countUnownedTopics(): Int
+
+    // Guarda del pull: ids de decks que existen localmente (tambien los borrados logicamente).
+    // Un topic cuyo deck no esta aqui no se puede insertar (foreign_keys = ON).
+    @Query("SELECT id FROM decks WHERE id IN (:ids)")
+    suspend fun getExistingDeckIds(ids: List<String>): List<String>
 }

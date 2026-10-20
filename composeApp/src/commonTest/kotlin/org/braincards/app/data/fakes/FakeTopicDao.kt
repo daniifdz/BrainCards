@@ -10,6 +10,16 @@ import org.braincards.app.data.local.entity.TopicEntity
 class FakeTopicDao : TopicDao {
     private val topics = mutableMapOf<String, TopicEntity>()
 
+    // Guarda de padres del pull. Por defecto PERMISIVO (todos los decks "existen") para no
+    // alterar los tests de LWW; con enforceParents = true solo existen los sembrados con
+    // seedDeck. El SQL real de la guarda se prueba en jvmTest (PullOrphanGuardRoomTest).
+    var enforceParents = false
+    private val deckIds = mutableSetOf<String>()
+
+    fun seedDeck(id: String) {
+        deckIds.add(id)
+    }
+
     fun seed(entity: TopicEntity) {
         topics[entity.id] = entity
     }
@@ -52,6 +62,9 @@ class FakeTopicDao : TopicDao {
     override suspend fun markTopicsPushed(ids: List<String>, syncedAt: Instant) {
         ids.forEach { id -> topics[id]?.let { topics[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
+
+    override suspend fun getExistingDeckIds(ids: List<String>): List<String> =
+        if (enforceParents) ids.filter { it in deckIds } else ids
 
     override suspend fun releaseTopicsFromUser(userId: String): Int {
         val owned = topics.values.filter { it.userId == userId }

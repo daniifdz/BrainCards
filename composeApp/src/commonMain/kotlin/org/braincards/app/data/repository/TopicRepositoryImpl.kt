@@ -11,6 +11,7 @@ import org.braincards.app.data.local.dao.TopicDao
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
 import org.braincards.app.domain.models.Deck
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.TopicsRepository
 
@@ -58,15 +59,29 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
     }
 
     // LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
-    override suspend fun applyRemotePull(topics: List<Topic>): Int {
-        val toApply = topics.filter { remote ->
+    override suspend fun applyRemotePull(topics: List<Topic>): Int =
+        applyRemotePullReporting(topics).applied
+
+    // Guarda de padres: se descartan (y cuentan) los topics cuyo deck no existe localmente, sin
+    // abortar la tabla -- con foreign_keys = ON, un solo topic huerfano haria fallar el insert
+    // de todo el lote. Un deck borrado logicamente (tombstone) SI cuenta como existente.
+    // Las filas descartadas no se escriben, asi que no se marcan como sincronizadas.
+    override suspend fun applyRemotePullReporting(topics: List<Topic>): PullApplyReport {
+        if (topics.isEmpty()) return PullApplyReport(applied = 0)
+        val existingDeckIds = topics.map { it.deckId }.distinct()
+            .chunked(EXISTING_IDS_CHUNK)
+            .flatMap { topicDao.getExistingDeckIds(it) }
+            .toSet()
+        val (withParent, orphans) = topics.partition { it.deckId in existingDeckIds }
+        val toApply = withParent.filter { remote ->
             val local = topicDao.getTopicByIdIncludingDeleted(remote.id)
             local == null || remote.updatedAt > local.updatedAt
         }
-        if (toApply.isEmpty()) return 0
-        val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
-        topicDao.insertAllTopics(entities)
-        return toApply.size
+        if (toApply.isNotEmpty()) {
+            val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+            topicDao.insertAllTopics(entities)
+        }
+        return PullApplyReport(applied = toApply.size, discarded = orphans.size)
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {
@@ -75,6 +90,11 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
 
     override suspend fun releaseFromUser(userId: String): Int {
         return topicDao.releaseTopicsFromUser(userId)
+    }
+
+    private companion object {
+        // Limite de variables de SQLite por sentencia (conservador), como CardSchedulingRepositoryImpl.
+        const val EXISTING_IDS_CHUNK = 500
     }
 }
 
