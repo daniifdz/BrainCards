@@ -28,6 +28,8 @@ import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.braincards.app.presentation.screens.auth.SignOutEvent
+import org.braincards.app.presentation.screens.auth.SyncUserMessage
+import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -76,6 +78,22 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         authViewModel.messageEvent.collectLatest { message ->
             coroutineScope.launch { snackbarHostState.showSnackbar(message) }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.syncMessageEvent.collectLatest { message ->
+            val text = when (message) {
+                SyncUserMessage.NotAuthenticated -> getString(Res.string.sync_not_authenticated)
+                SyncUserMessage.Synced -> getString(Res.string.sync_done)
+                SyncUserMessage.SyncFailed -> getString(Res.string.sync_failed)
+                SyncUserMessage.PullNetwork -> getString(Res.string.sync_pull_network)
+                SyncUserMessage.PullRejected -> getString(Res.string.sync_pull_rejected)
+                SyncUserMessage.PullLocal -> getString(Res.string.sync_pull_local)
+                is SyncUserMessage.PushPartial ->
+                    getPluralString(Res.plurals.sync_push_partial, message.pendingRows, message.pendingRows)
+            }
+            coroutineScope.launch { snackbarHostState.showSnackbar(text) }
         }
     }
 

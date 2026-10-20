@@ -28,6 +28,7 @@ import org.braincards.app.domain.usecase.Auth.SignInUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutAndWipeResult
 import org.braincards.app.domain.usecase.Auth.SignUpUseCase
 import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
+import org.braincards.app.domain.usecase.Sync.PullFailure
 import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.abortedTableCount
 import org.braincards.app.domain.usecase.Sync.failedRowCount
@@ -49,6 +50,55 @@ const val RESEND_CODE_COOLDOWN_SECONDS = 60
  * resolver recursos (stringResource): SettingsScreen traduce cada caso a su texto.
  */
 enum class SignOutEvent { SignedOut, SessionCloseFailed, WipeFailed, SessionChanged }
+
+/** Resultado del sync manual para el usuario. Cada caso tiene su texto en strings.xml. */
+sealed interface SyncUserMessage {
+    data object NotAuthenticated : SyncUserMessage
+    data object Synced : SyncUserMessage
+
+    /** Fallaron el pull y el push a la vez. */
+    data object SyncFailed : SyncUserMessage
+
+    /** Pull abortado por red/timeout/5xx (o por una causa sin clasificar). */
+    data object PullNetwork : SyncUserMessage
+
+    /** Pull abortado porque el servidor rechazo la peticion (4xx: sesion o permisos). */
+    data object PullRejected : SyncUserMessage
+
+    /** Pull abortado al guardar las filas descargadas en este dispositivo. */
+    data object PullLocal : SyncUserMessage
+
+    /** El pull fue bien pero [pendingRows] filas no se pudieron subir. */
+    data class PushPartial(val pendingRows: Int) : SyncUserMessage
+}
+
+/**
+ * Mensaje para el usuario de un sync manual. Si el pull falla y el push tambien, un unico texto
+ * combinado. Si solo falla el pull, el texto depende de la causa; con varias tablas abortadas por
+ * causas distintas manda la mas grave: LOCAL > REJECTED > NETWORK (sin clasificar cuenta como red).
+ */
+fun SyncResult.toSyncUserMessage(): SyncUserMessage = when (this) {
+    is SyncResult.NotAuthenticated -> SyncUserMessage.NotAuthenticated
+    is SyncResult.Completed -> {
+        val pullAbortedCount = pull.abortedTableCount()
+        val pushFailedCount = push.failedRowCount()
+        when {
+            pullAbortedCount > 0 && pushFailedCount > 0 -> SyncUserMessage.SyncFailed
+            pullAbortedCount > 0 -> {
+                val failures = listOf(pull.decks, pull.topics, pull.flashcards, pull.cardScheduling)
+                    .filter { it.aborted }
+                    .map { it.failure }
+                when {
+                    PullFailure.LOCAL in failures -> SyncUserMessage.PullLocal
+                    PullFailure.REJECTED in failures -> SyncUserMessage.PullRejected
+                    else -> SyncUserMessage.PullNetwork
+                }
+            }
+            pushFailedCount > 0 -> SyncUserMessage.PushPartial(pushFailedCount)
+            else -> SyncUserMessage.Synced
+        }
+    }
+}
 
 class AuthViewModel(
     authRepository: AuthRepository,
@@ -120,26 +170,14 @@ class AuthViewModel(
     fun syncNow() {
         viewModelScope.launch {
             val result = syncCoordinator.syncNow()
-            _messageEvent.emit(result.toUserMessage())
+            _syncMessageEvent.emit(result.toSyncUserMessage())
         }
     }
 
-    private fun SyncResult.toUserMessage(): String = when (this) {
-        is SyncResult.NotAuthenticated -> "Inicia sesión para sincronizar"
-        is SyncResult.Completed -> {
-            val pullAbortedCount = pull.abortedTableCount()
-            val pushFailedCount = push.failedRowCount()
-            when {
-                pullAbortedCount > 0 && pushFailedCount > 0 ->
-                    "No se pudo sincronizar del todo. Se reintentará más tarde"
-                pullAbortedCount > 0 ->
-                    "No se pudieron comprobar los cambios remotos. Se reintentará más tarde"
-                pushFailedCount > 0 ->
-                    "Sincronizado parcialmente: $pushFailedCount cambios pendientes de subir"
-                else -> "Sincronizado"
-            }
-        }
-    }
+    // Resultado del sync manual como TIPO, no como String: el ViewModel no resuelve recursos,
+    // SettingsScreen traduce cada caso a su texto en strings.xml.
+    private val _syncMessageEvent = MutableSharedFlow<SyncUserMessage>()
+    val syncMessageEvent: SharedFlow<SyncUserMessage> = _syncMessageEvent.asSharedFlow()
 
     fun signUp(email: String, password: String) {
         if (_isSubmitting.value) return

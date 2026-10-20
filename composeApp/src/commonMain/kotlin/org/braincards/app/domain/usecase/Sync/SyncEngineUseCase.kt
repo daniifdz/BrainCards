@@ -1,6 +1,7 @@
 package org.braincards.app.domain.usecase.Sync
 
 import io.github.jan.supabase.exceptions.HttpRequestException
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.coroutines.CancellationException
@@ -210,15 +211,33 @@ class SyncEngineUseCase(
         fetch: suspend () -> List<T>,
         apply: suspend (List<T>) -> PullApplyReport
     ): PullTableResult {
+        var inApplyPhase = false
         return try {
             val remoteRows = fetch()
+            inApplyPhase = true
             val report = apply(remoteRows)
             PullTableResult(applied = report.applied, aborted = false, discarded = report.discarded)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            PullTableResult(applied = 0, aborted = true)
+            PullTableResult(applied = 0, aborted = true, failure = classifyPullFailure(inApplyPhase, e))
         }
+    }
+
+    /**
+     * Causa de un pull abortado (para que el mensaje al usuario no diga "sin conexion" cuando el
+     * fallo fue local):
+     * - cualquier excepcion al APLICAR las filas descargadas -> LOCAL;
+     * - al DESCARGAR: timeout, transporte o 5xx -> NETWORK; un 4xx de PostgREST o de Auth (sesion
+     *   o permisos, ambas son RestException) -> REJECTED;
+     * - cualquier otra excepcion al descargar (p. ej. un error de decodificacion) -> null, sin
+     *   clasificar: el mensaje la trata como red, igual que antes de existir esta clasificacion.
+     */
+    private fun classifyPullFailure(inApplyPhase: Boolean, e: Exception): PullFailure? = when {
+        inApplyPhase -> PullFailure.LOCAL
+        e.isNetworkOrServerFailure() -> PullFailure.NETWORK
+        e is RestException && e.statusCode < 500 -> PullFailure.REJECTED
+        else -> null
     }
 
     /**
@@ -257,16 +276,6 @@ class SyncEngineUseCase(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // TODO DEBUG TEMPORAL -- quitar en cuanto se resuelva el problema de push
-                // que se esta investigando ahora mismo. No cambia la logica de reintentos.
-                val detail = if (e is PostgrestRestException) {
-                    "PostgrestRestException statusCode=${e.statusCode} code=${e.code} details=${e.details} hint=${e.hint} message=${e.message}"
-                } else {
-                    "${e::class.simpleName}: ${e.message}"
-                }
-                val rowsLabel = if (rows.size == 1) rowId(rows.single()) else "lote de ${rows.size} filas"
-                println("SyncEngineUseCase.pushTable FALLO fila id=$rowsLabel: $detail")
-                e.printStackTrace()
                 return if (e.isNetworkOrServerFailure()) {
                     consecutiveNetworkFailures++
                     PushAttempt.NETWORK_FAILURE

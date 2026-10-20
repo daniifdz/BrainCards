@@ -41,4 +41,14 @@
     <string name="sign_out_wipe_failed">No se pudieron borrar los datos de este dispositivo. Tu sesión sigue abierta; inténtalo de nuevo.</string>
     <string name="sign_out_session_close_failed">Se borraron los datos de este dispositivo, pero no se pudo cerrar la sesión. Inténtalo de nuevo.</string>
     <string name="sign_out_session_changed">Tu sesión había cambiado, así que no se ha borrado nada.</string>
+    <string name="sync_not_authenticated">Inicia sesión para sincronizar</string>
+    <string name="sync_done">Sincronizado</string>
+    <string name="sync_failed">No se pudo sincronizar del todo. Se reintentará más tarde</string>
+    <string name="sync_pull_network">No se pudieron comprobar los cambios remotos. Se reintentará más tarde</string>
+    <string name="sync_pull_rejected">El servidor ha rechazado la sincronización. Cierra sesión y vuelve a iniciar sesión</string>
+    <string name="sync_pull_local">No se pudieron guardar en este dispositivo los datos descargados. Inténtalo de nuevo; si persiste, avísanos</string>
+    <plurals name="sync_push_partial">
+        <item quantity="one">Sincronizado parcialmente: %1$d cambio pendiente de subir</item>
+        <item quantity="other">Sincronizado parcialmente: %1$d cambios pendientes de subir</item>
+    </plurals>
 </resources>
