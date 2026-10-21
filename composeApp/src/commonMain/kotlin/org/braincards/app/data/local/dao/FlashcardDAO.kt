@@ -62,8 +62,22 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedFlashcards(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DeckDao/TopicDao.
-    @Query("SELECT * FROM flashcards WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
+    // sync (Bloque D) -- mismo criterio que DeckDao/TopicDao, mas el invariante de dueno: solo se
+    // sube una flashcard cuyo deck (y su topic, si tiene) existen localmente (tambien borrados
+    // logicamente) y son del MISMO usuario. El INSERT del servidor solo comprueba
+    // user_id = auth.uid() y la FK salta RLS: sin esto se subirian flashcards colgadas del
+    // deck/topic de otra cuenta, y luego el pull no podria guardarlas. El topic va con LEFT JOIN
+    // porque es opcional. NO se exige lastSyncedAt del padre: el deck nuevo sube antes en el mismo
+    // push (decks -> topics -> flashcards).
+    @Query(
+        "SELECT f.* FROM flashcards f " +
+            "INNER JOIN decks d ON d.id = f.deckId " +
+            "AND d.userId = f.userId " +
+            "LEFT JOIN topics t ON t.id = f.topicId " +
+            "WHERE f.userId = :userId " +
+            "AND (f.topicId IS NULL OR t.userId = f.userId) " +
+            "AND (f.lastSyncedAt IS NULL OR f.updatedAt > f.lastSyncedAt)"
+    )
     suspend fun getPendingSyncFlashcards(userId: String): List<FlashcardEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

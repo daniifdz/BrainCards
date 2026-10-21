@@ -35,8 +35,18 @@ interface TopicDao {
     @Query("UPDATE topics SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedTopics(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DeckDao.
-    @Query("SELECT * FROM topics WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
+    // sync (Bloque D) -- mismo criterio que DeckDao, mas el invariante de dueno: solo se sube un
+    // topic cuyo deck existe localmente (tambien borrado logicamente) y es del MISMO usuario (el
+    // INSERT del servidor solo comprueba user_id = auth.uid(), no de quien es el deck, y la FK
+    // salta RLS: sin esto se subirian topics colgados del deck de otra cuenta). NO se exige
+    // d.lastSyncedAt: el deck nuevo sube antes en el mismo push (decks -> topics -> flashcards).
+    @Query(
+        "SELECT t.* FROM topics t " +
+            "INNER JOIN decks d ON d.id = t.deckId " +
+            "AND d.userId = t.userId " +
+            "WHERE t.userId = :userId " +
+            "AND (t.lastSyncedAt IS NULL OR t.updatedAt > t.lastSyncedAt)"
+    )
     suspend fun getPendingSyncTopics(userId: String): List<TopicEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
