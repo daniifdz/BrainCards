@@ -2,6 +2,8 @@ package org.braincards.app.data.remote.dto
 
 import kotlinx.datetime.Instant
 import kotlinx.datetime.serializers.InstantIso8601Serializer
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,6 +12,7 @@ import kotlinx.serialization.Serializable
  * Mismo patron que DeckDto: snake_case via @SerialName, Instant explicito
  * con InstantIso8601Serializer.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class TopicDto(
     val id: String,
@@ -29,5 +32,10 @@ data class TopicDto(
     @Serializable(with = InstantIso8601Serializer::class)
     val lastSyncedAt: Instant? = null,
     @SerialName("user_id")
-    val userId: String
+    val userId: String,
+    // Marca de agua de SERVIDOR: solo lectura, nunca se envia en el push (ver DeckDto).
+    @SerialName("server_updated_at")
+    @Serializable(with = InstantIso8601Serializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val serverUpdatedAt: Instant? = null
 )

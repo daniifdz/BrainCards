@@ -2,6 +2,8 @@ package org.braincards.app.data.remote.dto
 
 import kotlinx.datetime.Instant
 import kotlinx.datetime.serializers.InstantIso8601Serializer
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -12,6 +14,7 @@ import kotlinx.serialization.Serializable
  * updated_at, last_synced_at. Sin valores por defecto: cada campo se rellena a proposito
  * al construirlo (la leccion del bug de mappers que omitian campos en silencio).
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class CardSchedulingDto(
     @SerialName("card_id")
@@ -31,5 +34,11 @@ data class CardSchedulingDto(
     val updatedAt: Instant,
     @SerialName("last_synced_at")
     @Serializable(with = InstantIso8601Serializer::class)
-    val lastSyncedAt: Instant?
+    val lastSyncedAt: Instant?,
+    // Marca de agua de SERVIDOR: solo lectura, nunca se envia en el push (ver DeckDto). Unico campo
+    // con default de este DTO, a proposito.
+    @SerialName("server_updated_at")
+    @Serializable(with = InstantIso8601Serializer::class)
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val serverUpdatedAt: Instant? = null
 )
