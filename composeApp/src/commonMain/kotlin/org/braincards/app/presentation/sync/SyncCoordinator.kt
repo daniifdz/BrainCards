@@ -3,7 +3,6 @@ package org.braincards.app.presentation.sync
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +19,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.braincards.app.data.local.LAST_SUCCESSFUL_SYNC_KEY
+import org.braincards.app.data.local.SYNC_PREFS_KEYS
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
@@ -34,15 +35,6 @@ import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.isFullySuccessful
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-
-private val LAST_SUCCESSFUL_SYNC_KEY = stringPreferencesKey("last_successful_sync_at")
-
-/**
- * TODAS las claves del DataStore que son estado de sync (no preferencias del dispositivo como
- * app_theme). resetSyncState() borra exactamente estas, una a una. Una marca de agua futura
- * (p. ej. un watermark de pull por tabla) se anade aqui y nada mas.
- */
-private val SYNC_PREFS_KEYS: List<Preferences.Key<*>> = listOf(LAST_SUCCESSFUL_SYNC_KEY)
 
 /**
  * Tiempo maximo del sync previo al cierre de sesion. Si se agota (o falla), se sigue con el

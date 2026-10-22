@@ -337,4 +337,61 @@ class SyncCoordinatorSignOutTest {
         assertNull(prefs[lastSyncKey])
         assertEquals("LIGHT", prefs[themeKey])
     }
+
+    // --- marca de agua del pull incremental: se borra con el resto del estado de sync ---------------------------
+
+    // Nombre real de la clave en disco (literal a proposito: si alguien la renombra, el test debe saberlo).
+    private val watermarkKey = stringPreferencesKey("pull_watermark")
+    private val watermarkJson = """{"v":1,"userId":"user-1","cursors":{"decks":{"ts":"2026-10-22T10:00:00Z","id":"d"}}}"""
+
+    private fun watermarkPrefs() = preferencesOf(
+        themeKey to "DARK",
+        lastSyncKey to "2026-01-01T00:00:00Z",
+        watermarkKey to watermarkJson
+    )
+
+    @Test
+    fun resetSyncState_borra_la_marca_de_agua_y_el_ultimo_sync_pero_conserva_app_theme() = runTest {
+        val env = env(confirmed = false, prefs = watermarkPrefs())
+
+        env.coordinator.resetSyncState()
+
+        val prefs = env.dataStore.data.first()
+        assertNull(prefs[watermarkKey], "la marca de agua se borra")
+        assertNull(prefs[lastSyncKey], "las demas claves de sync siguen borrandose")
+        assertEquals("DARK", prefs[themeKey], "app_theme se conserva (no se usa clear())")
+    }
+
+    @Test
+    fun cerrar_sesion_borra_la_marca_de_agua_y_conserva_app_theme() = runTest {
+        val env = env(confirmed = false, prefs = watermarkPrefs())
+
+        val result = env.coordinator.finishSignOut(userId, confirmedCount = 0)
+
+        assertEquals(FinishSignOutResult.Finished(SignOutAndWipeResult.SignedOut), result)
+        val prefs = env.dataStore.data.first()
+        assertNull(prefs[watermarkKey])
+        assertEquals("DARK", prefs[themeKey])
+    }
+
+    @Test
+    fun si_falla_el_borrado_de_la_bd_la_marca_de_agua_se_conserva() = runTest {
+        val env = env(confirmed = false, prefs = watermarkPrefs())
+        env.local.wipeFailure = IllegalStateException("disco lleno")
+
+        env.coordinator.finishSignOut(userId, confirmedCount = 0)
+
+        assertEquals(watermarkJson, env.dataStore.data.first()[watermarkKey], "nada se borro: la marca sigue valiendo")
+    }
+
+    @Test
+    fun si_la_bd_se_vacio_pero_no_se_pudo_cerrar_la_sesion_la_marca_de_agua_tambien_se_borra() = runTest {
+        val env = env(confirmed = false, prefs = watermarkPrefs())
+        env.auth.signOutFailure = RuntimeException("sin red")
+        env.auth.clearLocalSessionFailure = IllegalStateException("no se pudo")
+
+        env.coordinator.finishSignOut(userId, confirmedCount = 0)
+
+        assertNull(env.dataStore.data.first()[watermarkKey], "la BD esta vacia: una marca vieja dejaria la BD sin repoblar")
+    }
 }

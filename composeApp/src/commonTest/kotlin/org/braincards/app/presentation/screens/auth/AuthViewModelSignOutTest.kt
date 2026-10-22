@@ -366,4 +366,35 @@ class AuthViewModelSignOutTest {
         assertNotNull(env.coordinator.lastSuccessfulSyncAt.value)
         assertEquals("2026-01-01T00:00:00Z", env.dataStore.data.first()[lastSyncKey])
     }
+
+    // --- marca de agua del pull incremental ---------------------------------------------------------------------
+
+    private val watermarkKey = stringPreferencesKey("pull_watermark")
+
+    @Test
+    fun al_borrar_la_cuenta_se_borra_la_marca_de_agua_y_se_conserva_el_tema() = runTest(testDispatcher) {
+        val env = env(preferencesOf(themeKey to "DARK", watermarkKey to """{"v":1,"userId":"user-1","cursors":{}}"""))
+        runCurrent()
+
+        env.vm.deleteAccount()
+        advanceUntilIdle()
+
+        assertTrue(env.auth.deleteAccountCalled)
+        val prefs = env.dataStore.data.first()
+        assertNull(prefs[watermarkKey])
+        assertEquals("DARK", prefs[themeKey])
+    }
+
+    @Test
+    fun si_falla_el_borrado_de_cuenta_remoto_la_marca_de_agua_se_conserva() = runTest(testDispatcher) {
+        val json = """{"v":1,"userId":"user-1","cursors":{}}"""
+        val env = env(preferencesOf(watermarkKey to json))
+        runCurrent()
+        env.auth.deleteAccountFailure = RuntimeException("sin red")
+
+        env.vm.deleteAccount()
+        advanceUntilIdle()
+
+        assertEquals(json, env.dataStore.data.first()[watermarkKey])
+    }
 }
