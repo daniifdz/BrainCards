@@ -26,7 +26,7 @@ import kotlin.test.assertIs
 
 /**
  * Los metodos nuevos de RemoteDataSource son ADITIVOS: la implementacion por defecto delega en el
- * pull completo con cursores nulos, y el motor de sync sigue usando solo el pull completo.
+ * pull completo con cursores nulos. El motor (4b) los usa y, con esa implementacion, hace el pull de siempre.
  */
 class RemoteDataSourceDefaultsTest {
 
@@ -51,31 +51,42 @@ class RemoteDataSourceDefaultsTest {
         assertEquals(remote.cardSchedulingToPull.map { RemoteRow(it, null) }, remote.pullCardSchedulingSince(user, null))
     }
 
-    /** Falla si alguien llama a un metodo *Since: el motor de este paso NO debe usarlos. */
-    private class NoSinceAllowed(private val delegate: RemoteDataSource) : RemoteDataSource by delegate {
-        override suspend fun pullDecksSince(userId: String, watermark: PullCursor?): List<RemoteRow<Deck>> =
-            throw AssertionError("el motor no debe usar pullDecksSince en este paso")
+    /** Anota el cursor con el que el motor llama a cada metodo *Since (y delega en el por defecto). */
+    private class SinceRecorder(private val delegate: RemoteDataSource) : RemoteDataSource by delegate {
+        val watermarks = mutableListOf<PullCursor?>()
 
-        override suspend fun pullTopicsSince(userId: String, watermark: PullCursor?): List<RemoteRow<Topic>> =
-            throw AssertionError("el motor no debe usar pullTopicsSince en este paso")
+        override suspend fun pullDecksSince(userId: String, watermark: PullCursor?): List<RemoteRow<Deck>> {
+            watermarks.add(watermark)
+            return delegate.pullDecksSince(userId, watermark)
+        }
 
-        override suspend fun pullFlashcardsSince(userId: String, watermark: PullCursor?): List<RemoteRow<Flashcard>> =
-            throw AssertionError("el motor no debe usar pullFlashcardsSince en este paso")
+        override suspend fun pullTopicsSince(userId: String, watermark: PullCursor?): List<RemoteRow<Topic>> {
+            watermarks.add(watermark)
+            return delegate.pullTopicsSince(userId, watermark)
+        }
 
-        override suspend fun pullCardSchedulingSince(userId: String, watermark: PullCursor?): List<RemoteRow<CardScheduling>> =
-            throw AssertionError("el motor no debe usar pullCardSchedulingSince en este paso")
+        override suspend fun pullFlashcardsSince(userId: String, watermark: PullCursor?): List<RemoteRow<Flashcard>> {
+            watermarks.add(watermark)
+            return delegate.pullFlashcardsSince(userId, watermark)
+        }
+
+        override suspend fun pullCardSchedulingSince(userId: String, watermark: PullCursor?): List<RemoteRow<CardScheduling>> {
+            watermarks.add(watermark)
+            return delegate.pullCardSchedulingSince(userId, watermark)
+        }
     }
 
     @Test
-    fun `el motor de sync sigue haciendo pull completo y no usa los metodos Since`() = runBlocking {
+    fun `con un remoto sin cursores el motor sigue haciendo el pull completo de siempre`() = runBlocking {
         val auth = FakeAuthRepository(AuthState.Authenticated(user, "a@b.c", sessionConfirmed = true))
         val remote = FakeRemoteDataSource()
+        val recorder = SinceRecorder(remote)
         val decks = FakeDecksRepository()
         val topics = FakeTopicsRepository()
         val flashcards = FakeFlashcardRepository()
         val scheduling = FakeCardSchedulingRepository()
         val engine = SyncEngineUseCase(
-            auth, NoSinceAllowed(remote), decks, topics, flashcards, scheduling,
+            auth, recorder, decks, topics, flashcards, scheduling,
             BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
         )
 
@@ -86,5 +97,6 @@ class RemoteDataSourceDefaultsTest {
             listOf("pullDecks", "pullTopics", "pullFlashcards", "pullCardScheduling"),
             remote.calls.filter { it.startsWith("pull") }
         )
+        assertEquals(listOf<PullCursor?>(null, null, null, null), recorder.watermarks)
     }
 }

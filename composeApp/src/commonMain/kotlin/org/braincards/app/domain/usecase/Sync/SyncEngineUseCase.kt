@@ -9,14 +9,28 @@ import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.MissingServerUpdatedAtException
 import org.braincards.app.domain.models.PullApplyReport
+import org.braincards.app.domain.models.PullCursor
+import org.braincards.app.domain.models.PullWatermarks
+import org.braincards.app.domain.models.RemoteRow
+import org.braincards.app.domain.models.SyncTable
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
+import org.braincards.app.domain.repository.LocalTableInspector
+import org.braincards.app.domain.repository.NeverEmptyLocalTableInspector
+import org.braincards.app.domain.repository.NoOpPullWatermarkStore
+import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+
+/** Cada cuanto se fuerza un pull COMPLETO de las cuatro tablas aunque haya cursores guardados. */
+val FULL_PULL_INTERVAL: Duration = 7.days
 
 sealed interface SyncResult {
     data object NotAuthenticated : SyncResult
@@ -53,6 +67,10 @@ fun PullResult.abortedTableCount(): Int =
 fun PullResult.discardedRowCount(): Int =
     listOf(decks, topics, flashcards, cardScheduling).sumOf { it.discarded }
 
+/** Filas (de las cuatro tablas) descargadas del servidor y aplicadas sin abortar la tabla. */
+fun PullResult.downloadedRowCount(): Int =
+    listOf(decks, topics, flashcards, cardScheduling).sumOf { it.downloaded }
+
 /** Filas (de las cuatro tablas) que quedaron pendientes de subir. */
 fun PushResult.failedRowCount(): Int =
     decks.failed + topics.failed + flashcards.failed + cardScheduling.failed
@@ -77,12 +95,19 @@ enum class PullFailure {
  * filas descargadas que se DESCARTARON sin abortar la tabla porque su padre (deck/topic) no
  * existe en la BD local; un pull con descartes sigue contando como correcto. Ambos con valor
  * por defecto para no tocar a quien construye PullTableResult(applied, aborted).
+ *
+ * [downloaded] son las filas que bajo el servidor en esta tabla (0 si se aborto); [fullPull] es true si
+ * la tabla se bajo ENTERA (sin cursor) y sin abortar; [fellBackToFullPull] es true si el servidor no
+ * tiene server_updated_at y se hizo el pull completo clasico (no se avanza ninguna marca).
  */
 data class PullTableResult(
     val applied: Int,
     val aborted: Boolean,
     val failure: PullFailure? = null,
-    val discarded: Int = 0
+    val discarded: Int = 0,
+    val downloaded: Int = 0,
+    val fullPull: Boolean = false,
+    val fellBackToFullPull: Boolean = false
 )
 
 /**
@@ -113,10 +138,15 @@ class SyncEngineUseCase(
     private val topicsRepository: TopicsRepository,
     private val flashcardRepository: FlashcardRepository,
     private val cardSchedulingRepository: CardSchedulingRepository,
-    private val backfillLocalDataUseCase: BackfillLocalDataUseCase
+    private val backfillLocalDataUseCase: BackfillLocalDataUseCase,
+    // Los tres con valor por defecto = comportamiento de siempre (pull completo en cada sync).
+    private val watermarkStore: PullWatermarkStore = NoOpPullWatermarkStore,
+    private val localTables: LocalTableInspector = NeverEmptyLocalTableInspector,
+    private val clock: Clock = Clock.System
 ) {
 
-    suspend operator fun invoke(): SyncResult {
+    /** [forceFullPull] = ignorar las marcas guardadas y bajar las cuatro tablas enteras. */
+    suspend operator fun invoke(forceFullPull: Boolean = false): SyncResult {
         val userId = currentUserId() ?: return SyncResult.NotAuthenticated
         // Unico sitio que llama al backfill (AuthViewModel ya no lo hace): cualquier
         // deck/topic/flashcard/scheduling creado con sesion ya activa nace con
@@ -125,7 +155,7 @@ class SyncEngineUseCase(
         // ve porque su userId sigue siendo null. Idempotente (WHERE userId IS NULL),
         // asi que no hace dano llamarlo en cada sync.
         backfillLocalDataUseCase(userId)
-        val pullResult = pull(userId)
+        val pullResult = pull(userId, forceFullPull)
         // Se sigue con push aunque el pull haya fallado (parcial o totalmente):
         // push no depende de que el pull haya tenido exito, y asi el usuario al
         // menos sube lo que tiene aunque no se haya podido comprobar lo remoto.
@@ -143,25 +173,103 @@ class SyncEngineUseCase(
     // localmente si su deck (FK real en Room) todavia no existe, ni un scheduling sin su
     // flashcard (el repositorio descarta esas filas sin error). Cada tabla es
     // independiente: si una se aborta, las siguientes se intentan igualmente.
-    private suspend fun pull(userId: String): PullResult {
-        val decksResult = pullTable(
-            fetch = { remoteDataSource.pullDecks(userId, PULL_SINCE_EPOCH) },
+    //
+    // Pull incremental: la marca (cursor por tabla + fecha del ultimo pull completo) se carga UNA
+    // vez. Se baja TODO si se fuerza, si no hay fecha del ultimo completo, si pasaron
+    // FULL_PULL_INTERVAL o si esa fecha esta en el futuro (reloj raro). Por tabla, el cursor
+    // guardado se usa tal cual salvo pull completo o tabla local vacia.
+    private suspend fun pull(userId: String, forceFullPull: Boolean): PullResult {
+        val startedAt = clock.now()
+        val marks = loadWatermarks(userId)
+        val fullAll = forceFullPull || needsFullPull(marks, startedAt)
+
+        fun cursorFor(table: SyncTable): PullCursor? =
+            if (fullAll) null else marks?.cursors?.get(table)
+
+        val decks = pullTable(
+            userId, SyncTable.DECKS, cursorFor(SyncTable.DECKS),
+            fetchSince = { remoteDataSource.pullDecksSince(userId, it) },
+            fetchClassic = { remoteDataSource.pullDecks(userId, PULL_SINCE_EPOCH) },
+            rowId = { it.id },
             apply = { PullApplyReport(decksRepository.applyRemotePull(it)) }
         )
-        val topicsResult = pullTable(
-            fetch = { remoteDataSource.pullTopics(userId, PULL_SINCE_EPOCH) },
+        val topics = pullTable(
+            userId, SyncTable.TOPICS, cursorFor(SyncTable.TOPICS),
+            fetchSince = { remoteDataSource.pullTopicsSince(userId, it) },
+            fetchClassic = { remoteDataSource.pullTopics(userId, PULL_SINCE_EPOCH) },
+            rowId = { it.id },
             apply = { topicsRepository.applyRemotePullReporting(it) }
         )
-        val flashcardsResult = pullTable(
-            fetch = { remoteDataSource.pullFlashcards(userId, PULL_SINCE_EPOCH) },
+        val flashcards = pullTable(
+            userId, SyncTable.FLASHCARDS, cursorFor(SyncTable.FLASHCARDS),
+            fetchSince = { remoteDataSource.pullFlashcardsSince(userId, it) },
+            fetchClassic = { remoteDataSource.pullFlashcards(userId, PULL_SINCE_EPOCH) },
+            rowId = { it.id },
             apply = { flashcardRepository.applyRemotePullReporting(it) }
         )
-        val cardSchedulingResult = pullTable(
-            fetch = { remoteDataSource.pullCardScheduling(userId, PULL_SINCE_EPOCH) },
-            apply = { PullApplyReport(cardSchedulingRepository.applyRemotePull(it)) }
+        val cardScheduling = pullTable(
+            userId, SyncTable.CARD_SCHEDULING, cursorFor(SyncTable.CARD_SCHEDULING),
+            fetchSince = { remoteDataSource.pullCardSchedulingSince(userId, it) },
+            fetchClassic = { remoteDataSource.pullCardScheduling(userId, PULL_SINCE_EPOCH) },
+            rowId = { it.cardId },
+            apply = { cardSchedulingRepository.applyRemotePullReporting(it) }
         )
-        return PullResult(decksResult, topicsResult, flashcardsResult, cardSchedulingResult)
+        val outcomes = listOf(decks, topics, flashcards, cardScheduling)
+
+        // La fecha del ultimo pull completo solo se guarda si LAS CUATRO tablas se bajaron enteras y
+        // bien. Lo bloquean los fallos (fetch, apply, fallback sin columna o filas sin cursor); los
+        // descartes no (la fila reaparece sola porque el cursor no pasa de ella).
+        if (outcomes.all { it.result.fullPull && !it.result.fellBackToFullPull && !it.cursorless }) {
+            saveFullPullAt(userId, startedAt)
+        }
+        return PullResult(decks.result, topics.result, flashcards.result, cardScheduling.result)
     }
+
+    private fun needsFullPull(marks: PullWatermarks?, now: Instant): Boolean {
+        val lastFull = marks?.lastFullPullAt ?: return true
+        return lastFull > now || now - lastFull >= FULL_PULL_INTERVAL
+    }
+
+    // El almacen no debe romper nunca el sync: cualquier fallo = "sin marca" = pull completo.
+    private suspend fun loadWatermarks(userId: String): PullWatermarks? = try {
+        watermarkStore.load(userId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
+    }
+
+    private suspend fun saveCursor(userId: String, table: SyncTable, cursor: PullCursor) {
+        try {
+            watermarkStore.saveCursor(userId, table, cursor)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // sin marca en la siguiente lectura = pull completo de esa tabla
+        }
+    }
+
+    private suspend fun saveFullPullAt(userId: String, at: Instant) {
+        try {
+            watermarkStore.saveFullPullAt(userId, at)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // idem: sin fecha = pull completo en el siguiente sync
+        }
+    }
+
+    // Si no se puede saber si la tabla local esta vacia, se baja entera (lo seguro).
+    private suspend fun isLocalTableEmpty(table: SyncTable): Boolean = try {
+        localTables.isEmpty(table)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        true
+    }
+
+    /** Resultado de una tabla + si sus filas llegaron sin cursor (RemoteDataSource antiguo/fake). */
+    private class TableOutcome(val result: PullTableResult, val cursorless: Boolean)
 
     private suspend fun push(userId: String): PushResult {
         // `now` se captura ANTES de cualquier getPendingSync: markPushed fija
@@ -206,22 +314,76 @@ class SyncEngineUseCase(
      * transaccion (confirmado en el codigo generado por KSP, DBUtil.performSuspending
      * con inTransaction = true) -- si falla a mitad, esa tabla se aborta entera y no
      * se sigue con la siguiente tabla de pull.
+     *
+     * [storedCursor] es el cursor guardado de la tabla (null = pull completo). Con cursor pero tabla
+     * local vacia (BD borrada o restaurada) esa tabla va completa. El cursor nuevo se guarda SOLO si
+     * la tabla se bajo y aplico entera, y es siempre el de una fila que DEVOLVIO el servidor:
+     * la ultima si no hubo descartes, o la inmediatamente anterior a la primera descartada (en el
+     * orden del servidor) si los hubo.
      */
     private suspend fun <T> pullTable(
-        fetch: suspend () -> List<T>,
+        userId: String,
+        table: SyncTable,
+        storedCursor: PullCursor?,
+        fetchSince: suspend (PullCursor?) -> List<RemoteRow<T>>,
+        fetchClassic: suspend () -> List<T>,
+        rowId: (T) -> String,
         apply: suspend (List<T>) -> PullApplyReport
-    ): PullTableResult {
+    ): TableOutcome {
+        val cursor = if (storedCursor != null && isLocalTableEmpty(table)) null else storedCursor
+        var fellBack = false
         var inApplyPhase = false
         return try {
-            val remoteRows = fetch()
+            val remoteRows = try {
+                fetchSince(cursor)
+            } catch (e: MissingServerUpdatedAtException) {
+                // Falta server_updated_at en el servidor: pull completo clasico, sin cursores. No es
+                // un fallo de red ni avanza ninguna marca.
+                fellBack = true
+                fetchClassic().map { RemoteRow(it, null) }
+            }
             inApplyPhase = true
-            val report = apply(remoteRows)
-            PullTableResult(applied = report.applied, aborted = false, discarded = report.discarded)
+            val report = apply(remoteRows.map { it.row })
+            val newCursor = if (fellBack) null else nextCursor(remoteRows, report, rowId)
+            if (newCursor != null) saveCursor(userId, table, newCursor)
+            TableOutcome(
+                PullTableResult(
+                    applied = report.applied,
+                    aborted = false,
+                    discarded = report.discarded,
+                    downloaded = remoteRows.size,
+                    fullPull = cursor == null,
+                    fellBackToFullPull = fellBack
+                ),
+                cursorless = remoteRows.isNotEmpty() && !fellBack && remoteRows.last().cursor == null
+            )
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            PullTableResult(applied = 0, aborted = true, failure = classifyPullFailure(inApplyPhase, e))
+            TableOutcome(
+                PullTableResult(applied = 0, aborted = true, failure = classifyPullFailure(inApplyPhase, e)),
+                cursorless = false
+            )
         }
+    }
+
+    /**
+     * Cursor a guardar tras un pull correcto, o null si no hay que cambiar nada (sin filas, o la
+     * primera fila ya es una descartada, o el servidor no dio cursor). Nunca se calcula un maximo en
+     * el cliente: es el cursor que el servidor dio a una de las filas.
+     */
+    private fun <T> nextCursor(
+        rows: List<RemoteRow<T>>,
+        report: PullApplyReport,
+        rowId: (T) -> String
+    ): PullCursor? {
+        if (rows.isEmpty()) return null
+        if (report.discardedIds.isEmpty()) return rows.last().cursor
+        val discarded = report.discardedIds.toSet()
+        val firstDiscarded = rows.indexOfFirst { rowId(it.row) in discarded }
+        if (firstDiscarded < 0) return rows.last().cursor
+        if (firstDiscarded == 0) return null
+        return rows[firstDiscarded - 1].cursor
     }
 
     /**

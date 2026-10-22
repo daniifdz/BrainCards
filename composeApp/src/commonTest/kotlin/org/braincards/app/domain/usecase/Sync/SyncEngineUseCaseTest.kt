@@ -104,6 +104,11 @@ private class OrderTrackingCardSchedulingRepository(
         callLog.add("pull:scheduling")
         return delegate.applyRemotePull(schedulings)
     }
+    // El motor aplica el pull de scheduling con applyRemotePullReporting (guarda de padres).
+    override suspend fun applyRemotePullReporting(schedulings: List<CardScheduling>): PullApplyReport {
+        callLog.add("pull:scheduling")
+        return delegate.applyRemotePullReporting(schedulings)
+    }
     override suspend fun getPendingSync(userId: String): List<CardScheduling> {
         callLog.add("push:scheduling")
         return delegate.getPendingSync(userId)

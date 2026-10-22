@@ -135,7 +135,9 @@ class PullOrphanGuardRoomTest {
         // Las 9 huerfanas descartadas y contadas; las 3 validas aplicadas.
         assertEquals(3, completed.pull.flashcards.applied)
         assertEquals(9, completed.pull.flashcards.discarded)
-        assertEquals(9, completed.pull.discardedRowCount())
+        // Las 6 de scheduling sin flashcard local tambien se descartan (el motor ya las cuenta).
+        assertEquals(6, completed.pull.cardScheduling.discarded)
+        assertEquals(15, completed.pull.discardedRowCount())
         assertEquals(0, completed.pull.topics.discarded)
         // Estado local: los 2 decks, las 3 flashcards validas y SOLO el scheduling de esas 3.
         assertEquals(2L, count("decks"))

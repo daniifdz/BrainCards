@@ -74,7 +74,10 @@ class SyncEngineCardSchedulingTest {
 
         val result = f.sync()
 
-        assertEquals(PullTableResult(applied = 2, aborted = false), result.pull.cardScheduling)
+        assertEquals(
+            PullTableResult(applied = 2, aborted = false, downloaded = 2, fullPull = true),
+            result.pull.cardScheduling
+        )
         assertEquals(1, f.scheduling.applyRemotePullCalls.size)
         assertEquals(listOf("c1", "c2"), f.scheduling.applyRemotePullCalls.single().map { it.cardId })
     }
