@@ -74,4 +74,6 @@ class FakeCardSchedulingDao : CardSchedulingDao {
     }
 
     override suspend fun countUnownedScheduling(): Int = schedulings.values.count { it.userId == null }
+
+    override suspend fun hasAnyScheduling(): Boolean = schedulings.isNotEmpty()
 }

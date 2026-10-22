@@ -65,4 +65,9 @@ interface DeckDao {
 
     @Query("SELECT COUNT(*) FROM decks WHERE userId IS NULL")
     suspend fun countUnownedDecks(): Int
+
+    // Pull incremental: ¿la tabla tiene alguna fila? Cuenta TODAS, tombstones incluidos (sin filtro
+    // deletedAt a proposito): una tabla con solo borrados logicos no esta vacia.
+    @Query("SELECT EXISTS(SELECT 1 FROM decks)")
+    suspend fun hasAnyDeck(): Boolean
 }

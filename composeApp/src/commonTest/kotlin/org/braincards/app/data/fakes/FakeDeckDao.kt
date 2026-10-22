@@ -68,4 +68,6 @@ class FakeDeckDao : DeckDao {
     }
 
     override suspend fun countUnownedDecks(): Int = decks.values.count { it.userId == null }
+
+    override suspend fun hasAnyDeck(): Boolean = decks.isNotEmpty()
 }

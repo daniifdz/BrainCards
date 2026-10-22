@@ -64,4 +64,8 @@ interface CardSchedulingDao {
 
     @Query("SELECT COUNT(*) FROM card_scheduling WHERE userId IS NULL")
     suspend fun countUnownedScheduling(): Int
+
+    // Pull incremental: ver DeckDao.hasAnyDeck.
+    @Query("SELECT EXISTS(SELECT 1 FROM card_scheduling)")
+    suspend fun hasAnyScheduling(): Boolean
 }

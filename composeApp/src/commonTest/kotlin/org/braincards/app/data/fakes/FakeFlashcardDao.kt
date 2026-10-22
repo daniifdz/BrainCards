@@ -94,4 +94,6 @@ class FakeFlashcardDao : FlashcardDao {
     }
 
     override suspend fun countUnownedFlashcards(): Int = flashcards.values.count { it.userId == null }
+
+    override suspend fun hasAnyFlashcard(): Boolean = flashcards.isNotEmpty()
 }

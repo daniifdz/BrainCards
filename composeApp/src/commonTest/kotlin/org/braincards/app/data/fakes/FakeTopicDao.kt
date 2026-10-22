@@ -77,4 +77,6 @@ class FakeTopicDao : TopicDao {
     }
 
     override suspend fun countUnownedTopics(): Int = topics.values.count { it.userId == null }
+
+    override suspend fun hasAnyTopic(): Boolean = topics.isNotEmpty()
 }

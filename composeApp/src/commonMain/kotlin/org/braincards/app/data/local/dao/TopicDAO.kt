@@ -66,6 +66,10 @@ interface TopicDao {
     @Query("SELECT COUNT(*) FROM topics WHERE userId IS NULL")
     suspend fun countUnownedTopics(): Int
 
+    // Pull incremental: ver DeckDao.hasAnyDeck (tombstones incluidos).
+    @Query("SELECT EXISTS(SELECT 1 FROM topics)")
+    suspend fun hasAnyTopic(): Boolean
+
     // Guarda del pull: ids de decks que existen localmente (tambien los borrados logicamente).
     // Un topic cuyo deck no esta aqui no se puede insertar (foreign_keys = ON).
     @Query("SELECT id FROM decks WHERE id IN (:ids)")

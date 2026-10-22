@@ -81,7 +81,7 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
             val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
             topicDao.insertAllTopics(entities)
         }
-        return PullApplyReport(applied = toApply.size, discarded = orphans.size)
+        return PullApplyReport(applied = toApply.size, discarded = orphans.size, discardedIds = orphans.map { it.id })
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

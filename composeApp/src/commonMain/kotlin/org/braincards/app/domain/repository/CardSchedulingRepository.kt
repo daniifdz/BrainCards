@@ -3,6 +3,7 @@ package org.braincards.app.domain.repository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.CardScheduling
+import org.braincards.app.domain.models.PullApplyReport
 
 interface CardSchedulingRepository {
     suspend fun getByCardId(cardId: String): CardScheduling?
@@ -26,6 +27,14 @@ interface CardSchedulingRepository {
      * transaccion. Descarta las filas cuya flashcard no existe localmente. Devuelve cuantas aplico.
      */
     suspend fun applyRemotePull(schedulings: List<CardScheduling>): Int
+
+    /**
+     * Igual que [applyRemotePull], pero informa tambien de las filas DESCARTADAS por no tener su
+     * flashcard en la BD local (con sus ids = cardId). Por defecto delega en [applyRemotePull] sin
+     * descartes: solo las implementaciones con guarda de padres lo sobrescriben.
+     */
+    suspend fun applyRemotePullReporting(schedulings: List<CardScheduling>): PullApplyReport =
+        PullApplyReport(applied = applyRemotePull(schedulings))
 
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 

@@ -154,7 +154,7 @@ class PullOrphanGuardRoomTest {
             listOf(topic("t-ok", "deck-1"), topic("t-huerfano", "deck-ajeno"))
         )
 
-        assertEquals(PullApplyReport(applied = 1, discarded = 1), report)
+        assertEquals(PullApplyReport(applied = 1, discarded = 1, discardedIds = listOf("t-huerfano")), report)
         assertEquals(1L, count("topics"))
         assertNotNull(db.topicDao().getTopicById("t-ok"))
         Unit
@@ -177,7 +177,7 @@ class PullOrphanGuardRoomTest {
 
         val report = flashcards.applyRemotePullReporting(listOf(card("f1", "deck-1", topicId = "topic-ajeno")))
 
-        assertEquals(PullApplyReport(applied = 0, discarded = 1), report)
+        assertEquals(PullApplyReport(applied = 0, discarded = 1, discardedIds = listOf("f1")), report)
         assertEquals(0L, count("flashcards"))
     }
 
@@ -212,7 +212,30 @@ class PullOrphanGuardRoomTest {
 
         val report = flashcards.applyRemotePullReporting(listOf(card("f1", "deck-ajeno", "topic-1")))
 
-        assertEquals(PullApplyReport(applied = 0, discarded = 1), report)
+        assertEquals(PullApplyReport(applied = 0, discarded = 1, discardedIds = listOf("f1")), report)
+    }
+
+    // --- ids descartados (los necesita el pull incremental para retener la marca de agua) ---
+
+    @Test
+    fun los_ids_descartados_salen_en_el_orden_en_que_llegan_del_servidor() = runBlocking {
+        seedLocalDeck("deck-1")
+        seedLocalTopic("topic-1", "deck-1")
+
+        val topicReport = topics.applyRemotePullReporting(
+            listOf(topic("t-z", "deck-ajeno"), topic("t-ok", "deck-1"), topic("t-a", "deck-ajeno"))
+        )
+        val cardReport = flashcards.applyRemotePullReporting(
+            listOf(
+                card("f-z", "deck-ajeno"), card("f-ok", "deck-1", "topic-1"),
+                card("f-a", "deck-1", topicId = "topic-ajeno"), card("f-m", "deck-ajeno")
+            )
+        )
+
+        assertEquals(listOf("t-z", "t-a"), topicReport.discardedIds)
+        assertEquals(listOf("f-z", "f-a", "f-m"), cardReport.discardedIds)
+        assertEquals(2, topicReport.discarded)
+        assertEquals(3, cardReport.discarded)
     }
 
     // --- compatibilidad y regresion ---

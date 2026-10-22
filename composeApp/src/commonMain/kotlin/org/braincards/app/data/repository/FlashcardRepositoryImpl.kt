@@ -89,7 +89,7 @@ class FlashcardRepositoryImpl(
             val entities = toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
             flashcardDao.insertAllFlashcards(entities)
         }
-        return PullApplyReport(applied = toApply.size, discarded = orphans.size)
+        return PullApplyReport(applied = toApply.size, discarded = orphans.size, discardedIds = orphans.map { it.id })
     }
 
     override suspend fun markPushed(ids: List<String>, syncedAt: Instant) {

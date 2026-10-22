@@ -9,6 +9,7 @@ import org.braincards.app.data.local.entity.CardSchedulingEntity
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
 import org.braincards.app.domain.models.CardScheduling
+import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.repository.CardSchedulingRepository
 
 class CardSchedulingRepositoryImpl(
@@ -44,24 +45,30 @@ class CardSchedulingRepositoryImpl(
     //  - todo (lectura local, decision LWW, escritura) va en UNA transaccion de escritura, para
     //    que un repaso concurrente (ReviewFlashcardUseCase.upsert) no quede pisado por un dato
     //    remoto mas viejo entre la lectura y la escritura.
-    override suspend fun applyRemotePull(schedulings: List<CardScheduling>): Int {
-        if (schedulings.isEmpty()) return 0
+    override suspend fun applyRemotePull(schedulings: List<CardScheduling>): Int =
+        applyRemotePullReporting(schedulings).applied
+
+    // Una fila DESCARTADA es la que no tiene su flashcard en la BD local (se informa, con su cardId).
+    // Una fila que pierde el LWW (la local es mas nueva) NO es un descarte: no se aplica pero tampoco
+    // hay nada pendiente de reintentar, asi que no se informa.
+    override suspend fun applyRemotePullReporting(schedulings: List<CardScheduling>): PullApplyReport {
+        if (schedulings.isEmpty()) return PullApplyReport(applied = 0)
         return transactionRunner.inTransaction {
             val existingFlashcardIds = schedulings.map { it.cardId }
                 .chunked(EXISTING_IDS_CHUNK)
                 .flatMap { cardSchedulingDao.getExistingFlashcardIds(it) }
                 .toSet()
+            val (withFlashcard, orphans) = schedulings.partition { it.cardId in existingFlashcardIds }
 
-            val toApply = schedulings.filter { remote ->
-                remote.cardId in existingFlashcardIds &&
-                    remoteWins(remote, cardSchedulingDao.getByCardId(remote.cardId))
+            val toApply = withFlashcard.filter { remote ->
+                remoteWins(remote, cardSchedulingDao.getByCardId(remote.cardId))
             }
-            if (toApply.isEmpty()) return@inTransaction 0
-
-            cardSchedulingDao.insertAllScheduling(
-                toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
-            )
-            toApply.size
+            if (toApply.isNotEmpty()) {
+                cardSchedulingDao.insertAllScheduling(
+                    toApply.map { it.copy(lastSyncedAt = it.updatedAt).toEntity() }
+                )
+            }
+            PullApplyReport(applied = toApply.size, discarded = orphans.size, discardedIds = orphans.map { it.cardId })
         }
     }
 
