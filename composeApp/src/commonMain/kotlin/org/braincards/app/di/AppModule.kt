@@ -11,6 +11,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.config.SUPABASE_ANON_KEY
 import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.DataStorePullWatermarkStore
 import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.local.migration.MIGRATION_4_5
 import org.braincards.app.data.local.migration.MIGRATION_5_6
@@ -29,6 +30,8 @@ import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
+import org.braincards.app.domain.repository.LocalTableInspector
+import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
@@ -129,7 +132,9 @@ fun appModule(
             topicsRepository = get(),
             flashcardRepository = get(),
             cardSchedulingRepository = get(),
-            backfillLocalDataUseCase = get()
+            backfillLocalDataUseCase = get(),
+            watermarkStore = get(),
+            localTables = get()
         )
     }
     factory {
@@ -207,6 +212,10 @@ fun appModule(
             transactionRunner = get()
         )
     }
+    // Mismo objeto que LocalDataRepository (LocalDataRepositoryImpl implementa las dos interfaces).
+    single<LocalTableInspector> { get<LocalDataRepository>() as LocalTableInspector }
+    // Marca de agua del pull incremental sobre el DataStore compartido (clave propia, ver SyncPreferenceKeys).
+    single<PullWatermarkStore> { DataStorePullWatermarkStore(dataStore = get()) }
     factory { SignOutAndWipeUseCase(authRepository = get(), localDataRepository = get()) }
 
 

@@ -43,6 +43,12 @@
     <string name="sign_out_session_changed">Tu sesión había cambiado, así que no se ha borrado nada.</string>
     <string name="sync_not_authenticated">Inicia sesión para sincronizar</string>
     <string name="sync_done">Sincronizado</string>
+    <!-- TEMPORAL (comprobacion del pull incremental): al cerrar el sprint se vuelve a usar sync_done y se borra este plural. -->
+    <plurals name="sync_done_downloaded">
+        <item quantity="one">Sincronizado · %1$d fila descargada</item>
+        <item quantity="other">Sincronizado · %1$d filas descargadas</item>
+    </plurals>
+    <string name="sync_server_outdated">El servidor no está actualizado: sincronizado en modo completo</string>
     <string name="sync_failed">No se pudo sincronizar del todo. Se reintentará más tarde</string>
     <string name="sync_pull_network">No se pudieron comprobar los cambios remotos. Se reintentará más tarde</string>
     <string name="sync_pull_rejected">El servidor ha rechazado la sincronización. Cierra sesión y vuelve a iniciar sesión</string>

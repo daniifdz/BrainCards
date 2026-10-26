@@ -37,14 +37,57 @@ class SyncUserMessageTest {
 
     @Test
     fun todo_bien_es_sincronizado() {
-        assertEquals(SyncUserMessage.Synced, completed().toSyncUserMessage())
+        assertEquals(SyncUserMessage.Synced(0), completed().toSyncUserMessage())
     }
 
     @Test
     fun un_pull_con_filas_descartadas_sigue_siendo_sincronizado() {
         val withDiscards = PullTableResult(applied = 3, aborted = false, discarded = 9)
 
-        assertEquals(SyncUserMessage.Synced, completed(flashcards = withDiscards).toSyncUserMessage())
+        assertEquals(SyncUserMessage.Synced(0), completed(flashcards = withDiscards).toSyncUserMessage())
+    }
+
+    // --- filas descargadas y servidor desactualizado ---
+
+    @Test
+    fun synced_lleva_la_suma_de_filas_descargadas_de_las_cuatro_tablas() {
+        fun downloaded(n: Int) = PullTableResult(applied = n, aborted = false, downloaded = n)
+
+        val message = completed(
+            decks = downloaded(1), topics = downloaded(2), flashcards = downloaded(4), scheduling = downloaded(8)
+        ).toSyncUserMessage()
+
+        assertEquals(SyncUserMessage.Synced(15), message)
+    }
+
+    private val fellBack = PullTableResult(applied = 2, aborted = false, downloaded = 2, fullPull = true, fellBackToFullPull = true)
+
+    @Test
+    fun un_fallback_sin_otros_problemas_es_servidor_desactualizado() {
+        assertEquals(SyncUserMessage.ServerOutdated, completed(flashcards = fellBack).toSyncUserMessage())
+    }
+
+    @Test
+    fun un_fallback_con_push_parcial_da_el_mensaje_del_push() {
+        assertEquals(
+            SyncUserMessage.PushPartial(2),
+            completed(flashcards = fellBack, pushDecks = pushFailed).toSyncUserMessage()
+        )
+    }
+
+    @Test
+    fun un_fallback_con_otra_tabla_abortada_da_el_mensaje_del_pull() {
+        assertEquals(
+            SyncUserMessage.PullLocal,
+            completed(flashcards = fellBack, topics = aborted(PullFailure.LOCAL)).toSyncUserMessage()
+        )
+    }
+
+    @Test
+    fun sin_fallback_nunca_es_servidor_desactualizado() {
+        val message = completed(decks = PullTableResult(applied = 1, aborted = false, downloaded = 1, fullPull = true)).toSyncUserMessage()
+
+        assertEquals(SyncUserMessage.Synced(1), message)
     }
 
     // --- pull abortado: un mensaje por causa ---

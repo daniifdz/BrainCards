@@ -206,13 +206,20 @@ class SyncCoordinator(
 
     private suspend fun runSync(): SyncResult = syncMutex.withLock { syncLocked() }
 
+    /**
+     * Sync con pull COMPLETO de las cuatro tablas (ignora las marcas guardadas). Sin boton en Ajustes
+     * todavia: lo usara el rediseño. Mismo Mutex que cualquier otro sync.
+     */
+    suspend fun requestFullPull(): SyncResult = syncMutex.withLock { syncLocked(forceFullPull = true) }
+
     /** Cuerpo de runSync SIN tomar el Mutex: el caller ya lo tiene (Mutex no reentrante). */
-    private suspend fun syncLocked(): SyncResult {
+    private suspend fun syncLocked(forceFullPull: Boolean = false): SyncResult {
         _isSyncing.value = true
         return try {
             // syncEngineUseCase() ya ejecuta el backfill como primer paso de cada
             // llamada (ver SyncEngineUseCase.invoke) -- no hace falta repetirlo aqui.
-            val result = syncEngineUseCase()
+            val result = syncEngineUseCase(forceFullPull)
+            if (result is SyncResult.Completed) logPullCounts(result)
             if (result is SyncResult.Completed && result.isFullySuccessful()) {
                 val now = Clock.System.now()
                 _lastSuccessfulSyncAt.value = now
@@ -224,6 +231,17 @@ class SyncCoordinator(
         } finally {
             _isSyncing.value = false
         }
+    }
+
+    // Solo conteos por tabla y modo: nada de datos de usuario, ids, tokens ni mensajes de excepcion.
+    private fun logPullCounts(result: SyncResult.Completed) {
+        val pull = result.pull
+        val tables = listOf(pull.decks, pull.topics, pull.flashcards, pull.cardScheduling)
+        val mode = if (tables.all { it.fullPull }) "completo" else "incremental"
+        println(
+            "Sync: bajadas decks=${pull.decks.downloaded} topics=${pull.topics.downloaded} " +
+                "flashcards=${pull.flashcards.downloaded} scheduling=${pull.cardScheduling.downloaded} ($mode)"
+        )
     }
 
     private suspend fun refreshPendingChangesCount(userId: String?) {
