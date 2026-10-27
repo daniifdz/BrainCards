@@ -80,6 +80,23 @@ interface FlashcardDao {
     )
     suspend fun getPendingSyncFlashcards(userId: String): List<FlashcardEntity>
 
+    // Sync automatica: ¿hay cambios pendientes de subir? Mismo criterio que getPendingSync* MAS las filas sin
+    // dueno (userId NULL = creadas con sesion iniciada y aun sin adoptar; ver countUnowned*). Observable:
+    // Room re-emite cuando cambia cualquiera de las tablas de la consulta. Un test de propiedad compara esto
+    // con getPendingSync + countUnowned para que no se desvien.
+    @Query(
+        "SELECT COUNT(*) AS pendingCount, COALESCE(MAX(updatedAt), 0) AS newestUpdatedAt FROM (" +
+            "SELECT f.updatedAt AS updatedAt FROM flashcards f " +
+            "INNER JOIN decks d ON d.id = f.deckId " +
+            "AND d.userId = f.userId " +
+            "LEFT JOIN topics t ON t.id = f.topicId " +
+            "WHERE f.userId = :userId " +
+            "AND (f.topicId IS NULL OR t.userId = f.userId) " +
+            "AND (f.lastSyncedAt IS NULL OR f.updatedAt > f.lastSyncedAt) " +
+            "UNION ALL SELECT updatedAt FROM flashcards WHERE userId IS NULL)"
+    )
+    fun observePendingStamp(userId: String): Flow<PendingStampRow>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllFlashcards(flashcards: List<FlashcardEntity>)
 

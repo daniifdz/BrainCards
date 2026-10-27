@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.TopicDao
+import org.braincards.app.data.local.dao.PendingStampRow
 import org.braincards.app.data.local.entity.TopicEntity
 
 /** Ver comentario en FakeDeckDao. */
@@ -79,4 +80,7 @@ class FakeTopicDao : TopicDao {
     override suspend fun countUnownedTopics(): Int = topics.values.count { it.userId == null }
 
     override suspend fun hasAnyTopic(): Boolean = topics.isNotEmpty()
+
+    // Sync automatica: los tests con fakes no observan pendientes (eso se prueba contra Room real).
+    override fun observePendingStamp(userId: String): Flow<PendingStampRow> = flowOf(PendingStampRow(0, 0))
 }

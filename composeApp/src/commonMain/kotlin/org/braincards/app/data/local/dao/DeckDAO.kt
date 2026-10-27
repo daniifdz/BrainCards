@@ -47,6 +47,17 @@ interface DeckDao {
     @Query("SELECT * FROM decks WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
     suspend fun getPendingSyncDecks(userId: String): List<DeckEntity>
 
+    // Sync automatica: ¿hay cambios pendientes de subir? Mismo criterio que getPendingSync* MAS las filas sin
+    // dueno (userId NULL = creadas con sesion iniciada y aun sin adoptar; ver countUnowned*). Observable:
+    // Room re-emite cuando cambia cualquiera de las tablas de la consulta. Un test de propiedad compara esto
+    // con getPendingSync + countUnowned para que no se desvien.
+    @Query(
+        "SELECT COUNT(*) AS pendingCount, COALESCE(MAX(updatedAt), 0) AS newestUpdatedAt FROM (" +
+            "SELECT updatedAt FROM decks WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt) " +
+            "UNION ALL SELECT updatedAt FROM decks WHERE userId IS NULL)"
+    )
+    fun observePendingStamp(userId: String): Flow<PendingStampRow>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllDecks(decks: List<DeckEntity>)
 

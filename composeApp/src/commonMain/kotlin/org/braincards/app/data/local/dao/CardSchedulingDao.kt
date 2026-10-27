@@ -44,6 +44,20 @@ interface CardSchedulingDao {
     )
     suspend fun getPendingSyncScheduling(userId: String): List<CardSchedulingEntity>
 
+    // Sync automatica: ¿hay cambios pendientes de subir? Mismo criterio que getPendingSync* MAS las filas sin
+    // dueno (userId NULL = creadas con sesion iniciada y aun sin adoptar; ver countUnowned*). Observable:
+    // Room re-emite cuando cambia cualquiera de las tablas de la consulta. Un test de propiedad compara esto
+    // con getPendingSync + countUnowned para que no se desvien.
+    @Query(
+        "SELECT COUNT(*) AS pendingCount, COALESCE(MAX(updatedAt), 0) AS newestUpdatedAt FROM (" +
+            "SELECT cs.updatedAt AS updatedAt FROM card_scheduling cs " +
+            "INNER JOIN flashcards f ON f.id = cs.cardId " +
+            "WHERE cs.userId = :userId AND f.userId = cs.userId AND f.lastSyncedAt IS NOT NULL " +
+            "AND (cs.lastSyncedAt IS NULL OR cs.updatedAt > cs.lastSyncedAt) " +
+            "UNION ALL SELECT updatedAt FROM card_scheduling WHERE userId IS NULL)"
+    )
+    fun observePendingStamp(userId: String): Flow<PendingStampRow>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAllScheduling(schedulings: List<CardSchedulingEntity>)
 
