@@ -296,6 +296,15 @@ class AuthViewModel(
         if (_isSigningOut.value) return
         _signOutPrompt.value = null
         signOutUserId = null
+        syncCoordinator.abortSignOut()
+    }
+
+    // Si el dialogo se cierra sin pasar por dismissSignOut (la pantalla se destruye con el dialogo abierto), la
+    // sync automatica no debe quedarse pausada: se levanta la pausa del cierre. Idempotente; no afecta a un
+    // cierre ya en marcha (finishSignOut tiene el Mutex y el cierre de sesion revalida la sesion).
+    override fun onCleared() {
+        syncCoordinator.abortSignOut()
+        super.onCleared()
     }
 
     private suspend fun finishSignOut(userId: String, confirmedCount: Int) {

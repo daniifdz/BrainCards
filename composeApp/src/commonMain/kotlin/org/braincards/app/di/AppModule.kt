@@ -71,6 +71,7 @@ import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
+import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.SyncCoordinator
 import org.koin.dsl.module
 import kotlin.time.Duration.Companion.seconds
@@ -155,6 +156,9 @@ fun appModule(
     // SyncCoordinator.kt sobre por que no puede ser un ViewModel de Koin aqui.
     // Reutiliza el DataStore<Preferences> ya registrado arriba (settingsDataStore),
     // no crea uno nuevo.
+    // Puerta de pausa de la sync automatica, COMPARTIDA (coordinador, estudio): una sola instancia.
+    single { AutoSyncPauseGate() }
+
     single(createdAtStart = true) {
         SyncCoordinator(
             authRepository = get(),
@@ -165,7 +169,8 @@ fun appModule(
             cardSchedulingRepository = get(),
             dataStore = get(),
             localDataRepository = get(),
-            signOutAndWipeUseCase = get()
+            signOutAndWipeUseCase = get(),
+            pauseGate = get()
         )
     }
 
@@ -270,6 +275,7 @@ fun appModule(
             getDueFlashcardsUseCase = get(),
             reviewFlashcardUseCase = get(),
             getFlashcardUseCase = get(),
+            syncPauseGate = get()
         )
     }
 

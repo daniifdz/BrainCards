@@ -15,6 +15,8 @@ import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
+import org.braincards.app.presentation.sync.AutoSyncPauseGate
+import org.braincards.app.presentation.sync.PauseReason
 
 sealed class StudyState {
     //data object: para un caso sin datos propios
@@ -39,7 +41,8 @@ sealed class StudyState {
 class StudyViewModel(
     private val getDueFlashcardsUseCase: GetDueFlashcardsUseCase,
     private val reviewFlashcardUseCase: ReviewFlashcardUseCase,
-    private val getFlashcardUseCase: GetFlashcardUseCase
+    private val getFlashcardUseCase: GetFlashcardUseCase,
+    private val syncPauseGate: AutoSyncPauseGate
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<StudyState>(StudyState.Loading)
@@ -51,7 +54,27 @@ class StudyViewModel(
 
     private var isSubmitting :Boolean = false
 
+    // Mientras dura la sesion de estudio la sync automatica esta en pausa (no se aplican pulls bajo los pies de una
+    // cola que es una foto fija); caduca por inactividad y se renueva con cada tarjeta puntuada.
+    private var pauseLease: AutoSyncPauseGate.Lease? = null
+
+    private fun pauseAutoSync() {
+        pauseLease?.release()
+        pauseLease = syncPauseGate.acquire(PauseReason.STUDY)
+    }
+
+    private fun resumeAutoSync() {
+        pauseLease?.release()
+        pauseLease = null
+    }
+
+    override fun onCleared() {
+        resumeAutoSync()
+        super.onCleared()
+    }
+
     fun initSession(scope: StudyScope) {
+        pauseAutoSync()
         viewModelScope.launch {
             _state.value = StudyState.Loading
             val now = Clock.System.now()
@@ -60,6 +83,7 @@ class StudyViewModel(
 
             if (dueCards.isEmpty()) {
                 _state.value = StudyState.Empty
+                resumeAutoSync()
             } else {
 
                 studyQueue = StudyQueue(
@@ -91,9 +115,11 @@ class StudyViewModel(
                 correctCount = current.correctCount,
                 failedCount = current.failedCount
             )
+            resumeAutoSync()
         }else{
             //cola vacia no se puntuo nada nunca, noy hay nada que estudiar
             _state.value = StudyState.Empty
+            resumeAutoSync()
         }
     }
 
@@ -105,6 +131,7 @@ class StudyViewModel(
     }
 
     fun reviewAllCards(deckId: String) {
+        pauseAutoSync()
         viewModelScope.launch {
             _state.value = StudyState.Loading
 
@@ -112,6 +139,7 @@ class StudyViewModel(
 
             if (allCards.isEmpty()) {
                 _state.value = StudyState.Empty
+                resumeAutoSync()
             } else {
                 studyQueue = StudyQueue(
                     queue = allCards.shuffled(),
@@ -133,6 +161,7 @@ class StudyViewModel(
         if (currentState is StudyState.Reviewing) {
             val card = currentState.currentCard
             isSubmitting = true
+            pauseLease?.renew()
 
                 viewModelScope.launch {
                     reviewFlashcardUseCase(card, quality)

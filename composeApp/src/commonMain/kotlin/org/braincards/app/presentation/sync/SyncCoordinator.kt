@@ -8,11 +8,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -86,7 +89,9 @@ class SyncCoordinator(
     private val dataStore: DataStore<Preferences>,
     private val localDataRepository: LocalDataRepository,
     private val signOutAndWipeUseCase: SignOutAndWipeUseCase,
-    coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+    private val pauseGate: AutoSyncPauseGate = AutoSyncPauseGate(),
+    private val clock: Clock = Clock.System
 ) {
     private val scope = coroutineScope
     private val syncMutex = Mutex()
@@ -99,6 +104,19 @@ class SyncCoordinator(
 
     private val _pendingChangesCount = MutableStateFlow(0)
     val pendingChangesCount: StateFlow<Int> = _pendingChangesCount.asStateFlow()
+
+    // Resultado del ULTIMO sync, venga de donde venga (manual, completo o automatico): lo escribe syncLocked.
+    private val _lastOutcome = MutableStateFlow<SyncOutcome?>(null)
+    val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
+
+    /** Estado observable de la sincronizacion (silencioso: sin textos ni carteles). Lo mostrara el rediseño. */
+    val status: StateFlow<SyncStatus> = combine(
+        authRepository.authState, _isSyncing, _lastOutcome, _lastSuccessfulSyncAt
+    ) { auth, syncing, outcome, lastSuccess -> deriveSyncStatus(auth, syncing, outcome, lastSuccess) }
+        .stateIn(scope, SharingStarted.Eagerly, SyncStatus.SignedOut)
+
+    // Lease SIGN_OUT del cierre de sesion en curso (prepareSignOut -> finishSignOut/abortSignOut). Uno solo.
+    private var signOutLease: AutoSyncPauseGate.Lease? = null
 
     init {
         scope.launch {
@@ -129,8 +147,24 @@ class SyncCoordinator(
         }
     }
 
-    /** Disparador manual del boton "Sincronizar ahora" de Ajustes. */
+    /** Disparador manual del boton "Sincronizar ahora" de Ajustes. La puerta de pausa NO lo bloquea. */
     suspend fun syncNow(): SyncResult = runSync()
+
+    /**
+     * Sync AUTOMATICO (lo pide el AutoSyncController). Toma el mismo Mutex que cualquier otro sync y, DENTRO del
+     * lock, comprueba la sesion y la puerta de pausa: si entre la peticion y la toma del lock se cerro la sesion,
+     * empezo un cierre o una sesion de estudio, no sincroniza y devuelve "omitido" con su motivo.
+     */
+    suspend fun requestAutoSync(): AutoSyncOutcome = syncMutex.withLock {
+        val state = authRepository.authState.first()
+        if (state !is AuthState.Authenticated) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.NO_SESSION)
+        if (!state.sessionConfirmed) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.SESSION_UNCONFIRMED)
+        when (pauseGate.activeReason()) {
+            PauseReason.SIGN_OUT -> AutoSyncOutcome.Skipped(AutoSyncSkipReason.PAUSED_SIGN_OUT)
+            PauseReason.STUDY -> AutoSyncOutcome.Skipped(AutoSyncSkipReason.PAUSED_STUDY)
+            null -> AutoSyncOutcome.Ran(syncLocked())
+        }
+    }
 
     /** Expone el Mutex sin filtrar el objeto en si -- lo usa
      * AuthViewModel.deleteAccount() para no correr a la vez que un sync. */
@@ -144,7 +178,18 @@ class SyncCoordinator(
      * Sin sesion confirmada (arranque en frio sin red) o sin sesion no se intenta el sync: solo
      * conteo local. Si el sync falla o se agota, tambien se sigue con el conteo local.
      */
-    suspend fun prepareSignOut(): SignOutPrompt = syncMutex.withLock {
+    suspend fun prepareSignOut(): SignOutPrompt {
+        // La puerta se cierra ANTES de esperar el Mutex: un sync automatico encolado detras ya vera el cierre en curso.
+        holdSignOutLease()
+        return try {
+            prepareSignOutLocked()
+        } catch (e: Throwable) {
+            releaseSignOutLease()
+            throw e
+        }
+    }
+
+    private suspend fun prepareSignOutLocked(): SignOutPrompt = syncMutex.withLock {
         val state = authRepository.authState.first()
         val userId = (state as? AuthState.Authenticated)?.userId
         if (state is AuthState.Authenticated && state.sessionConfirmed) {
@@ -167,7 +212,30 @@ class SyncCoordinator(
      * SignOutAndWipeUseCase manteniendo el Mutex hasta que termina (clearSession incluido):
      * un sync lanzado entre el borrado y el cierre de sesion esperaria y no repoblaria la BD.
      */
-    suspend fun finishSignOut(userId: String, confirmedCount: Int): FinishSignOutResult =
+    suspend fun finishSignOut(userId: String, confirmedCount: Int): FinishSignOutResult {
+        val result = finishSignOutLocked(userId, confirmedCount)
+        // Con NeedsReconfirmation el dialogo sigue abierto: la puerta sigue cerrada (renovada). En cualquier otro
+        // resultado el cierre termino (o se descarto) y la sync automatica puede reanudarse.
+        if (result is FinishSignOutResult.NeedsReconfirmation) signOutLease?.renew() else releaseSignOutLease()
+        return result
+    }
+
+    /** "Cancelar" del dialogo, o el ViewModel del cierre destruido (onCleared): el cierre ya no sigue. Idempotente. */
+    fun abortSignOut() {
+        releaseSignOutLease()
+    }
+
+    private fun holdSignOutLease() {
+        signOutLease?.release()
+        signOutLease = pauseGate.acquire(PauseReason.SIGN_OUT)
+    }
+
+    private fun releaseSignOutLease() {
+        signOutLease?.release()
+        signOutLease = null
+    }
+
+    private suspend fun finishSignOutLocked(userId: String, confirmedCount: Int): FinishSignOutResult =
         syncMutex.withLock {
             val current = authRepository.authState.first()
             if ((current as? AuthState.Authenticated)?.userId != userId) {
@@ -196,6 +264,7 @@ class SyncCoordinator(
     suspend fun resetSyncState() {
         _lastSuccessfulSyncAt.value = null
         _pendingChangesCount.value = 0
+        _lastOutcome.value = null
         try {
             dataStore.edit { prefs -> SYNC_PREFS_KEYS.forEach { key -> prefs -= key } }
         } catch (e: CancellationException) {
@@ -219,10 +288,18 @@ class SyncCoordinator(
         return try {
             // syncEngineUseCase() ya ejecuta el backfill como primer paso de cada
             // llamada (ver SyncEngineUseCase.invoke) -- no hace falta repetirlo aqui.
-            val result = syncEngineUseCase(forceFullPull)
+            val result = try {
+                syncEngineUseCase(forceFullPull)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _lastOutcome.value = SyncOutcome(result = null, at = clock.now())
+                throw e
+            }
+            _lastOutcome.value = SyncOutcome(result, clock.now())
             if (result is SyncResult.Completed) logPullCounts(result)
             if (result is SyncResult.Completed && result.isFullySuccessful()) {
-                val now = Clock.System.now()
+                val now = clock.now()
                 _lastSuccessfulSyncAt.value = now
                 persistLastSuccessfulSyncAt(now)
             }
