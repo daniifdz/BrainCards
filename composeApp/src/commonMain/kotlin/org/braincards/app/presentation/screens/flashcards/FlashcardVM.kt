@@ -29,6 +29,7 @@ import org.braincards.app.domain.util.IdGenerator
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import org.braincards.app.util.logError
 
 
 sealed class FlashcardsUiState {
@@ -95,7 +96,7 @@ class FlashCardViewModel(
             _flashcardState.value = FlashcardsUiState.Loading
             getFlashcardUseCase(deckId)
                 .catch { e ->
-                    println("Error al cargar las tarjetas: $e")
+                    logError("Error al cargar las tarjetas", e)
                     _flashcardState.value = FlashcardsUiState.Error("Error loading flashcards: ${e.message}") }
                 .collectLatest { list ->
                     _flashcardState.value = FlashcardsUiState.Success(list)

@@ -4,6 +4,7 @@ import java.awt.Desktop
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import org.braincards.app.util.logError
 
 actual fun openEmailClient(
     recipient: String,
@@ -18,6 +19,6 @@ actual fun openEmailClient(
         val uri = URI("mailto:$recipient?subject=$encodedSubject&body=$encodedBody")
         desktop.mail(uri)
     } catch (e: Exception) {
-        println("Error al intentar abrir el cliente de email: ${e.message}")
+        logError("Error al intentar abrir el cliente de email", e)
     }
 }
