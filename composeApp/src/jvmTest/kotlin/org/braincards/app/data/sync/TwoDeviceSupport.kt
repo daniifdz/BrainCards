@@ -282,8 +282,8 @@ class Device(
         decks.updateDeck(d.copy(deletedAt = at, updatedAt = at))
     }
 
-    suspend fun addCard(id: String, deckId: String, at: Instant = t0) =
-        flashcards.addFlashcard(Flashcard(id, deckId, "Q$id", "A$id", at, at, CardType.FLIP, null, null, null, userId, null, null))
+    suspend fun addCard(id: String, deckId: String, at: Instant = t0, topicId: String? = null) =
+        flashcards.addFlashcard(Flashcard(id, deckId, "Q$id", "A$id", at, at, CardType.FLIP, topicId, null, null, userId, null, null))
 
     suspend fun addTopic(id: String, deckId: String, at: Instant = t0) =
         topics.addTopic(Topic(id, deckId, "Topic $id", at, at, null, null, userId))
