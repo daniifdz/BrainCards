@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Android 11 y anteriores (fullBackupContent). Mismo exclude que data_extraction_rules.xml:
-    la sesion de Supabase no debe viajar en el backup. Solo excludes, sin includes.
+    la sesion de Supabase no debe viajar en el backup, ni el DataStore (braincards.preferences_pb,
+    en filesDir = domain="file"). Solo excludes, sin includes.
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="org.braincards.app_preferences.xml" />
+    <exclude domain="file" path="braincards.preferences_pb" />
 </full-backup-content>

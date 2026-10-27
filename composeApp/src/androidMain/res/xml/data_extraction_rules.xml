@@ -4,13 +4,18 @@
     claro) del backup en la nube y de la transferencia dispositivo a dispositivo.
     El archivo lo crea multiplatform-settings: "<applicationId>_preferences". Si cambia
     el applicationId (o se anade un applicationIdSuffix), actualizar tambien aqui y en
-    backup_rules.xml. La BD Room y el DataStore siguen dentro del backup.
+    backup_rules.xml. Tambien se excluye el DataStore (braincards.preferences_pb), que vive
+    en filesDir (domain="file", ver SettingsDataStoreAndroid): lleva la marca del pull
+    incremental y restaurarla junto a una BD mas antigua dejaria datos sin bajar. La BD Room
+    sigue dentro del backup.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="org.braincards.app_preferences.xml" />
+        <exclude domain="file" path="braincards.preferences_pb" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="org.braincards.app_preferences.xml" />
+        <exclude domain="file" path="braincards.preferences_pb" />
     </device-transfer>
 </data-extraction-rules>

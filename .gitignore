@@ -20,3 +20,7 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 composeApp/keystore/
+*.jks
+*.keystore
+google-services.json
+.env*
