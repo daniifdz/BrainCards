@@ -36,6 +36,7 @@ import org.braincards.app.domain.usecase.Sync.failedRowCount
 import org.braincards.app.presentation.sync.FinishSignOutResult
 import org.braincards.app.presentation.sync.SignOutPrompt
 import org.braincards.app.presentation.sync.SyncCoordinator
+import org.braincards.app.util.logError
 
 /**
  * Segundos de espera en el boton "Reenviar codigo" tras cada envio de un codigo de
@@ -198,7 +199,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al registrarse")
             } catch (e: Exception) {
-                println("Error al registrarse: $e")
+                logError("Error al registrarse", e)
                 _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
@@ -215,7 +216,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al iniciar sesión")
             } catch (e: Exception) {
-                println("Error al iniciar sesión: $e")
+                logError("Error al iniciar sesión", e)
                 if (e.isEmailNotConfirmed()) {
                     _emailNotConfirmedEvent.emit(email)
                 } else {
@@ -261,7 +262,7 @@ class AuthViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                println("Error al preparar el cierre de sesión: $e")
+                logError("Error al preparar el cierre de sesión", e)
                 _signOutEvent.emit(SignOutEvent.WipeFailed)
             } finally {
                 _isSigningOut.value = false
@@ -281,7 +282,7 @@ class AuthViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                println("Error al cerrar sesión: $e")
+                logError("Error al cerrar sesión", e)
                 _signOutPrompt.value = null
                 _signOutEvent.emit(SignOutEvent.WipeFailed)
             } finally {
@@ -333,7 +334,7 @@ class AuthViewModel(
                     syncCoordinator.resetSyncState()
                     _messageEvent.emit("Cuenta eliminada")
                 } catch (e: Exception) {
-                    println("Error al eliminar la cuenta: $e")
+                    logError("Error al eliminar la cuenta", e)
                     _messageEvent.emit("No se pudo eliminar la cuenta")
                 } finally {
                     _isDeletingAccount.value = false
@@ -358,7 +359,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al enviar el correo")
             } catch (e: Exception) {
-                println("Error al enviar el correo de recuperación: $e")
+                logError("Error al enviar el correo de recuperación", e)
                 _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
@@ -380,7 +381,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al confirmar la cuenta")
             } catch (e: Exception) {
-                println("Error al confirmar el registro: $e")
+                logError("Error al confirmar el registro", e)
                 _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
@@ -401,7 +402,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al reenviar el código")
             } catch (e: Exception) {
-                println("Error al reenviar el codigo de registro: $e")
+                logError("Error al reenviar el codigo de registro", e)
                 _messageEvent.emit(e.toAuthErrorMessage())
             } finally {
                 _isSubmitting.value = false
@@ -444,7 +445,7 @@ class AuthViewModel(
             } catch (e: IllegalArgumentException) {
                 _messageEvent.emit(e.message ?: "Error al actualizar la contraseña")
             } catch (e: Exception) {
-                println("Error al confirmar el restablecimiento de contraseña: $e")
+                logError("Error al confirmar el restablecimiento de contraseña", e)
                 _codeVerified.value = confirmPasswordResetUseCase.isCodeVerified(email)
                 _messageEvent.emit(e.toAuthErrorMessage())
             } finally {

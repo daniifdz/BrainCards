@@ -3,6 +3,7 @@ package org.braincards.app.di
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.logging.LogLevel
 import io.github.jan.supabase.postgrest.Postgrest
 import org.koin.core.module.dsl.viewModel
 import androidx.datastore.core.DataStore
@@ -93,6 +94,9 @@ fun appModule(
             // mismo default (10s) aunque no se declare (confirmado en el codigo
             // fuente real, KtorSupabaseHttpClient.kt/SupabaseClientBuilder.kt).
             requestTimeout = 10.seconds
+            // Sin logs del cliente (el valor por defecto es INFO): una RestException o una traza de
+            // peticion arrastra la URL y las cabeceras, Authorization incluido.
+            defaultLogLevel = LogLevel.NONE
             install(Auth)
             install(Postgrest)
         }

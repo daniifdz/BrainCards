@@ -35,6 +35,7 @@ import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.isFullySuccessful
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import org.braincards.app.util.logError
 
 /**
  * Tiempo maximo del sync previo al cierre de sesion. Si se agota (o falla), se sigue con el
@@ -152,7 +153,7 @@ class SyncCoordinator(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                println("El sync previo al cierre de sesion fallo, se sigue con el conteo local: $e")
+                logError("El sync previo al cierre de sesion fallo, se sigue con el conteo local", e)
             }
         }
         val unsynced = countUnsynced(userId)
@@ -200,7 +201,7 @@ class SyncCoordinator(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            println("No se pudo borrar el estado de sync del DataStore: $e")
+            logError("No se pudo borrar el estado de sync del DataStore", e)
         }
     }
 

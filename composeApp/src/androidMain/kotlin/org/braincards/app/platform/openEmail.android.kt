@@ -3,6 +3,7 @@ package org.braincards.app.platform
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import org.braincards.app.util.logError
 import org.koin.core.context.GlobalContext
 
 actual fun openEmailClient(
@@ -28,7 +29,7 @@ actual fun openEmailClient(
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            logError("Error al abrir el cliente de email", e)
         }
     } else {
         println("Error: Contexto de Android no encontrado en Koin.")

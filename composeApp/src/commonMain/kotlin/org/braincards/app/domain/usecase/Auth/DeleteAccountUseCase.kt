@@ -5,6 +5,7 @@ import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
+import org.braincards.app.util.logError
 
 /**
  * Borra la cuenta del usuario (Bloque F). Orden deliberado:
@@ -38,7 +39,7 @@ class DeleteAccountUseCase(
         try {
             authRepository.signOut()
         } catch (e: Exception) {
-            println("Cuenta borrada, pero signOut() local fallo: $e")
+            logError("Cuenta borrada, pero signOut() local fallo", e)
         }
     }
 }
