@@ -19,6 +19,7 @@ import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.domain.util.IdGenerator
+import org.braincards.app.util.logError
 
 sealed class TopicUiState {
     data object Loading : TopicUiState()
@@ -50,7 +51,7 @@ class TopicVM(
             _topicState.value = TopicUiState.Loading
             getTopicsUseCase(deckId)
                 .catch { e ->
-                    println("Error al cargar los temas: $e")
+                    logError("Error al cargar los temas", e)
                     _topicState.value = TopicUiState.Error("Error al cargar los topics: ${e.message}")
                 }
                 .collectLatest { list ->
