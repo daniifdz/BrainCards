@@ -393,6 +393,42 @@ class AutoSyncControllerTest {
         assertEquals(listOf(0L, 30.s()), env.host.calls)
     }
 
+    @Test
+    fun al_volver_la_red_se_reinicia_el_backoff_pero_se_mantiene_el_intervalo_minimo() = runTest {
+        val env = Env(this)
+        env.host.script = { n -> if (n < 3) failure() else success() }
+        env.start()                       // fallos a 0 y 30; el tercero a 90 s deja el backoff hasta 210 s
+        env.advance(90.seconds)
+        assertEquals(listOf(0L, 30.s(), 90.s()), env.host.calls)
+
+        env.advance(10.seconds)           // 100 s
+        env.connectivity.state.value = false
+        env.advance(10.seconds)
+        env.connectivity.state.value = true // 110 s: red restaurada
+        env.advance(9.seconds)
+        assertEquals(3, env.host.calls.size, "a los 119 s sigue el intervalo minimo (90 + 30 = 120 s)")
+        env.advance(1.seconds)
+
+        assertEquals(listOf(0L, 30.s(), 90.s(), 120.s()), env.host.calls, "sin esperar al backoff antiguo (210 s)")
+    }
+
+    @Test
+    fun tras_reiniciar_el_backoff_por_la_red_el_siguiente_fallo_vuelve_a_esperar_30_s() = runTest {
+        val env = Env(this)
+        env.host.script = { failure() }
+        env.start()                       // fallos a 0, 30 (backoff 60 s: hasta 90)
+        env.advance(30.seconds)
+        env.connectivity.state.value = false
+        env.advance(5.seconds)
+        env.connectivity.state.value = true // 35 s: reinicio; el siguiente intento a 60 s (30 + intervalo minimo)
+        env.advance(25.seconds)
+        assertEquals(listOf(0L, 30.s(), 60.s()), env.host.calls)
+
+        env.advance(30.seconds) // el fallo de 60 s es el primero tras el reinicio: espera 30 s, no 120
+
+        assertEquals(listOf(0L, 30.s(), 60.s(), 90.s()), env.host.calls)
+    }
+
     // --- puerta de pausa -----------------------------------------------------------------------------------------------
 
     @Test

@@ -280,7 +280,14 @@ class AutoSyncController(
             is Signal.Online -> {
                 val was = online
                 online = signal.on
-                if (signal.on && !was && (lastPending.count > 0 || failures > 0)) immediate = true
+                if (signal.on && !was) {
+                    // Red restaurada: los fallos anteriores (probablemente por falta de red) ya no cuentan, asi que
+                    // el backoff se reinicia. El intervalo minimo entre syncs (lastSyncEnd) se mantiene.
+                    val hadFailures = failures > 0
+                    failures = 0
+                    backoffUntil = null
+                    if (lastPending.count > 0 || hadFailures) immediate = true
+                }
             }
             is Signal.AuthReady -> {
                 val was = authReady
