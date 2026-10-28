@@ -86,6 +86,8 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            // Sync automatica: ProcessLifecycleOwner (primer/segundo plano del PROCESO, no de la Activity).
+            implementation(libs.androidx.lifecycle.process)
             //---------------------------------------------------------
             implementation(libs.koin.android)
             implementation(libs.ktor.client.android)
