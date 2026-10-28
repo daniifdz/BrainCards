@@ -92,7 +92,7 @@ class SyncCoordinator(
     coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val pauseGate: AutoSyncPauseGate = AutoSyncPauseGate(),
     private val clock: Clock = Clock.System
-) {
+) : AutoSyncHost {
     private val scope = coroutineScope
     private val syncMutex = Mutex()
 
@@ -107,7 +107,7 @@ class SyncCoordinator(
 
     // Resultado del ULTIMO sync, venga de donde venga (manual, completo o automatico): lo escribe syncLocked.
     private val _lastOutcome = MutableStateFlow<SyncOutcome?>(null)
-    val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
+    override val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
 
     /** Estado observable de la sincronizacion (silencioso: sin textos ni carteles). Lo mostrara el rediseño. */
     val status: StateFlow<SyncStatus> = combine(
@@ -155,7 +155,7 @@ class SyncCoordinator(
      * lock, comprueba la sesion y la puerta de pausa: si entre la peticion y la toma del lock se cerro la sesion,
      * empezo un cierre o una sesion de estudio, no sincroniza y devuelve "omitido" con su motivo.
      */
-    suspend fun requestAutoSync(): AutoSyncOutcome = syncMutex.withLock {
+    override suspend fun requestAutoSync(): AutoSyncOutcome = syncMutex.withLock {
         val state = authRepository.authState.first()
         if (state !is AuthState.Authenticated) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.NO_SESSION)
         if (!state.sessionConfirmed) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.SESSION_UNCONFIRMED)
