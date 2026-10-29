@@ -33,8 +33,9 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * AutoSyncController + SyncCoordinator REAL (con fakes de repositorios y remoto): no se solapa con el sync del init
- * ni con uno manual, y respeta el cierre de sesion. Tiempo virtual.
+ * AutoSyncController + SyncCoordinator REAL (con fakes de repositorios y remoto): sincroniza al arrancar y al iniciar
+ * sesion (el coordinador ya no lo hace en su init), no se solapa con un sync manual y respeta el cierre de sesion.
+ * Tiempo virtual.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutoSyncControllerCoordinatorTest {
@@ -46,8 +47,12 @@ class AutoSyncControllerCoordinatorTest {
         override fun observe(userId: String): StateFlow<PendingStamp> = stamp
     }
 
-    private class Env(val test: TestScope, userId: String) {
-        val auth = FakeAuthRepository(AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = true))
+    private class Env(
+        val test: TestScope,
+        userId: String,
+        initialAuth: AuthState = AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = true)
+    ) {
+        val auth = FakeAuthRepository(initialAuth)
         val remote = FakeRemoteDataSource().apply { pullDecksDelayMillis = 200 }
         private val decks = FakeDecksRepository()
         private val topics = FakeTopicsRepository()
@@ -96,7 +101,7 @@ class AutoSyncControllerCoordinatorTest {
     }
 
     @Test
-    fun no_se_solapa_con_el_sync_del_init_ni_con_uno_manual() = runTest {
+    fun no_se_solapa_con_un_sync_manual_concurrente() = runTest {
         val env = Env(this, userId)
         env.controller.start()
         val manual = backgroundScope.launch { env.coordinator.syncNow() }
@@ -105,8 +110,47 @@ class AutoSyncControllerCoordinatorTest {
         env.advance(5.seconds)
 
         assertEquals(1, env.remote.maxConcurrentPullDecksCalls, "nunca dos pulls a la vez")
-        assertTrue(env.pulls >= 2, "al menos el del init/manual y el automatico")
+        assertTrue(env.pulls >= 2, "al menos el manual y el automatico")
         manual.join()
+    }
+
+    // --- el controlador es quien sincroniza al arrancar y al iniciar sesion (el sync del init del coordinador se retira) ---
+
+    @Test
+    fun el_arranque_con_sesion_confirmada_sincroniza_una_sola_vez_por_el_controlador() = runTest {
+        val env = Env(this, userId)
+
+        env.controller.start()
+        env.advance(5.seconds)
+
+        assertEquals(1, env.pulls, "un solo sync de arranque (primer plano + sesion confirmada + red), y es del controlador")
+        assertIs<SyncStatus.Synced>(env.coordinator.status.value)
+    }
+
+    @Test
+    fun un_inicio_de_sesion_nuevo_dispara_una_sync_por_el_controlador() = runTest {
+        val env = Env(this, userId, initialAuth = AuthState.NotAuthenticated)
+        env.controller.start()
+        env.advance(10.seconds)
+        assertEquals(0, env.pulls, "sin sesion no se sincroniza")
+
+        env.auth.setState(AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = true))
+        env.advance(5.seconds)
+
+        assertEquals(1, env.pulls)
+    }
+
+    @Test
+    fun una_sesion_guardada_sin_confirmar_sincroniza_al_confirmarse() = runTest {
+        val env = Env(this, userId, initialAuth = AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = false))
+        env.controller.start()
+        env.advance(10.seconds)
+        assertEquals(0, env.pulls, "arranque en frio sin red: aun no se habla con el servidor")
+
+        env.auth.setState(AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = true))
+        env.advance(5.seconds)
+
+        assertEquals(1, env.pulls)
     }
 
     @Test

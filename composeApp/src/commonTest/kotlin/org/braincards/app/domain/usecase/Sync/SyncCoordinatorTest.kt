@@ -91,12 +91,12 @@ class SyncCoordinatorTest {
 
         val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
 
-        // El init ya dispara un sync automatico al construirse (Authenticated
-        // confirmado) -- lanzamos ademas 2 manuales concurrentes, para estresar el
-        // Mutex con 3 intentos solapables en total.
+        // Lanzamos 2 syncs manuales concurrentes y 1 automatico (requestAutoSync), para
+        // estresar el Mutex con 3 intentos solapables en total.
         listOf(
             async { coordinator.syncNow() },
-            async { coordinator.syncNow() }
+            async { coordinator.syncNow() },
+            async { coordinator.requestAutoSync() }
         ).awaitAll()
 
         assertEquals(1, remoteDataSource.maxConcurrentPullDecksCalls)
@@ -130,9 +130,10 @@ class SyncCoordinatorTest {
         val dataStore = FakeSettingsDataStore()
         decksRepository.addDeck(buildDeck("deck-fails"))
 
-        // El sync automatico del init ya corre con el push fallando -- deja la fila
-        // pendiente y no persiste lastSuccessfulSyncAt.
+        // Un primer sync con el push fallando -- deja la fila pendiente y no persiste
+        // lastSuccessfulSyncAt.
         val coordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
+        coordinator.syncNow()
 
         assertTrue(coordinator.pendingChangesCount.value > 0)
         assertNull(coordinator.lastSuccessfulSyncAt.value)
@@ -158,8 +159,9 @@ class SyncCoordinatorTest {
         val dataStore = FakeSettingsDataStore()
         decksRepository.addDeck(buildDeck("deck-fails"))
 
-        // Primer sync (automatico del init) falla parcialmente -- no se persiste nada.
+        // Primer sync falla parcialmente -- no se persiste nada.
         val firstCoordinator = buildCoordinator(authRepository, remoteDataSource, decksRepository, topicsRepository, flashcardRepository, FakeCardSchedulingRepository(), dataStore)
+        firstCoordinator.syncNow()
         assertNull(firstCoordinator.lastSuccessfulSyncAt.value)
 
         // Se arregla la red y se reintenta -- ahora si tiene exito completo.
@@ -200,11 +202,12 @@ class SyncCoordinatorTest {
         )
 
         // Solo hay scheduling pendiente (ningun deck/topic/flashcard): si el contador no lo
-        // sumara, valdria 0. El sync automatico del init falla en su push y lo deja pendiente.
+        // sumara, valdria 0. Un primer sync falla en su push y lo deja pendiente.
         val coordinator = buildCoordinator(
             authRepository, remoteDataSource, FakeDecksRepository(), FakeTopicsRepository(),
             FakeFlashcardRepository(), cardSchedulingRepository, FakeSettingsDataStore()
         )
+        coordinator.syncNow()
 
         assertEquals(1, coordinator.pendingChangesCount.value)
 

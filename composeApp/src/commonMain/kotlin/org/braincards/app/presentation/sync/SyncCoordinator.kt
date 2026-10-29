@@ -136,9 +136,8 @@ class SyncCoordinator(
                         // red, para no mostrar "0 pendientes" en un arranque en frio
                         // sin conexion.
                         refreshPendingChangesCount(state.userId)
-                        if (state.sessionConfirmed) {
-                            runSync()
-                        }
+                        // El sync de arranque / inicio de sesion ya NO se lanza aqui: lo dispara el AutoSyncController
+                        // (sesion confirmada + primer plano + red), que respeta el intervalo minimo y el backoff.
                     }
                     is AuthState.NotAuthenticated -> _pendingChangesCount.value = 0
                     else -> Unit // Loading

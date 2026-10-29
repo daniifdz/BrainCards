@@ -95,7 +95,7 @@ class SyncCoordinatorSignOutTest {
         prefs: Preferences = androidx.datastore.preferences.core.emptyPreferences()
     ): Env {
         val env = Env(backgroundScope, AuthState.Authenticated(userId, "a@b.c", confirmed), prefs)
-        runCurrent() // deja que el init del coordinador (y su sync automatico, si lo hay) corra
+        runCurrent() // deja que el init del coordinador corra (ultima sync guardada y conteo de pendientes; ya no sincroniza)
         return env
     }
 

@@ -3,6 +3,7 @@ package org.braincards.app
 import android.app.Application
 import org.braincards.app.data.local.DatabaseFactory
 import org.braincards.app.data.local.SettingsDataStoreFactory
+import org.braincards.app.di.androidSyncModule
 import org.braincards.app.di.initKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -17,6 +18,9 @@ class BrainCardsApp : Application() {
         ) {
             androidLogger()
             androidContext(this@BrainCardsApp)
+            // Monitores de la sync automatica. Estamos en Application.onCreate (hilo principal): el observador de
+            // ProcessLifecycleOwner exige el hilo principal. Ver AndroidSyncModule.
+            modules(androidSyncModule())
         }
     }
 }

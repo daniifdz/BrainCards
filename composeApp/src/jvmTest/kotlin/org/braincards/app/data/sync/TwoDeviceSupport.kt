@@ -231,8 +231,9 @@ class Device(
         clock = clock
     )
 
-    // Perezoso: SyncCoordinator sincroniza por su cuenta al ver una sesion autenticada, asi que solo se
-    // construye en los tests de cierre de sesion (el resto llama al motor directamente, en el momento exacto).
+    // Perezoso: solo se construye en los tests de cierre de sesion (el resto llama al motor directamente, en el
+    // momento exacto). Antes tambien evitaba el sync del init del coordinador, que ya no existe: lo hace el
+    // AutoSyncController, que estos tests no construyen.
     val coordinator: SyncCoordinator by lazy { buildCoordinator() }
 
     private fun buildCoordinator() = SyncCoordinator(

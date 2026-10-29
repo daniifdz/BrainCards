@@ -24,6 +24,7 @@ import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.LocalDataRepositoryImpl
+import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
 import org.braincards.app.domain.repository.AuthRepository
@@ -32,6 +33,7 @@ import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
+import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
@@ -80,6 +82,10 @@ fun appModule(
     databaseBuilder: androidx.room.RoomDatabase.Builder<AppDatabase>,
     settingsDataStore: DataStore<Preferences>
 ) = module {
+
+    // Sync automatica: el AutoSyncController (single, createdAtStart). Los monitores de plataforma entran por
+    // initKoin(appDeclaration), ver AutoSyncModule.kt.
+    includes(autoSyncModule())
 
     single<DataStore<Preferences>> { settingsDataStore }
     viewModel { ThemeViewModel(dataStore = get()) }
@@ -158,6 +164,16 @@ fun appModule(
     // no crea uno nuevo.
     // Puerta de pausa de la sync automatica, COMPARTIDA (coordinador, estudio): una sola instancia.
     single { AutoSyncPauseGate() }
+
+    // Observa los cambios locales pendientes de subir (los 4 DAO): lo usa el AutoSyncController.
+    single<PendingChangesObserver> {
+        PendingChangesObserverImpl(
+            deckDao = get(),
+            topicDao = get(),
+            flashcardDao = get(),
+            cardSchedulingDao = get()
+        )
+    }
 
     single(createdAtStart = true) {
         SyncCoordinator(
