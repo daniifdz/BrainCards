@@ -52,4 +52,29 @@
         <item quantity="one">Sincronizado parcialmente: %1$d cambio pendiente de subir</item>
         <item quantity="other">Sincronizado parcialmente: %1$d cambios pendientes de subir</item>
     </plurals>
+
+    <!-- Home -->
+    <string name="home_tagline">Domina tu memoria</string>
+    <string name="home_study_all">Estudiar Todo</string>
+    <plurals name="home_due_cards">
+        <item quantity="one">%1$d tarjeta pendiente hoy</item>
+        <item quantity="other">%1$d tarjetas pendientes hoy</item>
+    </plurals>
+    <string name="home_all_done">Todo al día</string>
+    <string name="home_load_error">No se pudieron cargar tus mazos.</string>
+    <string name="home_retry">Reintentar</string>
+    <string name="home_my_decks">Mis Mazos</string>
+    <string name="home_stats">Estadísticas</string>
+    <string name="home_settings">Ajustes</string>
+
+    <!-- Indicador de sync (pildora de Home) -->
+    <string name="sync_pill_syncing">Sincronizando…</string>
+    <string name="sync_pill_synced">Sincronizado</string>
+    <string name="sync_pill_never">Aún no se ha sincronizado</string>
+    <string name="sync_pill_offline">Sin conexión</string>
+    <string name="sync_pill_error_local">Error al guardar en este dispositivo</string>
+    <string name="sync_pill_error_rejected">El servidor no aceptó la sincronización</string>
+    <string name="sync_pill_error_push_partial">Solo se sincronizaron algunos cambios</string>
+    <string name="sync_pill_error_failed">No se pudo completar la sincronización</string>
+    <string name="sync_pill_guest">Modo invitado</string>
 </resources>

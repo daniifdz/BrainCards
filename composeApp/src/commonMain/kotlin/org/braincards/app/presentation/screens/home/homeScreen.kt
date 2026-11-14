@@ -1,147 +1,536 @@
 package org.braincards.app.presentation.screens.home
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.LibraryBooks
-import androidx.compose.material.icons.filled.PlayCircleFilled
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.PersonOutline
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import braincards.composeapp.generated.resources.*
+import org.braincards.app.presentation.sync.SyncErrorKind
+import org.braincards.app.presentation.sync.SyncIndicator
+import org.braincards.app.presentation.sync.SyncStatusViewModel
+import org.braincards.app.presentation.theme.BrainCardsTheme
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.annotation.KoinExperimentalAPI
 
-data class HomeItem(
-    val title: String,
-    val icon: ImageVector,
-    val color: Color,
-    val onClick: () -> Unit
-)
+/** Por debajo de este ancho se usa el diseno movil (tarjetas en fila, una por linea). */
+private val COMPACT_WIDTH_BREAKPOINT = 600.dp
 
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun HomeScreen(
     onNavigateToDecks: () -> Unit,
     onNavigateToStudy: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToStats: () -> Unit
+    onNavigateToStats: () -> Unit,
+    onNavigateToAuth: () -> Unit,
+    homeViewModel: HomeViewModel = koinViewModel(),
+    syncStatusViewModel: SyncStatusViewModel = koinViewModel()
 ) {
-    val items = listOf(
-        HomeItem("Mis Mazos", Icons.Default.LibraryBooks, Color(0xFF7C4DFF), onNavigateToDecks),
-        HomeItem("Estudiar Todo", Icons.Default.PlayCircleFilled, Color(0xFF00BFA5), onNavigateToStudy),
-        HomeItem("Estadísticas", Icons.Default.BarChart, Color(0xFFFF4081)) { onNavigateToStats() },
-        HomeItem("Ajustes", Icons.Default.Settings, Color(0xFF607D8B), onNavigateToSettings)
+    val state by homeViewModel.state.collectAsState()
+    val indicator by syncStatusViewModel.indicator.collectAsState()
 
+    HomeContent(
+        state = state,
+        indicator = indicator,
+        onRetry = homeViewModel::retry,
+        onNavigateToDecks = onNavigateToDecks,
+        onNavigateToStudy = onNavigateToStudy,
+        onNavigateToStats = onNavigateToStats,
+        // Con sesion (incluido "sin conexion") la pildora lleva a Ajustes; en modo invitado, a iniciar sesion.
+        onPillClick = if (indicator == SyncIndicator.Guest) onNavigateToAuth else onNavigateToSettings,
+        onNavigateToSettings = onNavigateToSettings
     )
+}
 
-    Box(
+@Composable
+internal fun HomeContent(
+    state: HomeUiState,
+    indicator: SyncIndicator?,
+    onRetry: () -> Unit,
+    onNavigateToDecks: () -> Unit,
+    onNavigateToStudy: () -> Unit,
+    onNavigateToStats: () -> Unit,
+    onPillClick: () -> Unit,
+    onNavigateToSettings: () -> Unit
+) {
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        val compact = maxWidth < COMPACT_WIDTH_BREAKPOINT
+        val extra = BrainCardsTheme.extraColors
+        Column(
             modifier = Modifier
-                .widthIn(max = 600.dp)
+                .align(Alignment.TopCenter)
+                .widthIn(max = 900.dp)
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.Center,
-            contentPadding = PaddingValues(vertical = 24.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = if (compact) 20.dp else 56.dp,
+                    vertical = if (compact) 28.dp else 56.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 24.dp else 32.dp)
         ) {
-            item(span = { GridItemSpan(2) }) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(bottom = 48.dp)
-                ) {
-                    Text(
-                        text = "BrainCards",
-                        style = MaterialTheme.typography.displayMedium.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 2.sp
-                        ),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Domina tu memoria",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+            HomeHeader(indicator = indicator, compact = compact, onPillClick = onPillClick)
+
+            if (state is HomeUiState.Error) {
+                ErrorBanner(onRetry = onRetry)
             }
 
-            // ITEMS DEL DASHBOARD
-            items(items) { item ->
-                DashboardCard(item)
+            when (state) {
+                HomeUiState.Loading -> {
+                    SkeletonBlock(height = if (compact) 88.dp else 112.dp, radius = if (compact) 18.dp else 20.dp)
+                    if (compact) {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            repeat(3) { SkeletonBlock(height = 76.dp, radius = 16.dp) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            repeat(3) { SkeletonBlock(height = 128.dp, radius = 18.dp, modifier = Modifier.weight(1f)) }
+                        }
+                    }
+                }
+
+                else -> {
+                    when (state) {
+                        is HomeUiState.Content -> StudyAllButton(
+                            dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
+                        )
+                        HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
+                        else -> StudyAllOutlineButton(compact = compact, onClick = onNavigateToStudy)
+                    }
+                    val cards = listOf(
+                        NavCardData(
+                            stringResource(Res.string.home_my_decks), Icons.Default.Layers,
+                            extra.brandChip, MaterialTheme.colorScheme.primary, onNavigateToDecks
+                        ),
+                        NavCardData(
+                            stringResource(Res.string.home_stats), Icons.Default.BarChart,
+                            extra.chipTealBg, extra.chipTeal, onNavigateToStats
+                        ),
+                        NavCardData(
+                            stringResource(Res.string.home_settings), Icons.Default.Tune,
+                            extra.chipGrayBg, extra.chipGray, onNavigateToSettings
+                        )
+                    )
+                    if (compact) {
+                        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            cards.forEach { NavCard(it, compact = true, modifier = Modifier.fillMaxWidth()) }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                            cards.forEach { NavCard(it, compact = false, modifier = Modifier.weight(1f)) }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@Composable
-fun DashboardCard(item: HomeItem) {
-    Card(
-        modifier = Modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(24.dp))
-            .clickable { item.onClick() },
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp,
-            pressedElevation = 4.dp
-        ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                item.color.copy(alpha = 0.1f),
-                                item.color.copy(alpha = 0.05f)
-                            )
-                        )
-                    )
-            )
+// --- Cabecera: marca + wordmark + pildora de sync -----------------------------------------------------------------
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.title,
-                    modifier = Modifier.size(48.dp),
-                    tint = item.color
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+@Composable
+private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
+            LogoMark(size = if (compact) 32.dp else 40.dp)
+            Spacer(Modifier.width(if (compact) 10.dp else 14.dp))
+            Column {
                 Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = stringResource(Res.string.app_name),
+                    style = BrainCardsTheme.wordmark.copy(
+                        fontSize = if (compact) 22.sp else 30.sp,
+                        lineHeight = if (compact) 26.sp else 33.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = stringResource(Res.string.home_tagline),
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = if (compact) 13.sp else 14.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
+        // null (arranque en frio) y Unknown (lectura de la ultima sync sin terminar): sin pildora.
+        if (indicator != null && indicator != SyncIndicator.Unknown) {
+            Spacer(Modifier.width(12.dp))
+            SyncPill(indicator = indicator, compact = compact, onClick = onPillClick)
+        }
+    }
+}
+
+@Composable
+private fun LogoMark(size: Dp) {
+    val extra = BrainCardsTheme.extraColors
+    val side = size * 0.55f
+    Box(Modifier.size(size)) {
+        Box(
+            Modifier
+                .align(Alignment.BottomStart)
+                .size(side)
+                .rotate(-8f)
+                .alpha(0.92f)
+                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(size * 0.18f))
+        )
+        Box(
+            Modifier
+                .align(Alignment.TopEnd)
+                .size(side)
+                .rotate(8f)
+                .background(extra.cta, RoundedCornerShape(size * 0.18f))
+        )
+    }
+}
+
+private data class PillStyle(val container: Color, val content: Color, val icon: ImageVector, val spinning: Boolean = false)
+
+@Composable
+private fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () -> Unit) {
+    val extra = BrainCardsTheme.extraColors
+    val scheme = MaterialTheme.colorScheme
+    val style = when (indicator) {
+        SyncIndicator.Syncing -> PillStyle(extra.chipGrayBg, extra.chipGray, Icons.Default.Refresh, spinning = true)
+        is SyncIndicator.Synced -> PillStyle(extra.chipTealBg, extra.chipTeal, Icons.Default.CloudDone)
+        SyncIndicator.NeverSynced -> PillStyle(extra.chipGrayBg, extra.chipGray, Icons.Default.Schedule)
+        SyncIndicator.Offline -> PillStyle(extra.chipGrayBg, extra.chipGray, Icons.Default.WifiOff)
+        is SyncIndicator.Error -> PillStyle(scheme.errorContainer, scheme.error, Icons.Default.ErrorOutline)
+        // Invitado: neutro, solo contorno.
+        SyncIndicator.Guest -> PillStyle(Color.Transparent, scheme.onSurfaceVariant, Icons.Default.PersonOutline)
+        SyncIndicator.Unknown -> return
+    }
+    val label = stringResource(
+        when (indicator) {
+            SyncIndicator.Syncing -> Res.string.sync_pill_syncing
+            is SyncIndicator.Synced -> Res.string.sync_pill_synced
+            SyncIndicator.NeverSynced -> Res.string.sync_pill_never
+            SyncIndicator.Offline -> Res.string.sync_pill_offline
+            is SyncIndicator.Error -> when (indicator.kind) {
+                SyncErrorKind.LOCAL -> Res.string.sync_pill_error_local
+                SyncErrorKind.REJECTED -> Res.string.sync_pill_error_rejected
+                SyncErrorKind.PUSH_PARTIAL -> Res.string.sync_pill_error_push_partial
+                SyncErrorKind.FAILED -> Res.string.sync_pill_error_failed
+            }
+            SyncIndicator.Guest -> Res.string.sync_pill_guest
+            SyncIndicator.Unknown -> Res.string.sync_pill_synced // inalcanzable (return arriba)
+        }
+    )
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = style.container,
+        contentColor = style.content,
+        border = BorderStroke(1.dp, scheme.outlineVariant)
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (compact) 10.dp else 14.dp,
+                vertical = if (compact) 6.dp else 8.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)
+        ) {
+            if (style.spinning) {
+                val angle by rememberInfiniteTransition().animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart)
+                )
+                Icon(style.icon, contentDescription = null, modifier = Modifier.size(16.dp).rotate(angle))
+            } else {
+                Icon(style.icon, contentDescription = null, modifier = Modifier.size(16.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontSize = if (compact) 12.sp else 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            )
+        }
+    }
+}
+
+// --- Estudiar Todo (segun estado) ---------------------------------------------------------------------------------
+
+@Composable
+private fun StudyAllButton(dueCount: Int, compact: Boolean, onClick: () -> Unit) {
+    val extra = BrainCardsTheme.extraColors
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(if (compact) 18.dp else 20.dp),
+        color = extra.cta,
+        contentColor = extra.ctaText,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (compact) 22.dp else 32.dp,
+                vertical = if (compact) 20.dp else 24.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 16.dp else 20.dp)
+        ) {
+            val box = if (compact) 48.dp else 56.dp
+            Box(
+                modifier = Modifier
+                    .size(box)
+                    .background(extra.ctaText, RoundedCornerShape(if (compact) 14.dp else 16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = extra.cta, modifier = Modifier.size(28.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 4.dp)) {
+                Text(
+                    text = stringResource(Res.string.home_study_all),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = if (compact) 19.sp else 23.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = pluralStringResource(Res.plurals.home_due_cards, dueCount, dueCount),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = if (compact) 13.sp else 14.sp),
+                    modifier = Modifier.alpha(0.85f)
+                )
+            }
+        }
+    }
+}
+
+/** 0 pendientes: "Todo al dia". Sigue llevando a Estudio (que muestra su propio "Estamos al dia"). */
+@Composable
+private fun AllDoneButton(compact: Boolean, onClick: () -> Unit) {
+    val extra = BrainCardsTheme.extraColors
+    OutlineRowButton(
+        label = stringResource(Res.string.home_all_done),
+        icon = Icons.Default.CheckCircleOutline,
+        iconBg = extra.chipTealBg,
+        iconTint = extra.chipTeal,
+        compact = compact,
+        onClick = onClick
+    )
+}
+
+/** Con el contador en error, "Estudiar Todo" sigue disponible (la sesion lee sus propias tarjetas). */
+@Composable
+private fun StudyAllOutlineButton(compact: Boolean, onClick: () -> Unit) {
+    val extra = BrainCardsTheme.extraColors
+    OutlineRowButton(
+        label = stringResource(Res.string.home_study_all),
+        icon = Icons.Default.PlayArrow,
+        iconBg = extra.chipGrayBg,
+        iconTint = extra.chipGray,
+        compact = compact,
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun OutlineRowButton(
+    label: String,
+    icon: ImageVector,
+    iconBg: Color,
+    iconTint: Color,
+    compact: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(if (compact) 18.dp else 20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (compact) 22.dp else 32.dp,
+                vertical = if (compact) 20.dp else 24.dp
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 16.dp else 20.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(if (compact) 48.dp else 56.dp)
+                    .background(iconBg, RoundedCornerShape(if (compact) 14.dp else 16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(26.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = if (compact) 19.sp else 23.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        }
+    }
+}
+
+// --- Tarjetas de navegacion ---------------------------------------------------------------------------------------
+
+private data class NavCardData(
+    val title: String,
+    val icon: ImageVector,
+    val chipBg: Color,
+    val chipTint: Color,
+    val onClick: () -> Unit
+)
+
+@Composable
+private fun NavCard(data: NavCardData, compact: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+        onClick = data.onClick,
+        shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+    ) {
+        val chip: @Composable () -> Unit = {
+            Box(
+                modifier = Modifier
+                    .size(if (compact) 40.dp else 44.dp)
+                    .background(data.chipBg, RoundedCornerShape(if (compact) 11.dp else 12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(data.icon, contentDescription = null, tint = data.chipTint, modifier = Modifier.size(22.dp))
+            }
+        }
+        val title: @Composable () -> Unit = {
+            Text(
+                text = data.title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            )
+        }
+        if (compact) {
+            Row(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                chip()
+                title()
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                chip()
+                title()
+            }
+        }
+    }
+}
+
+// --- Cargando y error ---------------------------------------------------------------------------------------------
+
+@Composable
+private fun SkeletonBlock(height: Dp, radius: Dp, modifier: Modifier = Modifier) {
+    val pulse by rememberInfiniteTransition().animateFloat(
+        initialValue = 0.45f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(800, easing = LinearEasing), RepeatMode.Reverse)
+    )
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .alpha(pulse)
+            .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(radius))
+    )
+}
+
+@Composable
+private fun ErrorBanner(onRetry: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(scheme.errorContainer, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = scheme.onErrorContainer, modifier = Modifier.size(18.dp))
+        Text(
+            text = stringResource(Res.string.home_load_error),
+            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+            color = scheme.onErrorContainer,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = stringResource(Res.string.home_retry),
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                textDecoration = TextDecoration.Underline
+            ),
+            color = scheme.onErrorContainer,
+            modifier = Modifier.clickable(onClick = onRetry)
+        )
     }
 }

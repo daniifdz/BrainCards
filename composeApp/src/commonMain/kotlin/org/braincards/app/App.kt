@@ -50,7 +50,9 @@ fun App() {
                         navController.navigate(destination)
                     },
                     onNavigateToSettings = { navController.navigate(Screen.Settings) },
-                    onNavigateToStats = { navController.navigate(Screen.Stats) }
+                    onNavigateToStats = { navController.navigate(Screen.Stats) },
+                    // Invitado: la pildora lleva al login actual (la Bienvenida llega en el paso 3).
+                    onNavigateToAuth = { navController.navigate(Screen.Auth) }
                 )
             }
             composable<Screen.DecksList> {

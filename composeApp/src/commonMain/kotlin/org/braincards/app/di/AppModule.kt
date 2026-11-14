@@ -24,6 +24,7 @@ import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.LocalDataRepositoryImpl
+import org.braincards.app.data.repository.DueCardsObserverImpl
 import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
@@ -33,6 +34,7 @@ import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
+import org.braincards.app.domain.repository.DueCardsObserver
 import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
@@ -59,6 +61,7 @@ import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 import org.braincards.app.domain.usecase.Stats.GetStudyStatsUseCase
@@ -69,12 +72,14 @@ import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
+import org.braincards.app.presentation.screens.home.HomeViewModel
 import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.SyncCoordinator
+import org.braincards.app.presentation.sync.SyncStatusViewModel
 import org.koin.dsl.binds
 import org.koin.dsl.module
 import org.koin.dsl.onClose
@@ -286,6 +291,18 @@ fun appModule(
             getTopicsUseCase = get(),
             updateTopicUseCase = get(),
             deleteTopicUseCase = get()
+        )
+    }
+
+    // Home: contador reactivo de tarjetas pendientes (mismo criterio que el estudio) e indicador de sync.
+    single<DueCardsObserver> { DueCardsObserverImpl(flashcardDao = get()) }
+    factory { ObserveDueCountUseCase(observer = get()) }
+    viewModel { HomeViewModel(observeDueCount = get()) }
+    viewModel {
+        SyncStatusViewModel(
+            authRepository = get(),
+            syncCoordinator = get(),
+            connectivityMonitor = get()
         )
     }
 
