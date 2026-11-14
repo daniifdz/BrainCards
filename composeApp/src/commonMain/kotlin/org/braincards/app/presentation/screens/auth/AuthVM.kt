@@ -31,7 +31,6 @@ import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.PullFailure
 import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.abortedTableCount
-import org.braincards.app.domain.usecase.Sync.downloadedRowCount
 import org.braincards.app.domain.usecase.Sync.failedRowCount
 import org.braincards.app.presentation.sync.FinishSignOutResult
 import org.braincards.app.presentation.sync.SignOutPrompt
@@ -56,8 +55,8 @@ enum class SignOutEvent { SignedOut, SessionCloseFailed, WipeFailed, SessionChan
 /** Resultado del sync manual para el usuario. Cada caso tiene su texto en strings.xml. */
 sealed interface SyncUserMessage {
     data object NotAuthenticated : SyncUserMessage
-    /** Todo bien. [downloadedRows] solo se muestra en un texto TEMPORAL de comprobacion (ver FINAL_SPRINT.md). */
-    data class Synced(val downloadedRows: Int) : SyncUserMessage
+    /** Todo bien. */
+    data object Synced : SyncUserMessage
 
     /** El servidor no tiene server_updated_at (falta aplicar el SQL): se sincronizo en modo completo. */
     data object ServerOutdated : SyncUserMessage
@@ -103,7 +102,7 @@ fun SyncResult.toSyncUserMessage(): SyncUserMessage = when (this) {
             pushFailedCount > 0 -> SyncUserMessage.PushPartial(pushFailedCount)
             listOf(pull.decks, pull.topics, pull.flashcards, pull.cardScheduling).any { it.fellBackToFullPull } ->
                 SyncUserMessage.ServerOutdated
-            else -> SyncUserMessage.Synced(pull.downloadedRowCount())
+            else -> SyncUserMessage.Synced
         }
     }
 }

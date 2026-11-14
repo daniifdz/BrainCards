@@ -77,7 +77,7 @@ private fun SyncOutcome.toSyncStatus(): SyncStatus {
     val r = result ?: return SyncStatus.Error(SyncErrorKind.FAILED)
     return when (r.toSyncUserMessage()) {
         SyncUserMessage.NotAuthenticated -> SyncStatus.SignedOut
-        is SyncUserMessage.Synced, SyncUserMessage.ServerOutdated -> SyncStatus.Synced(at)
+        SyncUserMessage.Synced, SyncUserMessage.ServerOutdated -> SyncStatus.Synced(at)
         SyncUserMessage.PullNetwork -> SyncStatus.Offline
         SyncUserMessage.PullRejected -> SyncStatus.Error(SyncErrorKind.REJECTED)
         SyncUserMessage.PullLocal -> SyncStatus.Error(SyncErrorKind.LOCAL)

@@ -85,8 +85,7 @@ fun SettingsScreen(
         authViewModel.syncMessageEvent.collectLatest { message ->
             val text = when (message) {
                 SyncUserMessage.NotAuthenticated -> getString(Res.string.sync_not_authenticated)
-                is SyncUserMessage.Synced ->
-                    getPluralString(Res.plurals.sync_done_downloaded, message.downloadedRows, message.downloadedRows)
+                SyncUserMessage.Synced -> getString(Res.string.sync_done)
                 SyncUserMessage.ServerOutdated -> getString(Res.string.sync_server_outdated)
                 SyncUserMessage.SyncFailed -> getString(Res.string.sync_failed)
                 SyncUserMessage.PullNetwork -> getString(Res.string.sync_pull_network)
