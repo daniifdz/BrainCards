@@ -220,7 +220,7 @@ class Device(
     val store = DataStorePullWatermarkStore(dataStore)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
 
-    val decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao())
+    val decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
     val topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
     val flashcards = FlashcardRepositoryImpl(db.flashcardDao())
     val scheduling = CardSchedulingRepositoryImpl(db.cardSchedulingDao(), RoomTransactionRunner(db))

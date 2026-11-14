@@ -57,7 +57,7 @@ class PullOrphanGuardRoomTest {
         db = Room.inMemoryDatabaseBuilder<AppDatabase>()
             .setDriver(BundledSQLiteDriver())
             .build()
-        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao())
+        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
         flashcards = FlashcardRepositoryImpl(db.flashcardDao())
         scheduling = CardSchedulingRepositoryImpl(db.cardSchedulingDao(), RoomTransactionRunner(db))

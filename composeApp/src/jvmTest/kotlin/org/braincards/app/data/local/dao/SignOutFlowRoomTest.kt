@@ -72,7 +72,7 @@ class SignOutFlowRoomTest {
         remote = FakeRemoteDataSource()
 
         val transactionRunner = RoomTransactionRunner(db)
-        val decks = DeckRepositoryImpl(deckDao = db.deckDao(), topicDao = db.topicDao(), flashcardDao = db.flashcardDao())
+        val decks = DeckRepositoryImpl(deckDao = db.deckDao(), topicDao = db.topicDao(), flashcardDao = db.flashcardDao(), transactionRunner = RoomTransactionRunner(db))
         val topics = TopicRepositoryImpl(topicDao = db.topicDao(), flashcardDao = db.flashcardDao())
         val flashcards = FlashcardRepositoryImpl(flashcardDao = db.flashcardDao())
         val scheduling = CardSchedulingRepositoryImpl(cardSchedulingDao = db.cardSchedulingDao(), transactionRunner = transactionRunner)

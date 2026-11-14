@@ -6,6 +6,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.RoomTransactionRunner
 import org.braincards.app.data.local.entity.CardSchedulingEntity
 import org.braincards.app.data.local.entity.DeckEntity
 import org.braincards.app.data.local.entity.FlashcardEntity
@@ -40,7 +41,7 @@ class ParentPullKeepsChildrenRoomTest {
     @BeforeTest
     fun setUp() = runBlocking {
         db = Room.inMemoryDatabaseBuilder<AppDatabase>().setDriver(BundledSQLiteDriver()).build()
-        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao())
+        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
         flashcards = FlashcardRepositoryImpl(db.flashcardDao())
         // deck d1 -> topic t1 -> card c1 (+ scheduling c1, reviewlog r1), todo sincronizado.

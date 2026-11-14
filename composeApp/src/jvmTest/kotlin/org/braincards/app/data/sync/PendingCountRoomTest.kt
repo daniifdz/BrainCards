@@ -57,7 +57,7 @@ class PendingCountRoomTest {
         db = Room.inMemoryDatabaseBuilder<AppDatabase>().setDriver(BundledSQLiteDriver()).build()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         remote = FakeRemoteDataSource()
-        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao())
+        decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         val topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
         flashcards = FlashcardRepositoryImpl(db.flashcardDao())
         val scheduling = CardSchedulingRepositoryImpl(db.cardSchedulingDao(), RoomTransactionRunner(db))

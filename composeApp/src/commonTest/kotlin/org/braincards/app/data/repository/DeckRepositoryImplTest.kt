@@ -5,6 +5,7 @@ import kotlinx.datetime.Instant
 import org.braincards.app.data.fakes.FakeDeckDao
 import org.braincards.app.data.fakes.FakeFlashcardDao
 import org.braincards.app.data.fakes.FakeTopicDao
+import org.braincards.app.data.fakes.FakeTransactionRunner
 import org.braincards.app.data.local.entity.DeckEntity
 import org.braincards.app.domain.models.Deck
 import kotlin.test.Test
@@ -37,7 +38,7 @@ class DeckRepositoryImplTest {
         val deckDao = FakeDeckDao().apply {
             seed(localEntity(id = "deck-1", updatedAt = Instant.fromEpochMilliseconds(1000)))
         }
-        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao())
+        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteDeck(id = "deck-1", updatedAt = Instant.fromEpochMilliseconds(2000))))
 
@@ -52,7 +53,7 @@ class DeckRepositoryImplTest {
         val deckDao = FakeDeckDao().apply {
             seed(localEntity(id = "deck-1", updatedAt = Instant.fromEpochMilliseconds(3000)))
         }
-        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao())
+        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteDeck(id = "deck-1", updatedAt = Instant.fromEpochMilliseconds(2000))))
 
@@ -67,7 +68,7 @@ class DeckRepositoryImplTest {
     @Test
     fun `applyRemotePull inserta la fila cuando no existe local`() = runBlocking {
         val deckDao = FakeDeckDao()
-        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao())
+        val repository = DeckRepositoryImpl(deckDao, FakeTopicDao(), FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteDeck(id = "deck-new", updatedAt = Instant.fromEpochMilliseconds(1000))))
 
