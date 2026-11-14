@@ -4,6 +4,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -18,7 +20,11 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.braincards.app.domain.fakes.FakeDecksRepository
+import org.braincards.app.domain.models.Deck
+import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.DueCardsObserver
+import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Flashcards.DUE_COUNT_TICK
 import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import kotlin.test.AfterTest
@@ -58,8 +64,22 @@ class HomeViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun TestScope.vmWith(observer: DueCardsObserver): HomeViewModel =
-        HomeViewModel(ObserveDueCountUseCase(observer, SchedulerClock(testScheduler), DUE_COUNT_TICK))
+    private val aDeck = Deck(id = "d1", name = "Mazo", createdAt = Instant.fromEpochMilliseconds(0),
+        updatedAt = Instant.fromEpochMilliseconds(0), description = null)
+
+    /** Por defecto hay un mazo (los tests de pendientes no quieren NoDecks); [decks] lo sustituye. */
+    private fun TestScope.vmWith(
+        observer: DueCardsObserver,
+        decks: Flow<List<Deck>> = flowOf(listOf(aDeck))
+    ): HomeViewModel {
+        val repository = object : DecksRepository by FakeDecksRepository() {
+            override fun getAllDecks(): Flow<List<Deck>> = decks
+        }
+        return HomeViewModel(
+            ObserveDueCountUseCase(observer, SchedulerClock(testScheduler), DUE_COUNT_TICK),
+            GetDeckUseCase(repository)
+        )
+    }
 
     private fun TestScope.collect(vm: HomeViewModel): List<HomeUiState> {
         val seen = mutableListOf<HomeUiState>()
@@ -158,5 +178,100 @@ class HomeViewModelTest {
         runCurrent()
 
         assertEquals(HomeUiState.Content(1), seen.last())
+    }
+
+    // --- primer uso: 0 mazos ----------------------------------------------------------------------------------------
+
+    @Test
+    fun sin_ningun_mazo_es_NoDecks() = runTest {
+        val observer = ManualObserver()
+        val vm = vmWith(observer, decks = flowOf(emptyList()))
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+
+        assertEquals(HomeUiState.NoDecks, seen.last())
+    }
+
+    @Test
+    fun NoDecks_manda_sobre_Content_aunque_el_contador_no_sea_cero() = runTest {
+        // Tarjetas vivas bajo un mazo borrado (deuda anotada): el contador dice 5 pero no hay mazos.
+        val observer = ManualObserver()
+        val vm = vmWith(observer, decks = flowOf(emptyList()))
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(5))
+        runCurrent()
+
+        assertEquals(HomeUiState.NoDecks, seen.last())
+    }
+
+    @Test
+    fun con_mazos_y_cero_pendientes_sigue_siendo_Empty() = runTest {
+        val observer = ManualObserver()
+        val vm = vmWith(observer, decks = flowOf(listOf(aDeck)))
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+
+        assertEquals(HomeUiState.Empty, seen.last())
+    }
+
+    @Test
+    fun hasta_que_llegan_los_mazos_es_Loading_aunque_ya_haya_recuento() = runTest {
+        val observer = ManualObserver()
+        val decks = MutableSharedFlow<List<Deck>>(extraBufferCapacity = 8)
+        val vm = vmWith(observer, decks = decks)
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(3))
+        runCurrent()
+        assertEquals(HomeUiState.Loading, seen.last())
+
+        decks.emit(listOf(aDeck))
+        runCurrent()
+        assertEquals(HomeUiState.Content(3), seen.last())
+    }
+
+    @Test
+    fun crear_el_primer_mazo_sale_de_NoDecks_y_borrar_el_ultimo_vuelve_a_NoDecks() = runTest {
+        val observer = ManualObserver()
+        val decks = MutableStateFlow<List<Deck>>(emptyList())
+        val vm = vmWith(observer, decks = decks)
+        val seen = collect(vm)
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+        assertEquals(HomeUiState.NoDecks, seen.last())
+
+        decks.value = listOf(aDeck)
+        runCurrent()
+        assertEquals(HomeUiState.Empty, seen.last())
+
+        decks.value = emptyList()
+        runCurrent()
+        assertEquals(HomeUiState.NoDecks, seen.last())
+    }
+
+    @Test
+    fun un_fallo_al_leer_los_mazos_es_Error_y_reintentar_se_recupera() = runTest {
+        val observer = ManualObserver()
+        var failing = true
+        val decks = flow<List<Deck>> {
+            if (failing) throw IllegalStateException("boom")
+            emit(listOf(aDeck))
+        }
+        val vm = vmWith(observer, decks = decks)
+        val seen = collect(vm)
+        runCurrent()
+        assertEquals(HomeUiState.Error, seen.last())
+
+        failing = false
+        vm.retry()
+        observer.counts.emit(Result.success(2))
+        runCurrent()
+
+        assertEquals(HomeUiState.Content(2), seen.last())
     }
 }

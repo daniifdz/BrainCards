@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -151,6 +153,7 @@ internal fun HomeContent(
                         is HomeUiState.Content -> StudyAllButton(
                             dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
                         )
+                        HomeUiState.NoDecks -> FirstUseCard(compact = compact, onCreateDeck = onNavigateToDecks)
                         HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
                         else -> StudyAllOutlineButton(compact = compact, onClick = onNavigateToStudy)
                     }
@@ -220,7 +223,7 @@ private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick:
 }
 
 @Composable
-private fun LogoMark(size: Dp) {
+internal fun LogoMark(size: Dp) {
     val extra = BrainCardsTheme.extraColors
     val side = size * 0.55f
     Box(Modifier.size(size)) {
@@ -351,6 +354,58 @@ private fun StudyAllButton(dueCount: Int, compact: Boolean, onClick: () -> Unit)
                     text = pluralStringResource(Res.plurals.home_due_cards, dueCount, dueCount),
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = if (compact) 13.sp else 14.sp),
                     modifier = Modifier.alpha(0.85f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Primer uso (0 mazos): bienvenida y un unico CTA a Mis Mazos. Sin "Estudiar Todo" (no hay nada que estudiar) ni
+ * "Todo al dia" (sugeriria que el usuario ya hizo algo).
+ */
+@Composable
+private fun FirstUseCard(compact: Boolean, onCreateDeck: () -> Unit) {
+    val extra = BrainCardsTheme.extraColors
+    Surface(
+        shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(if (compact) 24.dp else 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(extra.brandChip, RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Layers, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(Res.string.home_first_use_title),
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = stringResource(Res.string.home_first_use_text),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp, lineHeight = 21.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.widthIn(max = 480.dp)
+                )
+            }
+            Button(
+                onClick = onCreateDeck,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 13.dp)
+            ) {
+                Text(
+                    text = stringResource(Res.string.home_first_use_cta),
+                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 )
             }
         }
