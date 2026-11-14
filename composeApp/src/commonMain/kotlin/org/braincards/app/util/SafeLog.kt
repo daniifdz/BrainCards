@@ -16,3 +16,11 @@ fun Throwable.safeLogDescription(): String {
 fun logError(context: String, error: Throwable) {
     println("$context: ${error.safeLogDescription()}")
 }
+
+/**
+ * Traza de diagnostico de la sync automatica: prefijo fijo `Sync:` (para filtrar logcat). SOLO enums, conteos y
+ * duraciones: nunca excepciones, datos de sesion, nombres de usuario ni contenido de tarjetas.
+ */
+fun logSync(message: String) {
+    println("Sync: $message")
+}

@@ -17,6 +17,7 @@ import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.isFullySuccessful
 import org.braincards.app.util.logError
+import org.braincards.app.util.logSync
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -47,6 +48,9 @@ const val AUTO_SYNC_BACKOFF_JITTER: Double = 0.2
 
 /** Plazo corto para reintentar un disparo que se omitio porque la puerta de pausa estaba cerrada. */
 val AUTO_SYNC_PAUSED_RETRY: Duration = 20.seconds
+
+/** Por que el ultimo intento en segundo plano no se hizo (o se aplazo). Solo para trazas de diagnostico. */
+enum class BackgroundAttemptSkip { NOT_AUTHENTICATED, OFFLINE, NO_PENDING, PAUSED, BACKOFF }
 
 /** Todos los plazos del controlador, con los valores aprobados por defecto (los tests en tiempo real usan otros). */
 data class AutoSyncConfig(
@@ -96,7 +100,9 @@ class AutoSyncController(
     private val pauseGate: AutoSyncPauseGate,
     private val foregroundMonitor: ForegroundMonitor,
     private val connectivityMonitor: ConnectivityMonitor,
-    private val config: AutoSyncConfig = AutoSyncConfig()
+    private val config: AutoSyncConfig = AutoSyncConfig(),
+    // Trazas de diagnostico del ultimo intento en segundo plano (solo enums, conteos y duraciones). Inyectable en tests.
+    private val log: (String) -> Unit = ::logSync
 ) {
 
     private sealed interface Signal {
@@ -222,6 +228,7 @@ class AutoSyncController(
     private suspend fun attempt() {
         val background = !foreground
         attemptStartedAt = now()
+        if (background) log("ultimo intento en segundo plano: inicio")
         // Se consumen los disparos pendientes: lo que llegue durante el sync cuenta para el siguiente.
         immediate = false
         retryAt = null
@@ -231,6 +238,7 @@ class AutoSyncController(
         periodicAt = null
         if (background) backgroundFinal = false
 
+        var failedWithException = false
         val outcome: AutoSyncOutcome? = try {
             if (background) {
                 withTimeoutOrNull(config.backgroundTimeout) { host.requestAutoSync() }
@@ -241,6 +249,7 @@ class AutoSyncController(
             throw e
         } catch (e: Exception) {
             logError("Sync automatico", e)
+            failedWithException = true
             registerFailure()
             null
         }
@@ -256,6 +265,7 @@ class AutoSyncController(
             null -> Unit
         }
         attemptEndedAt = now()
+        if (background) logBackgroundEnd(outcome, failedWithException)
         lastAttemptRan = outcome is AutoSyncOutcome.Ran
         if (foreground && periodicAt == null) periodicAt = now() + config.periodicInterval
     }
@@ -275,6 +285,7 @@ class AutoSyncController(
                     periodicAt = now() + config.periodicInterval
                 } else if (!signal.on && was) {
                     backgroundFinal = authReady && (lastPending.count > 0 || changeDeadline != null)
+                    logBackgroundDecision()
                 }
             }
             is Signal.Online -> {
@@ -324,6 +335,48 @@ class AutoSyncController(
             }
             is Signal.Outcome -> onOutcome(signal.outcome)
         }
+    }
+
+    // --- trazas de diagnostico (no cambian ningun estado) -------------------------------------------------------------
+
+    /** Al pasar a segundo plano: si el ultimo intento queda armado, se aplaza (offline / backoff) o se omite, y por que. */
+    private fun logBackgroundDecision() {
+        val reason = when {
+            !authReady -> BackgroundAttemptSkip.NOT_AUTHENTICATED
+            !backgroundFinal -> BackgroundAttemptSkip.NO_PENDING
+            !online -> BackgroundAttemptSkip.OFFLINE
+            (backoffUntil ?: Duration.ZERO) > now() -> BackgroundAttemptSkip.BACKOFF
+            else -> null
+        }
+        when (reason) {
+            null -> log("segundo plano: ultimo intento armado pendientes=${lastPending.count}")
+            BackgroundAttemptSkip.OFFLINE, BackgroundAttemptSkip.BACKOFF -> log(
+                "segundo plano: ultimo intento aplazado motivo=$reason pendientes=${lastPending.count}" +
+                    if (reason == BackgroundAttemptSkip.BACKOFF) " esperaMs=${((backoffUntil ?: now()) - now()).inWholeMilliseconds}" else ""
+            )
+            else -> log("segundo plano: ultimo intento omitido motivo=$reason")
+        }
+    }
+
+    private fun logBackgroundEnd(outcome: AutoSyncOutcome?, failedWithException: Boolean) {
+        val ms = (attemptEndedAt - attemptStartedAt).inWholeMilliseconds
+        val result = when (outcome) {
+            is AutoSyncOutcome.Ran -> when (val r = outcome.result) {
+                is SyncResult.Completed -> if (r.isFullySuccessful()) "COMPLETED_OK" else "COMPLETED_WITH_FAILURES"
+                SyncResult.NotAuthenticated -> "NOT_AUTHENTICATED"
+            }
+            is AutoSyncOutcome.Skipped -> when (outcome.reason) {
+                AutoSyncSkipReason.PAUSED_SIGN_OUT, AutoSyncSkipReason.PAUSED_STUDY ->
+                    "SKIPPED_${BackgroundAttemptSkip.PAUSED} (${outcome.reason})"
+                AutoSyncSkipReason.NO_SESSION, AutoSyncSkipReason.SESSION_UNCONFIRMED ->
+                    "SKIPPED_${BackgroundAttemptSkip.NOT_AUTHENTICATED} (${outcome.reason})"
+            }
+            null -> if (failedWithException) "EXCEPTION" else "TIMEOUT"
+        }
+        if (outcome == null && !failedWithException) {
+            log("segundo plano: ultimo intento TIMEOUT limiteMs=${config.backgroundTimeout.inWholeMilliseconds}")
+        }
+        log("ultimo intento en segundo plano: fin duracionMs=$ms resultado=$result")
     }
 
     private fun clearChangeWindow() {
