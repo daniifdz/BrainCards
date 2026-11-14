@@ -75,7 +75,9 @@ import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.SyncCoordinator
+import org.koin.dsl.binds
 import org.koin.dsl.module
+import org.koin.dsl.onClose
 import kotlin.time.Duration.Companion.seconds
 
 fun appModule(
@@ -104,6 +106,10 @@ fun appModule(
             // Sin logs del cliente (el valor por defecto es INFO): una RestException o una traza de
             // peticion arrastra la URL y las cabeceras, Authorization incluido.
             defaultLogLevel = LogLevel.NONE
+            // NO cambiar enableLifecycleCallbacks ni alwaysAutoRefresh sin leer antes la nota «Limitación conocida
+            // (Android): el último intento en segundo plano NO sincroniza» de FINAL_SPRINT.md (sección de sincronización
+            // automática): con los valores por defecto supabase-kt resetea la sesión a Initializing en el onStop, pero
+            // desactivar los callbacks quita el refresco al volver tras un sueño largo (riesgo de 401).
             install(Auth)
             install(Postgrest)
         }
@@ -186,9 +192,10 @@ fun appModule(
             dataStore = get(),
             localDataRepository = get(),
             signOutAndWipeUseCase = get(),
-            pauseGate = get()
+            pauseGate = get(),
+            pendingObserver = get()
         )
-    }
+    } onClose { it?.close() }
 
     viewModel {
         AuthViewModel(
@@ -227,7 +234,8 @@ fun appModule(
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
     single<TransactionRunner> { RoomTransactionRunner(get<AppDatabase>()) }
     single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get(), transactionRunner = get()) }
-    single<LocalDataRepository> {
+    // UN solo singleton que responde a las dos interfaces (LocalDataRepositoryImpl implementa ambas): sin casts.
+    single {
         LocalDataRepositoryImpl(
             deckDao = get(),
             topicDao = get(),
@@ -236,9 +244,7 @@ fun appModule(
             reviewLogDao = get(),
             transactionRunner = get()
         )
-    }
-    // Mismo objeto que LocalDataRepository (LocalDataRepositoryImpl implementa las dos interfaces).
-    single<LocalTableInspector> { get<LocalDataRepository>() as LocalTableInspector }
+    } binds arrayOf(LocalDataRepository::class, LocalTableInspector::class)
     // Marca de agua del pull incremental sobre el DataStore compartido (clave propia, ver SyncPreferenceKeys).
     single<PullWatermarkStore> { DataStorePullWatermarkStore(dataStore = get()) }
     factory { SignOutAndWipeUseCase(authRepository = get(), localDataRepository = get()) }

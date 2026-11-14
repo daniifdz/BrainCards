@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +15,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -30,6 +35,7 @@ import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
+import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.SignOutAndWipeResult
 import org.braincards.app.domain.usecase.Auth.SignOutAndWipeUseCase
@@ -91,7 +97,8 @@ class SyncCoordinator(
     private val signOutAndWipeUseCase: SignOutAndWipeUseCase,
     coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
     private val pauseGate: AutoSyncPauseGate = AutoSyncPauseGate(),
-    private val clock: Clock = Clock.System
+    private val clock: Clock = Clock.System,
+    private val pendingObserver: PendingChangesObserver? = null
 ) : AutoSyncHost {
     private val scope = coroutineScope
     private val syncMutex = Mutex()
@@ -102,6 +109,9 @@ class SyncCoordinator(
     private val _lastSuccessfulSyncAt = MutableStateFlow<Instant?>(null)
     val lastSuccessfulSyncAt: StateFlow<Instant?> = _lastSuccessfulSyncAt.asStateFlow()
 
+    // Con [pendingObserver] el contador es REACTIVO: lo alimenta el observador (incluye las filas sin dueno, creadas
+    // sin conexion y aun sin adoptar, que getPendingSync no ve). Sin observador (solo tests antiguos) se recalcula
+    // al cambiar la sesion y al acabar un sync.
     private val _pendingChangesCount = MutableStateFlow(0)
     val pendingChangesCount: StateFlow<Int> = _pendingChangesCount.asStateFlow()
 
@@ -118,11 +128,15 @@ class SyncCoordinator(
     // Lease SIGN_OUT del cierre de sesion en curso (prepareSignOut -> finishSignOut/abortSignOut). Uno solo.
     private var signOutLease: AutoSyncPauseGate.Lease? = null
 
+    // Suscripciones propias del coordinador: close() las cancela (el scope es inyectado y no es nuestro).
+    private var authJob: Job? = null
+    private var pendingJob: Job? = null
+
     init {
         scope.launch {
             _lastSuccessfulSyncAt.value = readLastSuccessfulSyncAt()
         }
-        scope.launch {
+        authJob = scope.launch {
             // distinctUntilChanged: auth-kt emite un SessionStatus.Authenticated
             // nuevo en cada refresco automatico del token (cada hora aprox.) -- sin
             // esto, cada refresco cancelaria (collectLatest) un sync en curso y
@@ -135,7 +149,7 @@ class SyncCoordinator(
                         // Tambien sin confirmar (offline): consulta solo local, sin
                         // red, para no mostrar "0 pendientes" en un arranque en frio
                         // sin conexion.
-                        refreshPendingChangesCount(state.userId)
+                        if (pendingObserver == null) refreshPendingChangesCount(state.userId)
                         // El sync de arranque / inicio de sesion ya NO se lanza aqui: lo dispara el AutoSyncController
                         // (sesion confirmada + primer plano + red), que respeta el intervalo minimo y el backoff.
                     }
@@ -144,6 +158,29 @@ class SyncCoordinator(
                 }
             }
         }
+        if (pendingObserver != null) {
+            pendingJob = scope.launch {
+                // Se re-suscribe al cambiar de usuario; sin sesion el contador es 0; en Loading conserva el valor.
+                authRepository.authState
+                    .distinctUntilChanged()
+                    .flatMapLatest { state ->
+                        when (state) {
+                            is AuthState.Authenticated -> pendingObserver.observe(state.userId).map { it.count }
+                            is AuthState.NotAuthenticated -> flowOf(0)
+                            else -> emptyFlow()
+                        }
+                    }
+                    .collect { _pendingChangesCount.value = it }
+            }
+        }
+    }
+
+    /** Cancela las suscripciones del coordinador (sesion y pendientes). Idempotente. */
+    fun close() {
+        pendingJob?.cancel()
+        pendingJob = null
+        authJob?.cancel()
+        authJob = null
     }
 
     /** Disparador manual del boton "Sincronizar ahora" de Ajustes. La puerta de pausa NO lo bloquea. */
@@ -322,6 +359,7 @@ class SyncCoordinator(
     }
 
     private suspend fun refreshPendingChangesCount(userId: String?) {
+        if (pendingObserver != null) return // el observador es la unica fuente del contador
         _pendingChangesCount.value = if (userId == null) 0 else countPending(userId)
     }
 
