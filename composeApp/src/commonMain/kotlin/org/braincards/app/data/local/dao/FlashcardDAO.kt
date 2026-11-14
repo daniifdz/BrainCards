@@ -59,6 +59,16 @@ interface FlashcardDao {
     )
     suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
 
+    // Home: tarjetas pendientes de repaso, alcance "todas". DEBE mantener el mismo FROM/WHERE que getAllDueFlashcards
+    // (LEFT JOIN + deletedAt IS NULL + COALESCE(nextReview, 0) <= :now): es el criterio de la sesion de estudio
+    // (StudyScope.All). Un test de propiedad (DueCountRoomTest) compara ambos.
+    @Query(
+        "SELECT COUNT(*) FROM flashcards " +
+            "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            "WHERE flashcards.deletedAt IS NULL AND COALESCE(card_scheduling.nextReview, 0) <= :now"
+    )
+    fun observeDueCount(now: Instant): Flow<Int>
+
     @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedFlashcards(userId: String): Int
 

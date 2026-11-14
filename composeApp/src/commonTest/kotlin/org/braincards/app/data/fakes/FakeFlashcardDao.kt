@@ -98,6 +98,9 @@ class FakeFlashcardDao : FlashcardDao {
 
     override suspend fun hasAnyFlashcard(): Boolean = flashcards.isNotEmpty()
 
+    // Los tests con fakes no observan el contador de pendientes (se prueba contra Room real: DueCountRoomTest).
+    override fun observeDueCount(now: Instant): Flow<Int> = flowOf(0)
+
     // Sync automatica: los tests con fakes no observan pendientes (eso se prueba contra Room real).
     override fun observePendingStamp(userId: String): Flow<PendingStampRow> = flowOf(PendingStampRow(0, 0))
 }
