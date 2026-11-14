@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ground del tema (docs/design tokens.css): fondo del splash y de la ventana, claro -->
+    <color name="bc_ground">#FBF7F2</color>
+</resources>

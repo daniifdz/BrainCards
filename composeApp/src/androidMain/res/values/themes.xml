@@ -2,8 +2,12 @@
 
 <resources>
 <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-    <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+    <item name="windowSplashScreenBackground">@color/bc_ground</item>
     <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
-    <item name="postSplashScreenTheme">@android:style/Theme.Material.Light.NoActionBar</item>
+    <item name="postSplashScreenTheme">@style/Theme.App.Base</item>
+</style>
+<!-- Tema base de la app y de la ventana tras el splash: mismo color que el fondo del tema (claro; oscuro en values-night). -->
+<style name="Theme.App.Base" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowBackground">@color/bc_ground</item>
 </style>
 </resources>
