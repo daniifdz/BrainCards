@@ -1,0 +1,42 @@
+/* BrainCards — tokens de color (Opción A, decididos en el chat de rediseño visual) */
+[data-theme="light"] {
+  --ground: #FBF7F2;
+  --surface: #FFFFFF;
+  --border: rgba(43,36,32,0.12);
+  --text: #2B2420;
+  --text-secondary: #6B6258;
+  --brand: #5B3FBF;
+  --brand-chip: #EDE7FA;
+  --cta: #B8512E;
+  --cta-text: #FFFFFF;
+  --brand-text: #FFFFFF;
+  --chip-teal: #3D7566;
+  --chip-teal-bg: #E1F0EB;
+  --chip-gray: #5B5349;
+  --chip-gray-bg: #EFEAE2;
+  --error: #B3261E;
+  --error-bg: #FBEAE8;
+}
+[data-theme="dark"] {
+  --ground: #1C1712;
+  --surface: #271F19;
+  --border: rgba(245,239,230,0.14);
+  --text: #F5EFE6;
+  --text-secondary: #B8AC9C;
+  --brand: #A693F0;
+  --brand-chip: #352B4D;
+  --cta: #E8774F;
+  --cta-text: #1C1712;
+  --brand-text: #1C1712;
+  --chip-teal: #7FBFAE;
+  --chip-teal-bg: #1E342E;
+  --chip-gray: #C2B8AB;
+  --chip-gray-bg: #342B22;
+  --error: #FFB4A8;
+  --error-bg: #3B1410;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+.theme-root { background: var(--ground); color: var(--text); }
+.wordmark { font-family: 'Fredoka', system-ui, sans-serif; font-weight: 600; color: var(--text); }
