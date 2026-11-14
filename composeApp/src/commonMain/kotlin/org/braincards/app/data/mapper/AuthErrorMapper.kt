@@ -46,3 +46,34 @@ fun Throwable.toAuthErrorMessage(): String = when (this) {
         "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo."
     else -> GENERIC_AUTH_ERROR_MESSAGE
 }
+
+/**
+ * Clasificacion por TIPO de un fallo de auth (sin texto): la UI decide donde y con que texto se muestra
+ * (ver AuthFormError.kt). Los dos limites de envio de supabase se unen en [RateLimited]: se muestran igual.
+ */
+enum class AuthErrorKind {
+    OtpExpired,
+    WeakPassword,
+    RateLimited,
+    InvalidCredentials,
+    EmailNotConfirmed,
+    Network,
+    Generic
+}
+
+/** Nucleo puro de [toAuthErrorKind], testeable sin construir un AuthRestException. */
+fun authErrorKind(errorCode: AuthErrorCode?): AuthErrorKind = when (errorCode) {
+    AuthErrorCode.OtpExpired -> AuthErrorKind.OtpExpired
+    AuthErrorCode.WeakPassword -> AuthErrorKind.WeakPassword
+    AuthErrorCode.OverEmailSendRateLimit, AuthErrorCode.OverRequestRateLimit -> AuthErrorKind.RateLimited
+    AuthErrorCode.EmailNotConfirmed -> AuthErrorKind.EmailNotConfirmed
+    AuthErrorCode.InvalidCredentials -> AuthErrorKind.InvalidCredentials
+    else -> AuthErrorKind.Generic
+}
+
+/** Throwable -> tipo de fallo (mismas ramas que [toAuthErrorMessage]). */
+fun Throwable.toAuthErrorKind(): AuthErrorKind = when (this) {
+    is AuthRestException -> authErrorKind(errorCode)
+    is HttpRequestException, is HttpRequestTimeoutException -> AuthErrorKind.Network
+    else -> AuthErrorKind.Generic
+}

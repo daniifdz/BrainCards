@@ -22,7 +22,8 @@ sealed class Screen {
     @Serializable
     data object Auth : Screen()
     @Serializable
-    data object ForgotPassword : Screen()
+    // email: el que se habia escrito en Bienvenida, para precargarlo ("" = sin precarga).
+    data class ForgotPassword(val email: String = "") : Screen()
     @Serializable
     data class ResetPassword(val email: String) : Screen()
     @Serializable

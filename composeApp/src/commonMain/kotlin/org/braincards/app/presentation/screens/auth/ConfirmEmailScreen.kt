@@ -1,44 +1,50 @@
 package org.braincards.app.presentation.screens.auth
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import braincards.composeapp.generated.resources.*
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import org.braincards.app.presentation.components.form.CodeInput
+import org.braincards.app.presentation.components.form.FormBanner
+import org.braincards.app.presentation.components.form.FormCaption
+import org.braincards.app.presentation.components.form.FormScaffold
+import org.braincards.app.presentation.components.form.SubmitButton
+import org.braincards.app.presentation.components.form.formField
+import org.braincards.app.presentation.components.form.rememberFormFocus
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
 /**
- * Pantalla del codigo de confirmacion de registro. Mismo patron que
- * ResetPasswordScreen (eventos del ViewModel, snackbar, filtro de digitos), sin el
- * campo de contraseña: aqui solo hay un paso.
+ * Pantalla del codigo de confirmacion de registro (v4.4): 6 casillas, texto NEUTRO (nunca confirma que la cuenta
+ * exista: «Si X es una cuenta valida…», igual vengas de registrarte o de un login sin confirmar), cooldown de
+ * reenvio «(0:38)», error de campo «Escribe los 6 digitos» y del servidor «El codigo no es correcto o ha caducado.»
+ * con «Pedir codigo nuevo». Abrir la pantalla NUNCA envia un codigo: solo lo hace una accion del usuario.
+ * El codigo se guarda con rememberSaveable; no hay contraseñas aqui.
  */
-@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
+@OptIn(KoinExperimentalAPI::class)
 @Composable
 fun ConfirmEmailScreen(
     email: String,
@@ -49,90 +55,125 @@ fun ConfirmEmailScreen(
     val viewModel = koinViewModel<AuthViewModel>()
     val isSubmitting by viewModel.isSubmitting.collectAsState()
     val resendCooldownSeconds by viewModel.resendCooldownSeconds.collectAsState()
+    val uiError by viewModel.uiError.collectAsState()
 
-    var code by remember { mutableStateOf("") }
-
+    var code by rememberSaveable { mutableStateOf("") }
+    var clientError by remember { mutableStateOf<AuthMessage?>(null) }
+    var lastActionWasResend by remember { mutableStateOf(false) }
+    val focus = rememberFormFocus(1)
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
+    val resentText = AuthNotice.CodeResent.text()
 
+    fun submit() {
+        if (isSubmitting) return
+        lastActionWasResend = false
+        clientError = validateCode(code)
+        if (clientError != null) return
+        viewModel.clearError()
+        viewModel.confirmSignUp(email, code)
+    }
+
+    fun resend() {
+        lastActionWasResend = true
+        clientError = null
+        viewModel.resendSignUpCode(email)
+    }
+
+    // Solo ARRANCA el cooldown del boton (el correo acaba de enviarse al registrarse); no envia nada.
     LaunchedEffect(Unit) {
         if (codeJustSent) viewModel.startInitialResendCooldown()
     }
-
     LaunchedEffect(Unit) {
-        viewModel.messageEvent.collectLatest { message ->
-            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
-        }
+        runCatching { focus.requestFocus(0) }
     }
-
+    LaunchedEffect(Unit) {
+        viewModel.noticeEvent.collectLatest { snackbarHostState.showSnackbar(resentText) }
+    }
     LaunchedEffect(Unit) {
         viewModel.signUpConfirmedEvent.collectLatest { onConfirmed() }
     }
 
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Confirma tu cuenta") }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
-            // Mismo texto exista o no la cuenta: no se revela si el email ya estaba
-            // registrado (el servidor tampoco lo hace).
+    val bannerError = uiError as? AuthFormTarget.Banner
+    val serverCodeError = (uiError as? AuthFormTarget.Field)?.takeIf { it.field == AuthField.CODE }?.message
+    val codeError = (clientError ?: serverCodeError)?.text()
+
+    val resendLabel = stringResource(
+        if (serverCodeError != null) Res.string.auth_request_new_code else Res.string.auth_resend_code
+    )
+
+    FormScaffold(
+        topBar = { AuthTopBar(onBack = onBackToLogin, enabled = !isSubmitting) },
+        snackbarHostState = snackbarHostState
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                text = if (codeJustSent) {
-                    "Si el email $email es válido, te hemos enviado un código. Escríbelo aquí para confirmar tu cuenta."
-                } else {
-                    "Tu cuenta aún no está confirmada. Escribe el código que te enviamos a $email, o pide uno nuevo."
-                },
+                text = stringResource(Res.string.auth_confirm_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold, fontSize = 24.sp)
+            )
+            Text(
+                text = boldEmail(stringResource(Res.string.auth_confirm_neutral_text, email), email),
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            OutlinedTextField(
-                value = code,
-                onValueChange = { input -> code = input.filter { it.isDigit() } },
-                label = { Text("Código") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { viewModel.confirmSignUp(email, code) },
-                enabled = !isSubmitting && code.isNotBlank(),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Confirmar")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            TextButton(
-                onClick = { viewModel.resendSignUpCode(email) },
-                enabled = !isSubmitting && resendCooldownSeconds == 0
-            ) {
-                Text(
-                    if (resendCooldownSeconds > 0) "Reenviar código (${resendCooldownSeconds} s)"
-                    else "Reenviar código"
-                )
-            }
-
-            if (codeJustSent) {
-                Text(
-                    text = "¿Ya tienes cuenta?",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            TextButton(onClick = onBackToLogin) {
-                Text("Volver a iniciar sesión")
-            }
         }
+
+        if (bannerError != null) {
+            FormBanner(
+                message = bannerError.message.text(),
+                onRetry = if (bannerError.retryable) ({ if (lastActionWasResend) resend() else submit() }) else null
+            )
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            CodeInput(
+                value = code,
+                onValueChange = {
+                    code = it
+                    clientError = null
+                    viewModel.clearError()
+                },
+                isError = codeError != null,
+                enabled = !isSubmitting,
+                imeAction = ImeAction.Done,
+                onSubmit = { submit() },
+                modifier = Modifier.fillMaxWidth().formField(focus, 0) { submit() }
+            )
+            FormCaption(error = codeError)
+        }
+
+        SubmitButton(
+            text = stringResource(Res.string.auth_confirm_action),
+            loading = isSubmitting,
+            onClick = { submit() }
+        )
+
+        TextButton(
+            onClick = { resend() },
+            enabled = !isSubmitting && resendCooldownSeconds == 0
+        ) {
+            Text(
+                if (resendCooldownSeconds > 0) {
+                    stringResource(Res.string.auth_resend_with_cooldown, resendLabel, formatCooldown(resendCooldownSeconds))
+                } else {
+                    resendLabel
+                }
+            )
+        }
+
+        TextButton(onClick = onBackToLogin, enabled = !isSubmitting) {
+            Text(stringResource(Res.string.auth_back_to_login))
+        }
+    }
+}
+
+/** El correo en negrita dentro del texto ya formateado (si no aparece tal cual, el texto sin estilo). */
+private fun boldEmail(text: String, email: String): AnnotatedString = buildAnnotatedString {
+    val start = text.indexOf(email)
+    if (start < 0) {
+        append(text)
+    } else {
+        append(text.substring(0, start))
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(email) }
+        append(text.substring(start + email.length))
     }
 }

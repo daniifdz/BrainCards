@@ -108,8 +108,10 @@ fun App() {
             composable<Screen.Auth> {
                 AuthScreen(
                     onBackClick = { navController.popBackStack() },
+                    // Auth aun no es la entrada (paso 4): sin cuenta se vuelve a donde se estaba. Sin nada debajo, a Home.
+                    onContinueWithoutAccount = { if (!navController.popBackStack()) navController.navigate(Screen.Home) },
                     onAuthenticated = { navController.popBackStack() },
-                    onForgotPasswordClick = { navController.navigate(Screen.ForgotPassword) },
+                    onForgotPasswordClick = { email -> navController.navigate(Screen.ForgotPassword(email)) },
                     onSignUpConfirmationRequired = { email ->
                         navController.navigate(Screen.ConfirmEmail(email, codeJustSent = true))
                     },
@@ -127,8 +129,10 @@ fun App() {
                     onBackToLogin = { navController.popBackStack() }
                 )
             }
-            composable<Screen.ForgotPassword> {
+            composable<Screen.ForgotPassword> { backStackEntry ->
+                val route = backStackEntry.toRoute<Screen.ForgotPassword>()
                 ForgotPasswordScreen(
+                    initialEmail = route.email,
                     onBackClick = { navController.popBackStack() },
                     onCodeSent = { email -> navController.navigate(Screen.ResetPassword(email)) }
                 )
@@ -137,6 +141,9 @@ fun App() {
                 val route = backStackEntry.toRoute<Screen.ResetPassword>()
                 ResetPasswordScreen(
                     email = route.email,
+                    onBackClick = { navController.popBackStack() },
+                    // "Volver a iniciar sesion": hasta Bienvenida (se descartan Recuperar y Restablecer).
+                    onBackToLogin = { navController.popBackStack<Screen.Auth>(inclusive = false) },
                     onPasswordResetCompleted = {
                         navController.popBackStack<Screen.Auth>(inclusive = true)
                     }

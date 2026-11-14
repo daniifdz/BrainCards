@@ -70,8 +70,17 @@ class FakeAuthRepository(
         throw UnsupportedOperationException("No usado en estos tests")
     }
 
+    // Login (formularios de auth): falla con [signInFailure] o, si no, deja la sesion iniciada. [signInGate] lo
+    // detiene hasta que el test lo abra (para probar el doble tap).
+    var signInFailure: Throwable? = null
+    var signInGate: CompletableDeferred<Unit>? = null
+    var signInCallCount = 0
+
     override suspend fun signIn(email: String, password: String) {
-        throw UnsupportedOperationException("No usado en estos tests")
+        signInCallCount++
+        signInGate?.await()
+        signInFailure?.let { throw it }
+        state.value = AuthState.Authenticated(userId = "user-1", email = email, sessionConfirmed = true)
     }
 
     // Antes lanzaba siempre (nadie lo necesitaba) -- DeleteAccountUseCaseTest si lo
@@ -93,8 +102,13 @@ class FakeAuthRepository(
         state.value = AuthState.NotAuthenticated
     }
 
+    // Recuperacion de contraseña: falla con [sendPasswordResetFailure] o, si no, "envia" el correo.
+    var sendPasswordResetFailure: Throwable? = null
+    var sendPasswordResetCallCount = 0
+
     override suspend fun sendPasswordResetEmail(email: String) {
-        throw UnsupportedOperationException("No usado en estos tests")
+        sendPasswordResetCallCount++
+        sendPasswordResetFailure?.let { throw it }
     }
 
     override suspend fun deleteAccount() {

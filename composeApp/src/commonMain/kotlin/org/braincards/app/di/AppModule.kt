@@ -70,6 +70,7 @@ import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.auth.AuthViewModel
+import org.braincards.app.presentation.screens.auth.WelcomeViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.home.HomeViewModel
@@ -233,7 +234,7 @@ fun appModule(
     single { get<AppDatabase>().cardSchedulingDao() }
 
     // Proveer el Repositorio
-    single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get()) }
+    single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get(), transactionRunner = get()) }
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
     single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get()) }
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
@@ -297,7 +298,8 @@ fun appModule(
     // Home: contador reactivo de tarjetas pendientes (mismo criterio que el estudio) e indicador de sync.
     single<DueCardsObserver> { DueCardsObserverImpl(flashcardDao = get()) }
     factory { ObserveDueCountUseCase(observer = get()) }
-    viewModel { HomeViewModel(observeDueCount = get()) }
+    viewModel { HomeViewModel(observeDueCount = get(), getDecks = get()) }
+    viewModel { WelcomeViewModel(getDecks = get()) }
     viewModel {
         SyncStatusViewModel(
             authRepository = get(),

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import org.braincards.app.data.mapper.isEmailNotConfirmed
+import org.braincards.app.data.mapper.toAuthErrorKind
 import org.braincards.app.data.mapper.toAuthErrorMessage
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.SignUpOutcome
@@ -129,8 +130,25 @@ class AuthViewModel(
     private val _isSubmitting = MutableStateFlow(false)
     val isSubmitting: StateFlow<Boolean> = _isSubmitting.asStateFlow()
 
+    // Error del ULTIMO envio de un formulario de auth, como TIPO (campo o banner), no como texto: la pantalla lo
+    // traduce a su string. null = sin error. Se limpia al empezar otro envio y cuando el usuario edita
+    // ([clearError]). Lo usan las pantallas de login / registro; el resto de flujos de auth siguen con
+    // messageEvent hasta que se migren. Los eventos de Ajustes (messageEvent, cierre de sesion, borrado de
+    // cuenta) no pasan por aqui.
+    private val _uiError = MutableStateFlow<AuthFormTarget?>(null)
+    val uiError: StateFlow<AuthFormTarget?> = _uiError.asStateFlow()
+
+    /** El usuario edita un campo o cambia de modo: el error anterior ya no aplica. */
+    fun clearError() {
+        _uiError.value = null
+    }
+
     private val _messageEvent = MutableSharedFlow<String>()
     val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
+
+    // Confirmaciones breves de los formularios de auth (Snackbar), como clave.
+    private val _noticeEvent = MutableSharedFlow<AuthNotice>()
+    val noticeEvent: SharedFlow<AuthNotice> = _noticeEvent.asSharedFlow()
 
     private val _isDeletingAccount = MutableStateFlow(false)
     val isDeletingAccount: StateFlow<Boolean> = _isDeletingAccount.asStateFlow()
@@ -190,16 +208,18 @@ class AuthViewModel(
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 // SessionStarted: la sesion ya esta importada y authState navega solo.
                 if (signUpUseCase(email, password) == SignUpOutcome.ConfirmationRequired) {
                     _signUpConfirmationRequiredEvent.emit(email)
                 }
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al registrarse")
+                // Los campos vacios ya los valida la pantalla antes de llamar; esto es solo una red de seguridad.
+                _uiError.value = AuthFormTarget.Banner(AuthMessage.GenericError)
             } catch (e: Exception) {
                 logError("Error al registrarse", e)
-                _messageEvent.emit(e.toAuthErrorMessage())
+                _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.REGISTER).asUiError()
             } finally {
                 _isSubmitting.value = false
             }
@@ -210,16 +230,19 @@ class AuthViewModel(
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 signInUseCase(email, password)
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al iniciar sesión")
+                // Los campos vacios ya los valida la pantalla antes de llamar; esto es solo una red de seguridad.
+                _uiError.value = AuthFormTarget.Banner(AuthMessage.GenericError)
             } catch (e: Exception) {
                 logError("Error al iniciar sesión", e)
+                // Cuenta sin confirmar: NO es un error, se lleva a la pantalla del codigo (comportamiento de siempre).
                 if (e.isEmailNotConfirmed()) {
                     _emailNotConfirmedEvent.emit(email)
                 } else {
-                    _messageEvent.emit(e.toAuthErrorMessage())
+                    _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.LOGIN).asUiError()
                 }
             } finally {
                 _isSubmitting.value = false
@@ -351,24 +374,24 @@ class AuthViewModel(
         }
     }
 
-    /** Envio inicial (ForgotPasswordScreen) y reenvio (boton "reenviar codigo" en
-     * ResetPasswordScreen) comparten este metodo -- un codigo nuevo invalida
-     * cualquier verificacion previa (ConfirmPasswordResetUseCase.onNewCodeRequested). */
+    /** Envio inicial (ForgotPasswordScreen). Un codigo nuevo invalida cualquier verificacion previa
+     * (ConfirmPasswordResetUseCase.onNewCodeRequested). Exito -> evento con el correo (la pantalla navega). */
     fun sendPasswordReset(email: String) {
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 sendPasswordResetUseCase(email)
                 confirmPasswordResetUseCase.onNewCodeRequested()
                 _codeVerified.value = false
-                _messageEvent.emit("Te hemos enviado un correo para restablecer tu contraseña")
                 _passwordResetCodeSentEvent.emit(email)
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al enviar el correo")
+                // El correo vacio ya lo valida la pantalla; red de seguridad.
+                _uiError.value = AuthFormTarget.Field(AuthField.EMAIL, AuthMessage.EmailEmpty)
             } catch (e: Exception) {
                 logError("Error al enviar el correo de recuperación", e)
-                _messageEvent.emit(e.toAuthErrorMessage())
+                _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.FORGOT).asUiError()
             } finally {
                 _isSubmitting.value = false
             }
@@ -382,15 +405,16 @@ class AuthViewModel(
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 verifySignUpCodeUseCase(email, code)
-                _messageEvent.emit("Cuenta confirmada")
                 _signUpConfirmedEvent.emit(Unit)
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al confirmar la cuenta")
+                // Codigo con algo que no son digitos: la pantalla ya lo filtra; red de seguridad.
+                _uiError.value = AuthFormTarget.Field(AuthField.CODE, AuthMessage.CodeIncomplete)
             } catch (e: Exception) {
                 logError("Error al confirmar el registro", e)
-                _messageEvent.emit(e.toAuthErrorMessage())
+                _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.CONFIRM_CODE).asUiError()
             } finally {
                 _isSubmitting.value = false
             }
@@ -398,20 +422,22 @@ class AuthViewModel(
     }
 
     /** Reenvia el codigo de confirmacion y reinicia el cooldown del boton. Si el
-     * servidor lo rechaza (rate limit), el cooldown no se reinicia. */
+     * servidor lo rechaza (rate limit), el cooldown no se reinicia. SOLO lo llama una accion explicita del
+     * usuario ("Reenviar codigo" / "Pedir codigo nuevo"): abrir la pantalla nunca envia nada. */
     fun resendSignUpCode(email: String) {
         if (_isSubmitting.value || _resendCooldownSeconds.value > 0) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 resendSignUpCodeUseCase(email)
-                _messageEvent.emit("Te hemos enviado un código nuevo")
+                _noticeEvent.emit(AuthNotice.CodeResent)
                 startResendCooldown()
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al reenviar el código")
+                _uiError.value = AuthFormTarget.Banner(AuthMessage.GenericError)
             } catch (e: Exception) {
                 logError("Error al reenviar el codigo de registro", e)
-                _messageEvent.emit(e.toAuthErrorMessage())
+                _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.RESEND_CODE).asUiError()
             } finally {
                 _isSubmitting.value = false
             }
@@ -445,20 +471,24 @@ class AuthViewModel(
         if (_isSubmitting.value) return
         viewModelScope.launch {
             _isSubmitting.value = true
+            _uiError.value = null
             try {
                 confirmPasswordResetUseCase(email, code, newPassword)
                 _codeVerified.value = false
-                _messageEvent.emit("Contraseña actualizada")
                 _passwordResetCompletedEvent.emit(Unit)
             } catch (e: IllegalArgumentException) {
-                _messageEvent.emit(e.message ?: "Error al actualizar la contraseña")
+                // Campos vacios o codigo con letras: la pantalla ya los valida; red de seguridad.
+                _uiError.value = AuthFormTarget.Banner(AuthMessage.GenericError)
             } catch (e: Exception) {
                 logError("Error al confirmar el restablecimiento de contraseña", e)
                 _codeVerified.value = confirmPasswordResetUseCase.isCodeVerified(email)
-                _messageEvent.emit(e.toAuthErrorMessage())
+                _uiError.value = e.toAuthErrorKind().targetFor(AuthContext.RESET).asUiError()
             } finally {
                 _isSubmitting.value = false
             }
         }
     }
+
+    // GoToConfirmEmail no se muestra como error (lo gestionan los eventos de arriba); el resto, tal cual.
+    private fun AuthFormTarget.asUiError(): AuthFormTarget? = if (this is AuthFormTarget.GoToConfirmEmail) null else this
 }
