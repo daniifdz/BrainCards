@@ -109,6 +109,11 @@ class SyncCoordinator(
     private val _lastSuccessfulSyncAt = MutableStateFlow<Instant?>(null)
     val lastSuccessfulSyncAt: StateFlow<Instant?> = _lastSuccessfulSyncAt.asStateFlow()
 
+    // _lastSuccessfulSyncAt es null unos instantes al arrancar (se lee del DataStore en init): este indicador pasa a
+    // true cuando la lectura TERMINA (con valor, sin valor o con fallo) para distinguir "aun no leido" de "nunca".
+    private val _lastSuccessfulSyncAtLoaded = MutableStateFlow(false)
+    val lastSuccessfulSyncAtLoaded: StateFlow<Boolean> = _lastSuccessfulSyncAtLoaded.asStateFlow()
+
     // Con [pendingObserver] el contador es REACTIVO: lo alimenta el observador (incluye las filas sin dueno, creadas
     // sin conexion y aun sin adoptar, que getPendingSync no ve). Sin observador (solo tests antiguos) se recalcula
     // al cambiar la sesion y al acabar un sync.
@@ -134,7 +139,11 @@ class SyncCoordinator(
 
     init {
         scope.launch {
-            _lastSuccessfulSyncAt.value = readLastSuccessfulSyncAt()
+            try {
+                _lastSuccessfulSyncAt.value = readLastSuccessfulSyncAt()
+            } finally {
+                _lastSuccessfulSyncAtLoaded.value = true
+            }
         }
         authJob = scope.launch {
             // distinctUntilChanged: auth-kt emite un SessionStatus.Authenticated
