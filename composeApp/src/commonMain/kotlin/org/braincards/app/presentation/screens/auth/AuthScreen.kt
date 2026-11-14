@@ -53,14 +53,15 @@ import org.koin.core.annotation.KoinExperimentalAPI
 private val FIELD_ORDER = listOf(AuthField.EMAIL, AuthField.PASSWORD)
 
 /**
- * Bienvenida: inicio de sesion y registro en una sola pantalla (ruta Auth; aun NO es la entrada de la app, eso es
- * el paso 4). Estado: correo y modo con rememberSaveable (sobreviven a rotar); la CONTRASENA solo con remember (no
+ * Bienvenida: inicio de sesion y registro en una sola pantalla. [asEntry] = es la ENTRADA de la app (sin flecha de
+ * vuelta); si no, esta apilada desde Home o Ajustes (con flecha). Estado: correo y modo con rememberSaveable (sobreviven a rotar); la CONTRASENA solo con remember (no
  * se guarda en el estado de la instancia). Errores: de campo (cliente: correo / contraseña; servidor: contraseña
  * debil) bajo el input, y banner para el resto.
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 fun AuthScreen(
+    asEntry: Boolean = false,
     onBackClick: () -> Unit,
     onContinueWithoutAccount: () -> Unit,
     onAuthenticated: () -> Unit,
@@ -101,17 +102,14 @@ fun AuthScreen(
         viewModel.emailNotConfirmedEvent.collectLatest { onEmailNotConfirmed(it) }
     }
 
-    // No usamos authState como key (eso compara valores, no detecta transiciones):
-    // si la pantalla se compusiera ya autenticada (o el registro diera sesion
-    // inmediata sin confirmar email), navegaria sola en el primer render. En vez de
-    // eso, hacemos collect directo y solo reaccionamos a un cambio real de
-    // no-autenticado a autenticado ocurrido DESPUES de entrar a esta pantalla.
+    // Esta pantalla solo se ve sin sesion: cualquier Authenticated (iniciar sesion, registro con sesion inmediata, o
+    // una sesion ya abierta al volver de un flujo abandonado, p. ej. tras verificar el codigo de restablecer) la cierra.
+    // Sin saltarse la primera emision: la StateFlow del ViewModel puede conservar ya el Authenticated.
     LaunchedEffect(Unit) {
-        var isFirstEmission = true
+        var exited = false
         viewModel.authState.collect { state ->
-            if (isFirstEmission) {
-                isFirstEmission = false
-            } else if (state is AuthState.Authenticated) {
+            if (state is AuthState.Authenticated && !exited) {
+                exited = true
                 onAuthenticated()
             }
         }
@@ -124,7 +122,7 @@ fun AuthScreen(
         ?: serverFieldError?.takeIf { it.field == AuthField.PASSWORD }?.message)?.text()
 
     FormScaffold(
-        topBar = { AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) }
+        topBar = { if (!asEntry) AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) }
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             LogoMark(size = 40.dp)

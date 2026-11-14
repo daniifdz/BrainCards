@@ -5,12 +5,10 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.Instant
-import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
+import org.braincards.app.presentation.screens.navigation.stableAuth
 
 /**
  * Indicador de sync para la UI. `null` = no dibujar: aun no hubo ningun AuthState estable (arranque en frio).
@@ -33,10 +31,8 @@ class SyncStatusViewModel(
         val loaded: Boolean
     )
 
-    // null hasta el primer estado estable; despues, el ultimo estable (Loading no lo pisa).
-    private val stableAuth = authRepository.authState
-        .scan<AuthState, AuthState?>(null) { lastStable, next -> if (next is AuthState.Loading) lastStable else next }
-        .distinctUntilChanged()
+    // null hasta el primer estado estable; despues, el ultimo estable (Loading no lo pisa). Compartido con el arranque.
+    private val stableAuth = authRepository.authState.stableAuth()
 
     private val syncSnapshot = combine(
         syncCoordinator.isSyncing,

@@ -22,6 +22,9 @@ import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import org.braincards.app.presentation.screens.auth.WelcomeViewModel
 import org.braincards.app.presentation.screens.home.HomeViewModel
+import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
+import org.braincards.app.data.local.DataStoreLocalModePreference
+import org.braincards.app.domain.repository.LocalModePreference
 import org.braincards.app.presentation.sync.ConnectivityMonitor
 import org.braincards.app.presentation.sync.SyncStatusViewModel
 import org.braincards.app.presentation.sync.FakeConnectivityMonitor
@@ -130,6 +133,17 @@ class AppModuleBindingsTest {
     fun WelcomeViewModel_se_resuelve_con_sus_dependencias_reales() {
         withRealModule { koin ->
             assertNotNull(koin.get<WelcomeViewModel>())
+        }
+    }
+
+    @Test
+    fun AppEntryViewModel_y_el_flag_de_modo_local_se_resuelven_desde_el_modulo_real() {
+        withRealModule { koin ->
+            val preference = koin.get<LocalModePreference>()
+
+            assertTrue(preference is DataStoreLocalModePreference)
+            assertSame(preference, koin.get<LocalModePreference>())
+            assertNotNull(koin.get<AppEntryViewModel>())
         }
     }
 }

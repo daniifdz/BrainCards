@@ -20,7 +20,9 @@ sealed class Screen {
 
     data object Stats : Screen()
     @Serializable
-    data object Auth : Screen()
+    // asEntry: true si es la Bienvenida de ENTRADA de la app (sin flecha; «Continuar sin cuenta» va a Home);
+    // false si se apilo desde Home o Ajustes (con flecha; «Continuar sin cuenta» vuelve al origen).
+    data class Auth(val asEntry: Boolean = false) : Screen()
     @Serializable
     // email: el que se habia escrito en Bienvenida, para precargarlo ("" = sin precarga).
     data class ForgotPassword(val email: String = "") : Screen()

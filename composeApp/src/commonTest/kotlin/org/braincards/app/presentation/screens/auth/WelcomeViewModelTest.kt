@@ -85,4 +85,12 @@ class WelcomeViewModelTest {
         val seen = collect(vmWith(flow { throw IllegalStateException("boom") }))
         assertEquals(false, seen.last())
     }
+
+    @Test
+    fun solo_los_mazos_sin_dueno_cuentan_para_la_nota_de_fusion() = runTest {
+        val foreign = aDeck.copy(id = "d2", userId = "otra-cuenta")
+        assertEquals(false, collect(vmWith(MutableStateFlow(listOf(foreign)))).last())
+
+        assertEquals(true, collect(vmWith(MutableStateFlow(listOf(foreign, aDeck)))).last())
+    }
 }

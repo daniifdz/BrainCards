@@ -14,7 +14,8 @@ import org.braincards.app.util.logError
 
 /**
  * Dato de la nota de fusion de Bienvenida («Tus mazos actuales se guardaran en tu cuenta…»): hay datos locales si
- * existe algun mazo no borrado. Sale de GetDeckUseCase, sin codigo de datos nuevo ni cambios en los repositorios.
+ * existe algun mazo no borrado SIN dueño (userId null): solo esos se anadiran a la cuenta al iniciar sesion; los de
+ * otra cuenta (userId con valor) no se adoptan. Sale de GetDeckUseCase, sin codigo de datos nuevo ni cambios en los repositorios.
  * En esta pantalla (sin sesion) todo dato local es de invitado: el cierre de sesion vacia la BD.
  *
  * `null` = aun no se sabe (no se muestra la nota). Un fallo de lectura cuenta como "no hay" (sin nota).
@@ -22,7 +23,7 @@ import org.braincards.app.util.logError
 class WelcomeViewModel(getDecks: GetDeckUseCase) : ViewModel() {
 
     val hasLocalData: StateFlow<Boolean?> = getDecks()
-        .map<List<Deck>, Boolean?> { it.isNotEmpty() }
+        .map<List<Deck>, Boolean?> { decks -> decks.any { it.userId == null } }
         .distinctUntilChanged()
         .catch { e ->
             logError("No se pudo comprobar si hay mazos locales", e)

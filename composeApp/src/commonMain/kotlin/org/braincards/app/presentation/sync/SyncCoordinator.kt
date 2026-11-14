@@ -120,6 +120,11 @@ class SyncCoordinator(
     private val _pendingChangesCount = MutableStateFlow(0)
     val pendingChangesCount: StateFlow<Int> = _pendingChangesCount.asStateFlow()
 
+    // Sube cada vez que termina un cierre de sesion o un borrado de cuenta del USUARIO (los dos llaman a
+    // resetSyncState al acabar bien). El arranque lo usa para NO esperar al dar por cerrada la sesion.
+    private val _userSessionExitCount = MutableStateFlow(0)
+    val userSessionExitCount: StateFlow<Int> = _userSessionExitCount.asStateFlow()
+
     // Resultado del ULTIMO sync, venga de donde venga (manual, completo o automatico): lo escribe syncLocked.
     private val _lastOutcome = MutableStateFlow<SyncOutcome?>(null)
     override val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
@@ -307,6 +312,7 @@ class SyncCoordinator(
      * de sesion/borrado de cuenta que ya ocurrio no debe parecer fallido.
      */
     suspend fun resetSyncState() {
+        _userSessionExitCount.value += 1
         _lastSuccessfulSyncAt.value = null
         _pendingChangesCount.value = 0
         _lastOutcome.value = null

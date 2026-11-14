@@ -15,6 +15,10 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
+import org.braincards.app.presentation.screens.navigation.ENTRY_SPLASH_MAX_WAIT_MS
+import org.braincards.app.presentation.screens.navigation.EntryRoute
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -23,6 +27,9 @@ class MainActivity : ComponentActivity() {
 
     private val themeViewModel: ThemeViewModel by viewModel()
 
+    // Activity-scoped, la misma instancia que usa App() (igual que themeViewModel).
+    private val entryViewModel: AppEntryViewModel by viewModel()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen() // ANTES de super.onCreate()
         // Hasta leer el tema de la app, las barras siguen al sistema; en cuanto se conoce AppTheme se reajustan.
@@ -30,10 +37,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         var isThemeReady = false
-        splashScreen.setKeepOnScreenCondition { !isThemeReady }
+        var isEntryReady = false
+        splashScreen.setKeepOnScreenCondition { !(isThemeReady && isEntryReady) }
         lifecycleScope.launch {
             themeViewModel.theme.first { it != null }
             isThemeReady = true
+        }
+        // El splash espera a saber a donde arrancar (auth + flag de modo local), con un tope: pasado el tope, App()
+        // muestra EntryPendingScreen (logo) hasta que se resuelva; nunca Bienvenida ni Home antes de tiempo.
+        lifecycleScope.launch {
+            withTimeoutOrNull(ENTRY_SPLASH_MAX_WAIT_MS) { entryViewModel.startRoute.first { it != EntryRoute.Pending } }
+            isEntryReady = true
         }
         lifecycleScope.launch {
             themeViewModel.theme.filterNotNull().collect { appTheme ->

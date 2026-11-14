@@ -12,6 +12,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.config.SUPABASE_ANON_KEY
 import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.DataStoreLocalModePreference
 import org.braincards.app.data.local.DataStorePullWatermarkStore
 import org.braincards.app.data.local.migration.MIGRATION_3_4
 import org.braincards.app.data.local.migration.MIGRATION_4_5
@@ -35,6 +36,7 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
 import org.braincards.app.domain.repository.DueCardsObserver
+import org.braincards.app.domain.repository.LocalModePreference
 import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
@@ -74,6 +76,7 @@ import org.braincards.app.presentation.screens.auth.WelcomeViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
 import org.braincards.app.presentation.screens.home.HomeViewModel
+import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
 import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
@@ -300,6 +303,16 @@ fun appModule(
     factory { ObserveDueCountUseCase(observer = get()) }
     viewModel { HomeViewModel(observeDueCount = get(), getDecks = get()) }
     viewModel { WelcomeViewModel(getDecks = get()) }
+
+    // Arranque: flag de "modo local elegido" (DataStore) y ruta de entrada / sesion perdida.
+    single<LocalModePreference> { DataStoreLocalModePreference(dataStore = get()) }
+    viewModel {
+        AppEntryViewModel(
+            authRepository = get(),
+            localModePreference = get(),
+            userSessionExitCount = get<SyncCoordinator>().userSessionExitCount
+        )
+    }
     viewModel {
         SyncStatusViewModel(
             authRepository = get(),

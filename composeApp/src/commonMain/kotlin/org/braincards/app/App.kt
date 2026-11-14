@@ -17,7 +17,17 @@ import org.braincards.app.presentation.screens.home.HomeScreen
 import org.braincards.app.presentation.screens.settings.AppTheme
 import org.braincards.app.presentation.screens.settings.SettingsScreen
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
+import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
+import org.braincards.app.presentation.screens.navigation.EntryPendingScreen
+import org.braincards.app.presentation.screens.navigation.EntryRoute
+import org.braincards.app.presentation.screens.navigation.exitAuthFlow
+import org.braincards.app.presentation.screens.navigation.goHomeClearingStack
+import org.braincards.app.presentation.screens.navigation.goToWelcomeEntry
+import org.braincards.app.presentation.screens.navigation.isAuthFlow
+import org.braincards.app.presentation.screens.navigation.needsWelcomeGuard
 import org.braincards.app.presentation.theme.BrainCardsTheme
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.braincards.app.presentation.screens.studyStats.StudyStatsScreen
 import androidx.navigation.compose.NavHost
@@ -37,11 +47,34 @@ fun App() {
 
     val useDarkTheme = resolveDarkTheme(appTheme, isSystemInDarkTheme())
 
+    val entryViewModel = koinViewModel<AppEntryViewModel>()
+    val startRoute by entryViewModel.startRoute.collectAsState()
+
     BrainCardsTheme(darkTheme = useDarkTheme) {
+        // Auth sin resolver (arranque en frio): solo logo, nunca Bienvenida ni Home.
+        if (startRoute == EntryRoute.Pending) {
+            EntryPendingScreen()
+            return@BrainCardsTheme
+        }
 
         val navController = rememberNavController()
+        val scope = rememberCoroutineScope()
 
-        NavHost(navController = navController, startDestination = Screen.Home) {
+        // Sesion perdida (cierre de sesion, borrado de cuenta, token revocado): Bienvenida de entrada con la pila vacia.
+        // Channel de un solo consumo: no se repite al recomponer ni al rotar.
+        LaunchedEffect(navController) {
+            entryViewModel.signedOut.collect { navController.goToWelcomeEntry() }
+        }
+        // Pila restaurada por el sistema (Android) que no encaja con la ruta de arranque: a Bienvenida.
+        LaunchedEffect(navController, startRoute) {
+            val current = navController.currentBackStackEntryFlow.first().destination
+            if (needsWelcomeGuard(startRoute, current.isAuthFlow())) navController.goToWelcomeEntry()
+        }
+
+        NavHost(
+            navController = navController,
+            startDestination = if (startRoute == EntryRoute.Home) Screen.Home else Screen.Auth(asEntry = true)
+        ) {
             composable<Screen.Home> {
                 HomeScreen(
                     onNavigateToDecks = { navController.navigate(Screen.DecksList) },
@@ -51,8 +84,8 @@ fun App() {
                     },
                     onNavigateToSettings = { navController.navigate(Screen.Settings) },
                     onNavigateToStats = { navController.navigate(Screen.Stats) },
-                    // Invitado: la pildora lleva al login actual (la Bienvenida llega en el paso 3).
-                    onNavigateToAuth = { navController.navigate(Screen.Auth) }
+                    // Invitado: la pildora lleva a Bienvenida apilada (con flecha de vuelta).
+                    onNavigateToAuth = { navController.navigate(Screen.Auth()) }
                 )
             }
             composable<Screen.DecksList> {
@@ -97,7 +130,7 @@ fun App() {
                     currentTheme = appTheme?: AppTheme.SYSTEM,
                     onThemeChange = { newTheme -> themeViewModel.setTheme(newTheme) },
                     onBackClick = { navController.popBackStack() },
-                    onNavigateToAuth = { navController.navigate(Screen.Auth) },
+                    onNavigateToAuth = { navController.navigate(Screen.Auth()) },
                 )
             }
             composable<Screen.Stats>{
@@ -105,12 +138,23 @@ fun App() {
                     onBackClick = {navController.popBackStack()}
                 )
             }
-            composable<Screen.Auth> {
+            composable<Screen.Auth> { backStackEntry ->
+                val route = backStackEntry.toRoute<Screen.Auth>()
                 AuthScreen(
+                    asEntry = route.asEntry,
                     onBackClick = { navController.popBackStack() },
-                    // Auth aun no es la entrada (paso 4): sin cuenta se vuelve a donde se estaba. Sin nada debajo, a Home.
-                    onContinueWithoutAccount = { if (!navController.popBackStack()) navController.navigate(Screen.Home) },
-                    onAuthenticated = { navController.popBackStack() },
+                    // Entrada: se elige el modo local y se va a Home reemplazando la pantalla. Apilada: se vuelve al origen.
+                    onContinueWithoutAccount = {
+                        if (route.asEntry) {
+                            scope.launch {
+                                entryViewModel.chooseLocalMode()
+                                navController.goHomeClearingStack()
+                            }
+                        } else if (!navController.popBackStack()) {
+                            navController.goHomeClearingStack()
+                        }
+                    },
+                    onAuthenticated = { navController.exitAuthFlow() },
                     onForgotPasswordClick = { email -> navController.navigate(Screen.ForgotPassword(email)) },
                     onSignUpConfirmationRequired = { email ->
                         navController.navigate(Screen.ConfirmEmail(email, codeJustSent = true))
@@ -125,7 +169,7 @@ fun App() {
                 ConfirmEmailScreen(
                     email = route.email,
                     codeJustSent = route.codeJustSent,
-                    onConfirmed = { navController.popBackStack<Screen.Auth>(inclusive = true) },
+                    onConfirmed = { navController.exitAuthFlow() },
                     onBackToLogin = { navController.popBackStack() }
                 )
             }
@@ -144,9 +188,7 @@ fun App() {
                     onBackClick = { navController.popBackStack() },
                     // "Volver a iniciar sesion": hasta Bienvenida (se descartan Recuperar y Restablecer).
                     onBackToLogin = { navController.popBackStack<Screen.Auth>(inclusive = false) },
-                    onPasswordResetCompleted = {
-                        navController.popBackStack<Screen.Auth>(inclusive = true)
-                    }
+                    onPasswordResetCompleted = { navController.exitAuthFlow() }
                 )
             }
 
