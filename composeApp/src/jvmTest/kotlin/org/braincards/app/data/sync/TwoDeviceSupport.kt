@@ -21,6 +21,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import org.braincards.app.data.fakes.FakeSettingsDataStore
 import org.braincards.app.data.local.AppDatabase
 import org.braincards.app.data.local.DataStorePullWatermarkStore
@@ -73,6 +75,13 @@ class FakeServer(start: Instant, var autoTick: Duration = 1.minutes) {
     val clock = MutableClock(start)
     val gets = mutableListOf<ServedGet>()
 
+    // Contadores seguros entre hilos (los tests con sync automatica de dos dispositivos los leen mientras otros
+    // hilos sirven peticiones): peticiones POST (pushes) y filas subidas, por dispositivo.
+    private val postsBy = ConcurrentHashMap<String, AtomicInteger>()
+    private val postedRowsBy = ConcurrentHashMap<String, AtomicInteger>()
+    fun postCount(device: String): Int = postsBy[device]?.get() ?: 0
+    fun postedRows(device: String): Int = postedRowsBy[device]?.get() ?: 0
+
     /** Se llama DESPUES de servir cada GET (dispositivo, tabla, n.o de GET de esa tabla): escrituras durante la descarga. */
     var afterGet: ((table: String, getIndex: Int) -> Unit)? = null
 
@@ -108,18 +117,23 @@ class FakeServer(start: Instant, var autoTick: Duration = 1.minutes) {
     fun putFlashcard(card: Flashcard) = store("flashcards", json.encodeToJsonElement(FlashcardDto.serializer(), card.toDto()).jsonObject)
     fun putScheduling(s: CardScheduling) = store("card_scheduling", json.encodeToJsonElement(CardSchedulingDto.serializer(), s.toDto()).jsonObject)
 
-    fun stampOf(table: String, id: String): Instant = stampOf(tables.getValue(table).getValue(id))
-    fun rowCount(table: String) = tables.getValue(table).size
-    fun nameOf(table: String, id: String): String? = tables.getValue(table)[id]?.str("name")
+    @Synchronized fun stampOf(table: String, id: String): Instant = stampOf(tables.getValue(table).getValue(id))
+    @Synchronized fun rowCount(table: String) = tables.getValue(table).size
+    @Synchronized fun nameOf(table: String, id: String): String? = tables.getValue(table)[id]?.str("name")
+
+    /** `true`/`false` si la fila existe en el servidor (con/sin deleted_at); null si no existe. */
+    @Synchronized fun isDeleted(table: String, id: String): Boolean? =
+        tables.getValue(table)[id]?.let { it.str("deleted_at") != null }
 
     // --- manejador HTTP ------------------------------------------------------------------------------------------------
 
+    @Synchronized
     fun handle(request: HttpRequestData, device: String): Pair<HttpStatusCode, String> {
         val table = request.table()
         require(table in tables) { "tabla desconocida: $table" }
         return when (request.method) {
             HttpMethod.Get -> get(request, table, device)
-            HttpMethod.Post -> post(request, table)
+            HttpMethod.Post -> post(request, table, device)
             else -> error("metodo no soportado: ${request.method}")
         }
     }
@@ -178,9 +192,11 @@ class FakeServer(start: Instant, var autoTick: Duration = 1.minutes) {
         return HttpStatusCode.OK to body
     }
 
-    private fun post(request: HttpRequestData, table: String): Pair<HttpStatusCode, String> {
+    private fun post(request: HttpRequestData, table: String, device: String): Pair<HttpStatusCode, String> {
         val bytes = (request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString()
         val items: List<JsonElement> = Json.parseToJsonElement(bytes).jsonArray
+        postsBy.getOrPut(device) { AtomicInteger() }.incrementAndGet()
+        postedRowsBy.getOrPut(device) { AtomicInteger() }.addAndGet(items.size)
         items.forEach { store(table, it.jsonObject) }
         return HttpStatusCode.Created to ""
     }
