@@ -37,7 +37,9 @@
         <item quantity="other">Tienes %1$d cambios sin sincronizar que se perderán. Al cerrar sesión se borran los datos de este dispositivo.</item>
     </plurals>
     <string name="sign_out_dialog_confirm">Cerrar sesión y borrar</string>
-    <string name="sign_out_signed_out">Sesión cerrada. Los datos de este dispositivo se han borrado.</string>
+    <string name="welcome_notice_signed_out">Sesión cerrada.</string>
+    <string name="welcome_notice_account_deleted">Cuenta eliminada.</string>
+    <string name="welcome_notice_session_expired">Tu sesión ha caducado. Vuelve a iniciar sesión.</string>
     <string name="sign_out_wipe_failed">No se pudieron borrar los datos de este dispositivo. Tu sesión sigue abierta; inténtalo de nuevo.</string>
     <string name="sign_out_session_close_failed">Se borraron los datos de este dispositivo, pero no se pudo cerrar la sesión. Inténtalo de nuevo.</string>
     <string name="sign_out_session_changed">Tu sesión había cambiado, así que no se ha borrado nada.</string>

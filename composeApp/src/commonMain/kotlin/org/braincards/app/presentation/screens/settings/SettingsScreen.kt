@@ -101,7 +101,9 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         authViewModel.signOutEvent.collectLatest { event ->
             val message = when (event) {
-                SignOutEvent.SignedOut -> getString(Res.string.sign_out_signed_out)
+                // El aviso "Sesion cerrada." lo muestra la Bienvenida (la navegacion ocurria casi a la vez y este
+                // Snackbar no llegaba a verse). Aqui solo quedan los casos en los que SE SIGUE en Ajustes.
+                SignOutEvent.SignedOut -> return@collectLatest
                 SignOutEvent.SessionCloseFailed -> getString(Res.string.sign_out_session_close_failed)
                 SignOutEvent.WipeFailed -> getString(Res.string.sign_out_wipe_failed)
                 SignOutEvent.SessionChanged -> getString(Res.string.sign_out_session_changed)
