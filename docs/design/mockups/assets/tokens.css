@@ -39,4 +39,11 @@
 html, body { margin: 0; }
 body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
 .theme-root { background: var(--ground); color: var(--text); }
+/* v4.8 — transición suave de toda la app al cambiar de tema (fondo, superficie, texto, marca…) */
+.theme-root, .theme-root * {
+  transition: background-color .25s ease, border-color .25s ease, color .25s ease, fill .25s ease, stroke .25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-root, .theme-root * { transition: none !important; }
+}
 .wordmark { font-family: 'Fredoka', system-ui, sans-serif; font-weight: 600; color: var(--text); }
