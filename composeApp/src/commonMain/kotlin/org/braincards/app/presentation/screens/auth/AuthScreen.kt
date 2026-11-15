@@ -1,22 +1,17 @@
 package org.braincards.app.presentation.screens.auth
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,14 +32,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import braincards.composeapp.generated.resources.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.presentation.components.form.FormBanner
-import org.braincards.app.presentation.components.form.FormScaffold
+import org.braincards.app.presentation.components.form.FormNote
 import org.braincards.app.presentation.components.form.FormTextField
 import org.braincards.app.presentation.components.form.SubmitButton
+import org.braincards.app.presentation.components.form.WelcomeScaffold
 import org.braincards.app.presentation.components.form.formField
 import org.braincards.app.presentation.components.form.rememberFormFocus
 import org.braincards.app.presentation.screens.home.LogoMark
+import org.braincards.app.presentation.screens.navigation.WelcomeNotice
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -55,7 +54,9 @@ private val FIELD_ORDER = listOf(AuthField.EMAIL, AuthField.PASSWORD)
 /**
  * Bienvenida: inicio de sesion y registro en una sola pantalla. [asEntry] = es la ENTRADA de la app (sin flecha de
  * vuelta); si no, esta apilada desde Home o Ajustes (con flecha). Estado: correo y modo con rememberSaveable (sobreviven a rotar); la CONTRASENA solo con remember (no
- * se guarda en el estado de la instancia). Errores: de campo (cliente: correo / contraseña; servidor: contraseña
+ * se guarda en el estado de la instancia). [notice] = aviso de salida de sesion (ver [WelcomeNotice]): Snackbar de un
+ * solo uso (SignedOut / AccountDeleted, se pide con [onNoticeConsumed]) o nota persistente (SessionExpired) que se
+ * descarta con [onNoticeDismissed] en cuanto el usuario interactua con el formulario. Errores: de campo (cliente: correo / contraseña; servidor: contraseña
  * debil) bajo el input, y banner para el resto.
  */
 @OptIn(KoinExperimentalAPI::class)
@@ -67,7 +68,10 @@ fun AuthScreen(
     onAuthenticated: () -> Unit,
     onForgotPasswordClick: (email: String) -> Unit,
     onSignUpConfirmationRequired: (email: String) -> Unit,
-    onEmailNotConfirmed: (email: String) -> Unit
+    onEmailNotConfirmed: (email: String) -> Unit,
+    notice: WelcomeNotice? = null,
+    onNoticeConsumed: (WelcomeNotice) -> Boolean = { false },
+    onNoticeDismissed: () -> Unit = {}
 ) {
     val viewModel = koinViewModel<AuthViewModel>()
     val welcomeViewModel = koinViewModel<WelcomeViewModel>()
@@ -76,13 +80,20 @@ fun AuthScreen(
     val hasLocalData by welcomeViewModel.hasLocalData.collectAsState()
 
     var isRegisterMode by rememberSaveable { mutableStateOf(false) }
-    var email by rememberSaveable { mutableStateOf("") }
+    // Sesion caducada: el correo llega precargado (solo el correo; la contrasena nunca).
+    var email by rememberSaveable { mutableStateOf((notice as? WelcomeNotice.SessionExpired)?.email.orEmpty()) }
     var password by remember { mutableStateOf("") } // NO rememberSaveable
     var clientErrors by remember { mutableStateOf(FieldErrors.None) }
     val focus = rememberFormFocus(FIELD_ORDER.size)
 
-    fun submit() {
+    // Unico punto por el que se descarta el aviso persistente: solo lo hacen los eventos de isDismissingInteraction.
+    fun interact(event: WelcomeInteraction) {
+        if (isDismissingInteraction(event)) onNoticeDismissed()
+    }
+
+    fun submit(via: WelcomeInteraction = WelcomeInteraction.SubmitByButton) {
         if (isSubmitting) return
+        interact(via)
         val errors = if (isRegisterMode) validateRegisterForm(email, password) else validateLoginForm(email, password)
         clientErrors = errors
         if (!errors.isEmpty) {
@@ -92,6 +103,24 @@ fun AuthScreen(
         viewModel.clearError()
         val cleanEmail = email.trim()
         if (isRegisterMode) viewModel.signUp(cleanEmail, password) else viewModel.signIn(cleanEmail, password)
+    }
+
+    // Snackbar de un solo uso: se SACA del slot antes de mostrarlo (consumo atomico) y se lanza en un scope propio, no
+    // en el efecto, que se cancela al cambiar `notice` a null. Los textos se resuelven ya (sin suspender entre medias).
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarScope = rememberCoroutineScope()
+    val signedOutText = stringResource(Res.string.welcome_notice_signed_out)
+    val accountDeletedText = stringResource(Res.string.welcome_notice_account_deleted)
+    LaunchedEffect(notice) {
+        val current = notice ?: return@LaunchedEffect
+        val text = when (current) {
+            WelcomeNotice.SignedOut -> signedOutText
+            WelcomeNotice.AccountDeleted -> accountDeletedText
+            is WelcomeNotice.SessionExpired -> return@LaunchedEffect
+        }
+        if (onNoticeConsumed(current)) {
+            snackbarScope.launch { snackbarHostState.showSnackbar(text, duration = SnackbarDuration.Short) }
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -110,6 +139,7 @@ fun AuthScreen(
         viewModel.authState.collect { state ->
             if (state is AuthState.Authenticated && !exited) {
                 exited = true
+                interact(WelcomeInteraction.Authenticated)
                 onAuthenticated()
             }
         }
@@ -121,19 +151,19 @@ fun AuthScreen(
     val passwordError = (clientErrors[AuthField.PASSWORD]
         ?: serverFieldError?.takeIf { it.field == AuthField.PASSWORD }?.message)?.text()
 
-    FormScaffold(
-        topBar = { if (!asEntry) AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) }
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LogoMark(size = 40.dp)
-            Spacer(Modifier.width(14.dp))
+    WelcomeScaffold(
+        topBar = { if (!asEntry) AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) },
+        snackbarHostState = snackbarHostState,
+        // Tamanos de los mockups (.auth-logo-zone): movil 40 dp + 25 sp; tablet / Desktop 44 dp + 27 sp.
+        hero = { compact ->
+            LogoMark(size = if (compact) 40.dp else 44.dp)
             Text(
                 text = stringResource(Res.string.app_name),
-                style = BrainCardsTheme.wordmark.copy(fontSize = 28.sp),
+                style = BrainCardsTheme.wordmark.copy(fontSize = if (compact) 25.sp else 27.sp),
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
-
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = stringResource(if (isRegisterMode) Res.string.auth_register_title else Res.string.auth_login_title),
@@ -148,9 +178,14 @@ fun AuthScreen(
             )
         }
 
+        // Sesion perdida sola: aviso persistente (no es un error ni un Snackbar), hasta que el usuario interactue.
+        if (notice is WelcomeNotice.SessionExpired) {
+            FormNote(stringResource(Res.string.welcome_notice_session_expired), announce = true)
+        }
+
         // Solo si ya hay mazos locales (WelcomeViewModel): se anadiran a la cuenta al iniciar sesion.
         if (hasLocalData == true) {
-            MergeNote(stringResource(Res.string.auth_merge_note))
+            FormNote(stringResource(Res.string.auth_merge_note))
         }
 
         if (bannerError != null) {
@@ -163,6 +198,7 @@ fun AuthScreen(
         FormTextField(
             value = email,
             onValueChange = {
+                interact(WelcomeInteraction.EmailEdited)
                 email = it
                 clientErrors = clientErrors.without(AuthField.EMAIL)
                 viewModel.clearError()
@@ -173,12 +209,13 @@ fun AuthScreen(
             enabled = !isSubmitting,
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next,
-            modifier = Modifier.fillMaxWidth().formField(focus, 0) { submit() }
+            modifier = Modifier.fillMaxWidth().formField(focus, 0) { submit(WelcomeInteraction.SubmitByIme) }
         )
 
         FormTextField(
             value = password,
             onValueChange = {
+                interact(WelcomeInteraction.PasswordEdited)
                 password = it
                 clientErrors = clientErrors.without(AuthField.PASSWORD)
                 viewModel.clearError()
@@ -190,8 +227,8 @@ fun AuthScreen(
             enabled = !isSubmitting,
             isPassword = true,
             imeAction = ImeAction.Done,
-            onImeAction = { submit() },
-            modifier = Modifier.fillMaxWidth().formField(focus, 1) { submit() }
+            onImeAction = { submit(WelcomeInteraction.SubmitByIme) },
+            modifier = Modifier.fillMaxWidth().formField(focus, 1) { submit(WelcomeInteraction.SubmitByIme) }
         )
 
         SubmitButton(
@@ -201,13 +238,20 @@ fun AuthScreen(
         )
 
         if (!isRegisterMode) {
-            TextButton(onClick = { onForgotPasswordClick(email.trim()) }, enabled = !isSubmitting) {
+            TextButton(
+                onClick = {
+                    interact(WelcomeInteraction.ForgotPassword)
+                    onForgotPasswordClick(email.trim())
+                },
+                enabled = !isSubmitting
+            ) {
                 Text(stringResource(Res.string.auth_forgot_password))
             }
         }
 
         TextButton(
             onClick = {
+                interact(WelcomeInteraction.ToggleMode)
                 isRegisterMode = !isRegisterMode
                 clientErrors = FieldErrors.None
                 viewModel.clearError()
@@ -233,7 +277,10 @@ fun AuthScreen(
 
         // Aun no hay cuenta: se vuelve a donde se estaba (App.kt), sin tocar nada. Sin callejon sin salida.
         OutlinedButton(
-            onClick = onContinueWithoutAccount,
+            onClick = {
+                interact(WelcomeInteraction.ContinueWithoutAccount)
+                onContinueWithoutAccount()
+            },
             enabled = !isSubmitting,
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -245,24 +292,5 @@ fun AuthScreen(
                 modifier = Modifier.padding(vertical = 5.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun MergeNote(text: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BrainCardsTheme.extraColors.brandChip, RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }

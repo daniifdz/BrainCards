@@ -49,6 +49,7 @@ fun App() {
 
     val entryViewModel = koinViewModel<AppEntryViewModel>()
     val startRoute by entryViewModel.startRoute.collectAsState()
+    val welcomeNotice by entryViewModel.welcomeNotice.collectAsState()
 
     BrainCardsTheme(darkTheme = useDarkTheme) {
         // Auth sin resolver (arranque en frio): solo logo, nunca Bienvenida ni Home.
@@ -161,7 +162,12 @@ fun App() {
                     },
                     onEmailNotConfirmed = { email ->
                         navController.navigate(Screen.ConfirmEmail(email, codeJustSent = false))
-                    }
+                    },
+                    // Aviso de salida de sesion (Snackbar de un solo uso / nota persistente), tambien en la variante con flecha.
+                    // Vive en AppEntryViewModel (Activity-scoped), no en el koinViewModel de esta entrada de navegacion.
+                    notice = welcomeNotice,
+                    onNoticeConsumed = entryViewModel::consumeWelcomeNotice,
+                    onNoticeDismissed = entryViewModel::dismissWelcomeNotice
                 )
             }
             composable<Screen.ConfirmEmail> { backStackEntry ->
