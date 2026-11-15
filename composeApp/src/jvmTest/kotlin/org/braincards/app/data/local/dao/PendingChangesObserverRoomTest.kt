@@ -226,7 +226,7 @@ class PendingChangesObserverRoomTest {
     @Test
     fun propiedad_la_huella_coincide_con_getPendingSync_mas_countUnowned_en_bds_aleatorias() = runBlocking {
         val decksRepo = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
-        val topicsRepo = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
+        val topicsRepo = TopicRepositoryImpl(db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         val cardsRepo = FlashcardRepositoryImpl(db.flashcardDao())
         val schedRepo = CardSchedulingRepositoryImpl(db.cardSchedulingDao(), RoomTransactionRunner(db))
         val local = LocalDataRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), db.cardSchedulingDao(),

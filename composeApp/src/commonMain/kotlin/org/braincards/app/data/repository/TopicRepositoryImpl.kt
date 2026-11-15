@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.braincards.app.data.local.TransactionRunner
 import org.braincards.app.data.local.dao.DeckDao
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
@@ -15,7 +16,12 @@ import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.TopicsRepository
 
-class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardDao: FlashcardDao): TopicsRepository {
+class TopicRepositoryImpl(
+    private val topicDao: TopicDao,
+    private val flashcardDao: FlashcardDao,
+    private val transactionRunner: TransactionRunner,
+    private val clock: Clock = Clock.System
+) : TopicsRepository {
 
     override suspend fun addTopic(topic: Topic) {
         topicDao.addTopic(topic.toEntity())
@@ -26,15 +32,20 @@ class TopicRepositoryImpl(private val topicDao: TopicDao, private val flashcardD
 
     }
 
+    // Borrado logico en cascada (tema y sus tarjetas) en UNA transaccion: o se marca todo o no se marca nada.
+    // Sin ella, un fallo o un cierre a mitad dejaba el tema borrado con tarjetas vivas bajo ese tema (invisibles en la
+    // pantalla del mazo pero contadas en Home y en "Estudiar Todo"). Misma marca `now` para el tema y todas sus
+    // tarjetas: el sync los trata como un unico cambio.
     override suspend fun deleteTopic(topic: Topic) {
-        val now = Clock.System.now()
-        topicDao.softdeleteTopic(topic.id, now)
+        val now = clock.now()
+        transactionRunner.inTransaction {
+            topicDao.softdeleteTopic(topic.id, now)
 
-
-        val flashcardsOfDeck = flashcardDao.getFlashcardsByDeckId(topic.deckId).first()
-        val flashcardsOfThisTopic = flashcardsOfDeck.filter{it.topicId == topic.id}
-        for (flashcard in flashcardsOfThisTopic){
-            flashcardDao.softdeleteFlashcardById(flashcard.id, now)
+            val flashcardsOfDeck = flashcardDao.getFlashcardsByDeckId(topic.deckId).first()
+            val flashcardsOfThisTopic = flashcardsOfDeck.filter { it.topicId == topic.id }
+            for (flashcard in flashcardsOfThisTopic) {
+                flashcardDao.softdeleteFlashcardById(flashcard.id, now)
+            }
         }
     }
 

@@ -42,7 +42,7 @@ class ParentPullKeepsChildrenRoomTest {
     fun setUp() = runBlocking {
         db = Room.inMemoryDatabaseBuilder<AppDatabase>().setDriver(BundledSQLiteDriver()).build()
         decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
-        topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
+        topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         flashcards = FlashcardRepositoryImpl(db.flashcardDao())
         // deck d1 -> topic t1 -> card c1 (+ scheduling c1, reviewlog r1), todo sincronizado.
         db.deckDao().addDeck(DeckEntity(id = "d1", name = "viejo", createdAt = ms(1), updatedAt = ms(1000),

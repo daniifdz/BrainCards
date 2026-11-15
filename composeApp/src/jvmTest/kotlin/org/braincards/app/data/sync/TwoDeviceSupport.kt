@@ -221,7 +221,7 @@ class Device(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
 
     val decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
-    val topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao())
+    val topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
     val flashcards = FlashcardRepositoryImpl(db.flashcardDao())
     val scheduling = CardSchedulingRepositoryImpl(db.cardSchedulingDao(), RoomTransactionRunner(db))
     val localData = LocalDataRepositoryImpl(

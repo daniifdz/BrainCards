@@ -239,7 +239,7 @@ fun appModule(
     // Proveer el Repositorio
     single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get(), transactionRunner = get()) }
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
-    single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get()) }
+    single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get(), transactionRunner = get()) }
     single<ReviewLogRepository> { ReviewLogRepositoryImpl(reviewLogDao = get()) }
     single<TransactionRunner> { RoomTransactionRunner(get<AppDatabase>()) }
     single<CardSchedulingRepository> { CardSchedulingRepositoryImpl(cardSchedulingDao = get(), transactionRunner = get()) }

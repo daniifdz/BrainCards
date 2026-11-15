@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.data.fakes.FakeFlashcardDao
 import org.braincards.app.data.fakes.FakeTopicDao
+import org.braincards.app.data.fakes.FakeTransactionRunner
 import org.braincards.app.data.local.entity.TopicEntity
 import org.braincards.app.domain.models.Topic
 import kotlin.test.Test
@@ -35,7 +36,7 @@ class TopicRepositoryImplTest {
         val topicDao = FakeTopicDao().apply {
             seed(localEntity(id = "topic-1", updatedAt = Instant.fromEpochMilliseconds(1000)))
         }
-        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao())
+        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteTopic(id = "topic-1", updatedAt = Instant.fromEpochMilliseconds(2000))))
 
@@ -49,7 +50,7 @@ class TopicRepositoryImplTest {
         val topicDao = FakeTopicDao().apply {
             seed(localEntity(id = "topic-1", updatedAt = Instant.fromEpochMilliseconds(3000)))
         }
-        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao())
+        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteTopic(id = "topic-1", updatedAt = Instant.fromEpochMilliseconds(2000))))
 
@@ -61,7 +62,7 @@ class TopicRepositoryImplTest {
     @Test
     fun `applyRemotePull inserta la fila cuando no existe local`() = runBlocking {
         val topicDao = FakeTopicDao()
-        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao())
+        val repository = TopicRepositoryImpl(topicDao, FakeFlashcardDao(), FakeTransactionRunner())
 
         repository.applyRemotePull(listOf(remoteTopic(id = "topic-new", updatedAt = Instant.fromEpochMilliseconds(1000))))
 
