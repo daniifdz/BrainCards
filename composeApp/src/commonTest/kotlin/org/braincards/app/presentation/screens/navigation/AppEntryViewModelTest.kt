@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.setMain
 import org.braincards.app.domain.fakes.FakeAuthRepository
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.LocalModePreference
+import org.braincards.app.presentation.sync.SessionExitReason
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -51,7 +52,15 @@ class AppEntryViewModelTest {
         val auth = FakeAuthRepository(initialAuth)
         val pref = FakeLocalModePreference(initialFlag, prefWriteDelayMs)
         val exitCount = MutableStateFlow(0)
-        val vm = AppEntryViewModel(auth, pref, exitCount)
+        val exitReason = MutableStateFlow<SessionExitReason?>(null)
+        val expectedExit = MutableStateFlow<SessionExitReason?>(null)
+        val vm = AppEntryViewModel(auth, pref, exitCount, exitReason, expectedExit)
+
+        /** Lo que hace SyncCoordinator.resetSyncState: primero el motivo y despues el contador. */
+        fun userExit(reason: SessionExitReason? = SessionExitReason.SignedOut) {
+            exitReason.value = reason
+            exitCount.value += 1
+        }
     }
 
     /** Recoge los eventos signedOut; guarda el valor del flag EN EL MOMENTO de recibir cada uno. */
@@ -163,7 +172,7 @@ class AppEntryViewModelTest {
 
         env.auth.setState(AuthState.NotAuthenticated)
         assertTrue(events.isEmpty())
-        env.exitCount.value += 1 // SyncCoordinator.resetSyncState al terminar el cierre / el borrado
+        env.userExit() // SyncCoordinator.resetSyncState al terminar el cierre / el borrado
         runCurrent()
 
         assertEquals(1, events.size, "sin esperar el debounce")
@@ -174,7 +183,7 @@ class AppEntryViewModelTest {
         val env = Env(signedIn, initialFlag = true)
         val events = collectSignedOut(env)
 
-        env.exitCount.value += 1
+        env.userExit()
         env.auth.setState(AuthState.NotAuthenticated)
         runCurrent()
 

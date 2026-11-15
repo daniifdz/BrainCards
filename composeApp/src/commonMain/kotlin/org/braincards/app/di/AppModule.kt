@@ -310,7 +310,9 @@ fun appModule(
         AppEntryViewModel(
             authRepository = get(),
             localModePreference = get(),
-            userSessionExitCount = get<SyncCoordinator>().userSessionExitCount
+            userSessionExitCount = get<SyncCoordinator>().userSessionExitCount,
+            userExitReason = get<SyncCoordinator>().userSessionExitReason,
+            expectedUserExit = get<SyncCoordinator>().expectedUserExit
         )
     }
     viewModel {
