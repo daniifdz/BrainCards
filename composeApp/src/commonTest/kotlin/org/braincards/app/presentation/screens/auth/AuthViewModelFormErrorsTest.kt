@@ -149,13 +149,15 @@ class AuthViewModelFormErrorsTest {
     // --- los flujos de Ajustes NO cambian ---------------------------------------------------------------------------
 
     @Test
-    fun borrar_la_cuenta_sigue_avisando_por_messageEvent_y_no_toca_uiError() = runTest {
+    fun borrar_la_cuenta_ya_no_emite_el_Snackbar_de_Ajustes_y_no_toca_uiError() = runTest {
+        // El aviso "Cuenta eliminada." lo muestra ahora la Bienvenida (AppEntryViewModel.welcomeNotice): el emit de
+        // Ajustes no llegaba a verse porque la navegacion ocurre casi a la vez.
         val env = AuthVmEnv(AuthState.Authenticated("user-1", "a@b.co", sessionConfirmed = true))
         val rec = record(env)
 
         env.vm.deleteAccount()
 
-        assertEquals(listOf("Cuenta eliminada"), rec.messages)
+        assertEquals(emptyList(), rec.messages)
         assertNull(env.vm.uiError.value)
     }
 

@@ -34,6 +34,7 @@ import org.braincards.app.domain.usecase.Sync.SyncResult
 import org.braincards.app.domain.usecase.Sync.abortedTableCount
 import org.braincards.app.domain.usecase.Sync.failedRowCount
 import org.braincards.app.presentation.sync.FinishSignOutResult
+import org.braincards.app.presentation.sync.SessionExitReason
 import org.braincards.app.presentation.sync.SignOutPrompt
 import org.braincards.app.presentation.sync.SyncCoordinator
 import org.braincards.app.util.logError
@@ -359,12 +360,15 @@ class AuthViewModel(
             syncCoordinator.withSyncLock {
                 _isDeletingAccount.value = true
                 try {
+                    // Salida esperada (como el cierre de sesion): la sesion puede caer antes de que acabe el borrado.
+                    syncCoordinator.markExpectedUserExit(SessionExitReason.AccountDeleted)
                     deleteAccountUseCase(userId)
                     // La siguiente cuenta no debe heredar "ultima sincronizacion" ni el
                     // contador de pendientes de esta (los datos locales si se conservan).
-                    syncCoordinator.resetSyncState()
-                    _messageEvent.emit("Cuenta eliminada")
+                    // Sin Snackbar aqui: el aviso "Cuenta eliminada." lo muestra la Bienvenida a la que se navega.
+                    syncCoordinator.resetSyncState(SessionExitReason.AccountDeleted)
                 } catch (e: Exception) {
+                    syncCoordinator.clearExpectedUserExit()
                     logError("Error al eliminar la cuenta", e)
                     _messageEvent.emit("No se pudo eliminar la cuenta")
                 } finally {

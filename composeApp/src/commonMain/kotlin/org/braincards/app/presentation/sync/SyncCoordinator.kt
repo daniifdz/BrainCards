@@ -125,6 +125,27 @@ class SyncCoordinator(
     private val _userSessionExitCount = MutableStateFlow(0)
     val userSessionExitCount: StateFlow<Int> = _userSessionExitCount.asStateFlow()
 
+    // Motivo de la ULTIMA salida del usuario. resetSyncState lo escribe ANTES de subir el contador: quien vea el
+    // contador nuevo lee ya el motivo correcto. null = el reset no fue una salida confirmada (SessionCloseFailed: la
+    // sesion sigue viva) o aun no hubo ninguna.
+    private val _userSessionExitReason = MutableStateFlow<SessionExitReason?>(null)
+    val userSessionExitReason: StateFlow<SessionExitReason?> = _userSessionExitReason.asStateFlow()
+
+    // "Salida esperada": el usuario ya confirmo salir y la peticion esta EN CURSO. La sesion puede dejar de existir
+    // (NotAuthenticated) mucho antes de que termine el cierre/borrado (red lenta); sin esta marca el arranque lo
+    // tomaria por una sesion perdida. Se pone justo antes de la llamada y se limpia en resetSyncState, o aqui mismo si
+    // la llamada falla, se cancela o no cierra la sesion.
+    private val _expectedUserExit = MutableStateFlow<SessionExitReason?>(null)
+    val expectedUserExit: StateFlow<SessionExitReason?> = _expectedUserExit.asStateFlow()
+
+    fun markExpectedUserExit(reason: SessionExitReason) {
+        _expectedUserExit.value = reason
+    }
+
+    fun clearExpectedUserExit() {
+        _expectedUserExit.value = null
+    }
+
     // Resultado del ULTIMO sync, venga de donde venga (manual, completo o automatico): lo escribe syncLocked.
     private val _lastOutcome = MutableStateFlow<SyncOutcome?>(null)
     override val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
@@ -295,12 +316,22 @@ class SyncCoordinator(
             if (unsynced > confirmedCount) {
                 return@withLock FinishSignOutResult.NeedsReconfirmation(unsynced)
             }
-            val outcome = signOutAndWipeUseCase(userId)
+            // Salida esperada: marcada justo ANTES de la llamada (la sesion puede caer antes de que termine).
+            markExpectedUserExit(SessionExitReason.SignedOut)
+            val outcome = try {
+                signOutAndWipeUseCase(userId)
+            } catch (e: Throwable) {
+                clearExpectedUserExit() // fallo o cancelacion: no hay salida
+                throw e
+            }
             // La BD ya esta vacia en SignedOut y en SessionCloseFailed: el estado de sync
             // (ultima sync, pendientes) ya no describe nada. Con WipeFailed/SessionChanged no
-            // se toco nada y se conserva.
-            if (outcome is SignOutAndWipeResult.SignedOut || outcome is SignOutAndWipeResult.SessionCloseFailed) {
-                resetSyncState()
+            // se toco nada y se conserva. Solo SignedOut es una salida: con SessionCloseFailed la
+            // sesion sigue viva (motivo null; el contador sube igual, como siempre).
+            when (outcome) {
+                SignOutAndWipeResult.SignedOut -> resetSyncState(SessionExitReason.SignedOut)
+                is SignOutAndWipeResult.SessionCloseFailed -> resetSyncState()
+                else -> clearExpectedUserExit()
             }
             FinishSignOutResult.Finished(outcome)
         }
@@ -311,8 +342,11 @@ class SyncCoordinator(
      * Mutex (lo llaman quienes ya lo tienen). Best-effort con el DataStore: si falla, el cierre
      * de sesion/borrado de cuenta que ya ocurrio no debe parecer fallido.
      */
-    suspend fun resetSyncState() {
+    suspend fun resetSyncState(exitReason: SessionExitReason? = null) {
+        // Orden: motivo, contador, y por ultimo se limpia la marca de "salida esperada" (nunca hay un hueco sin dato).
+        _userSessionExitReason.value = exitReason
         _userSessionExitCount.value += 1
+        _expectedUserExit.value = null
         _lastSuccessfulSyncAt.value = null
         _pendingChangesCount.value = 0
         _lastOutcome.value = null

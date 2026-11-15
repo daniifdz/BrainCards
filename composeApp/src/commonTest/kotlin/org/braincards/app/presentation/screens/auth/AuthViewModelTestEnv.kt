@@ -37,7 +37,7 @@ internal class AuthVmEnv(initial: AuthState = AuthState.NotAuthenticated) {
     private val topics = FakeTopicsRepository()
     private val flashcards = FakeFlashcardRepository()
     private val scheduling = FakeCardSchedulingRepository()
-    private val local = FakeLocalDataRepository()
+    val local = FakeLocalDataRepository()
 
     val coordinator = SyncCoordinator(
         authRepository = auth,
