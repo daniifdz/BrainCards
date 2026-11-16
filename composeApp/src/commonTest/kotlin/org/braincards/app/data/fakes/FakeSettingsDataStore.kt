@@ -5,6 +5,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 
 /**
  * Fake en memoria de DataStore<Preferences>, sin tocar disco. Interfaz real
@@ -15,7 +17,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
  */
 class FakeSettingsDataStore(initial: Preferences = emptyPreferences()) : DataStore<Preferences> {
     private val state = MutableStateFlow(initial)
-    override val data: Flow<Preferences> = state
+
+    /** Si no es null, LEER `data` lanza esto (IOException = preferencias corruptas). Escribir no se ve afectado. */
+    var readFailure: Throwable? = null
+
+    override val data: Flow<Preferences> = flow {
+        readFailure?.let { throw it }
+        emitAll(state)
+    }
 
     override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
         val updated = transform(state.value)

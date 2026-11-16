@@ -41,7 +41,10 @@ enum class AutoSyncSkipReason {
     NO_SESSION,
     SESSION_UNCONFIRMED,
     PAUSED_SIGN_OUT,
-    PAUSED_STUDY
+    PAUSED_STUDY,
+
+    /** El usuario apago la sincronizacion automatica (se comprueba DENTRO del Mutex, como la puerta de pausa). */
+    DISABLED
 }
 
 /** Resultado de [SyncCoordinator.requestAutoSync]: se ejecuto (con su resultado) u "omitido" con su motivo. */

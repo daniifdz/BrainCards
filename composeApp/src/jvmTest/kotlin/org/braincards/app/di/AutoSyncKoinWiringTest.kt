@@ -20,6 +20,8 @@ import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.PendingStamp
 import org.braincards.app.domain.repository.AuthRepository
+import kotlinx.coroutines.flow.flowOf
+import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.PendingChangesObserver
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -107,6 +109,13 @@ class AutoSyncKoinWiringTest {
             }
             single { gate }
             single { coordinator }
+            // autoSyncModule() lee el interruptor de sync automatico: aqui, siempre activado.
+            single<AutoSyncPreference> {
+                object : AutoSyncPreference {
+                    override val enabled = flowOf(true)
+                    override suspend fun setEnabled(value: Boolean) = Unit
+                }
+            }
         }
     }
 
@@ -259,6 +268,7 @@ class AutoSyncKoinWiringTest {
 
         assertTrue(AutoSyncController::class in types, "appModule incluye autoSyncModule(): el controlador esta registrado")
         assertTrue(PendingChangesObserver::class in types, "appModule registra el observador de pendientes")
+        assertTrue(AutoSyncPreference::class in types, "appModule registra el interruptor de sync automatico")
         assertTrue(AutoSyncPauseGate::class in types)
     }
 }

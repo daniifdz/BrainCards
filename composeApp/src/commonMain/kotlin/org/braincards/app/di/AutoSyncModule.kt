@@ -3,6 +3,7 @@ package org.braincards.app.di
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.presentation.sync.AutoSyncController
 import org.braincards.app.presentation.sync.SyncCoordinator
 import org.koin.dsl.module
@@ -30,7 +31,8 @@ fun autoSyncModule() = module {
             pendingObserver = get(),
             pauseGate = get(),
             foregroundMonitor = get(),
-            connectivityMonitor = get()
+            connectivityMonitor = get(),
+            autoSyncEnabled = get<AutoSyncPreference>().enabled
         ).also { it.start() }
     } onClose { it?.stop() }
 }

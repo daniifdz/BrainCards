@@ -4,10 +4,13 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.braincards.app.domain.models.AuthState
@@ -89,6 +92,11 @@ interface AutoSyncHost {
  * y pulls propios dejan count == 0 o la misma huella y no disparan nada.
  *
  * Tiempo: [timeSource] monotonico e inyectable (los tests usan el del scheduler virtual); [random] para el jitter.
+ *
+ * Interruptor [autoSyncEnabled] (preferencia del usuario): apagado, NINGUN disparo automatico sincroniza (primer plano,
+ * cambios, red, periodico, puerta de pausa, ultimo intento en segundo plano); el sync manual no depende de el. Hasta que
+ * llega el primer valor se trata como APAGADO: asi un arranque con el interruptor apagado no lanza un sync antes de
+ * que DataStore responda. Al encenderlo hay un sync inmediato (con el intervalo minimo) y se reinician los fallos.
  */
 class AutoSyncController(
     private val scope: CoroutineScope,
@@ -102,7 +110,8 @@ class AutoSyncController(
     private val connectivityMonitor: ConnectivityMonitor,
     private val config: AutoSyncConfig = AutoSyncConfig(),
     // Trazas de diagnostico del ultimo intento en segundo plano (solo enums, conteos y duraciones). Inyectable en tests.
-    private val log: (String) -> Unit = ::logSync
+    private val log: (String) -> Unit = ::logSync,
+    private val autoSyncEnabled: Flow<Boolean> = flowOf(true)
 ) {
 
     private sealed interface Signal {
@@ -112,6 +121,7 @@ class AutoSyncController(
         data class Pending(val stamp: PendingStamp) : Signal
         data class GateOpened(val at: Duration) : Signal
         data class Outcome(val outcome: SyncOutcome) : Signal
+        data class Enabled(val on: Boolean) : Signal
     }
 
     private val signals = Channel<Signal>(Channel.UNLIMITED)
@@ -123,6 +133,7 @@ class AutoSyncController(
     private var online = false
     private var authReady = false
     private var lastPending = PendingStamp(0, 0)
+    private var autoEnabled = false // desconocido = apagado hasta el primer valor del interruptor
 
     private var immediate = false          // hay que sincronizar en cuanto se pueda
     private var retryAt: Duration? = null  // reintento tras "omitido por pausa"
@@ -173,6 +184,15 @@ class AutoSyncController(
                 }
             }
             launch { host.lastOutcome.collect { outcome -> if (outcome != null) signals.trySend(Signal.Outcome(outcome)) } }
+            launch {
+                // Un fallo al leer el interruptor NO puede matar el controlador: se asume el valor por defecto (activado).
+                autoSyncEnabled
+                    .catch { e ->
+                        logError("Interruptor de sync automatico", e)
+                        emit(true)
+                    }
+                    .collect { signals.trySend(Signal.Enabled(it)) }
+            }
             runLoop()
         }
     }
@@ -209,7 +229,7 @@ class AutoSyncController(
 
     /** Tiempo hasta el proximo intento (ZERO = ya), o null si no hay nada que hacer / esta en pausa. */
     private fun nextWait(): Duration? {
-        if (!authReady || !online) return null
+        if (!autoEnabled || !authReady || !online) return null
         val now = now()
         if (!foreground) {
             // Segundo plano: solo el ultimo intento. Salta debounce e intervalo minimo, no el backoff.
@@ -261,6 +281,8 @@ class AutoSyncController(
                     if (foreground) retryAt = now() + config.pausedRetry
                 // Sin sesion / sin confirmar: lo reactivara el flujo de sesion.
                 AutoSyncSkipReason.NO_SESSION, AutoSyncSkipReason.SESSION_UNCONFIRMED -> Unit
+                // Apagado entre la peticion y el lock: la senal Enabled(false) deja el controlador quieto.
+                AutoSyncSkipReason.DISABLED -> Unit
             }
             null -> Unit
         }
@@ -284,7 +306,7 @@ class AutoSyncController(
                     backgroundFinal = false
                     periodicAt = now() + config.periodicInterval
                 } else if (!signal.on && was) {
-                    backgroundFinal = authReady && (lastPending.count > 0 || changeDeadline != null)
+                    backgroundFinal = autoEnabled && authReady && (lastPending.count > 0 || changeDeadline != null)
                     logBackgroundDecision()
                 }
             }
@@ -334,6 +356,17 @@ class AutoSyncController(
                 if (!openedDuringRunningAttempt) immediate = true
             }
             is Signal.Outcome -> onOutcome(signal.outcome)
+            is Signal.Enabled -> {
+                val was = autoEnabled
+                autoEnabled = signal.on
+                // Apagado: nextWait() devuelve null y lo armado queda inerte. Encendido: sync inmediato (lo cubre todo
+                // lo que se hubiera armado) y empezar de cero con fallos y backoff.
+                if (signal.on && !was) {
+                    failures = 0
+                    backoffUntil = null
+                    immediate = true
+                }
+            }
         }
     }
 
@@ -370,6 +403,7 @@ class AutoSyncController(
                     "SKIPPED_${BackgroundAttemptSkip.PAUSED} (${outcome.reason})"
                 AutoSyncSkipReason.NO_SESSION, AutoSyncSkipReason.SESSION_UNCONFIRMED ->
                     "SKIPPED_${BackgroundAttemptSkip.NOT_AUTHENTICATED} (${outcome.reason})"
+                AutoSyncSkipReason.DISABLED -> "SKIPPED_DISABLED"
             }
             null -> if (failedWithException) "EXCEPTION" else "TIMEOUT"
         }

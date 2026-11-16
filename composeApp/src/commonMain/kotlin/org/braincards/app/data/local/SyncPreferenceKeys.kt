@@ -1,6 +1,7 @@
 package org.braincards.app.data.local
 
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
 // Claves del DataStore (braincards.preferences_pb) que son ESTADO DE SYNC. Sitio compartido: las usan
@@ -16,6 +17,14 @@ val LAST_SUCCESSFUL_SYNC_KEY = stringPreferencesKey("last_successful_sync_at")
  * del ultimo pull completo (ver DataStorePullWatermarkStore).
  */
 val PULL_WATERMARK_KEY = stringPreferencesKey("pull_watermark")
+
+/**
+ * Interruptor de sincronizacion automatica. Ausente = ACTIVADO. NO esta en [SYNC_PREFS_KEYS] a proposito: no es estado
+ * de sync que se olvide en cualquier reset. SyncCoordinator.resetSyncState la borra (`prefs -= KEY`, nunca clear()) SOLO
+ * en una salida confirmada del usuario (cerrar sesion / eliminar cuenta, `exitReason != null`); con SessionCloseFailed
+ * (la sesion sigue viva) NO se toca: el interruptor no puede cambiar solo.
+ */
+val AUTO_SYNC_ENABLED_KEY = booleanPreferencesKey("auto_sync_enabled")
 
 /**
  * TODAS las claves del DataStore que son estado de sync. SyncCoordinator.resetSyncState() borra

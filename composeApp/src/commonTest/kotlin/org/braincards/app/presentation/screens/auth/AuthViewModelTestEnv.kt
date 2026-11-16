@@ -39,6 +39,9 @@ internal class AuthVmEnv(initial: AuthState = AuthState.NotAuthenticated) {
     private val scheduling = FakeCardSchedulingRepository()
     val local = FakeLocalDataRepository()
 
+    // Expuesto para los tests que comprueban claves del DataStore (p. ej. el interruptor de sync automatico).
+    val dataStore = FakeSettingsDataStore()
+
     val coordinator = SyncCoordinator(
         authRepository = auth,
         syncEngineUseCase = SyncEngineUseCase(
@@ -49,7 +52,7 @@ internal class AuthVmEnv(initial: AuthState = AuthState.NotAuthenticated) {
         topicsRepository = topics,
         flashcardRepository = flashcards,
         cardSchedulingRepository = scheduling,
-        dataStore = FakeSettingsDataStore(),
+        dataStore = dataStore,
         localDataRepository = local,
         signOutAndWipeUseCase = SignOutAndWipeUseCase(auth, local),
         coroutineScope = CoroutineScope(Dispatchers.Unconfined)

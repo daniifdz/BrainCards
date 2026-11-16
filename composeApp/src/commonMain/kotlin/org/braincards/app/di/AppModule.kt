@@ -12,6 +12,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import org.braincards.app.config.SUPABASE_ANON_KEY
 import org.braincards.app.config.SUPABASE_URL
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.DataStoreAutoSyncPreference
 import org.braincards.app.data.local.DataStoreLocalModePreference
 import org.braincards.app.data.local.DataStorePullWatermarkStore
 import org.braincards.app.data.local.migration.MIGRATION_3_4
@@ -36,6 +37,7 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
 import org.braincards.app.domain.repository.DueCardsObserver
+import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.LocalModePreference
 import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.PullWatermarkStore
@@ -306,6 +308,8 @@ fun appModule(
 
     // Arranque: flag de "modo local elegido" (DataStore) y ruta de entrada / sesion perdida.
     single<LocalModePreference> { DataStoreLocalModePreference(dataStore = get()) }
+    // Interruptor de sincronizacion automatica (Ajustes). Lo lee el AutoSyncController.
+    single<AutoSyncPreference> { DataStoreAutoSyncPreference(dataStore = get()) }
     viewModel {
         AppEntryViewModel(
             authRepository = get(),

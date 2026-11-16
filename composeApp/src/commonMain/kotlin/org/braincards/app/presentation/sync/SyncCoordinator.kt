@@ -27,8 +27,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import org.braincards.app.data.local.AUTO_SYNC_ENABLED_KEY
 import org.braincards.app.data.local.LAST_SUCCESSFUL_SYNC_KEY
 import org.braincards.app.data.local.SYNC_PREFS_KEYS
+import org.braincards.app.data.local.autoSyncEnabledFlow
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.repository.CardSchedulingRepository
@@ -230,12 +232,18 @@ class SyncCoordinator(
         val state = authRepository.authState.first()
         if (state !is AuthState.Authenticated) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.NO_SESSION)
         if (!state.sessionConfirmed) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.SESSION_UNCONFIRMED)
+        // Interruptor apagado: tambien aqui (no solo en el controlador) para cerrar la carrera entre pedir el sync y
+        // tomar el lock. El sync MANUAL (syncNow) no pasa por aqui.
+        if (!isAutoSyncEnabled()) return@withLock AutoSyncOutcome.Skipped(AutoSyncSkipReason.DISABLED)
         when (pauseGate.activeReason()) {
             PauseReason.SIGN_OUT -> AutoSyncOutcome.Skipped(AutoSyncSkipReason.PAUSED_SIGN_OUT)
             PauseReason.STUDY -> AutoSyncOutcome.Skipped(AutoSyncSkipReason.PAUSED_STUDY)
             null -> AutoSyncOutcome.Ran(syncLocked())
         }
     }
+
+    // Ausente o ilegible (IOException / preferencias corruptas) = activado: la MISMA lectura que la preferencia.
+    private suspend fun isAutoSyncEnabled(): Boolean = dataStore.autoSyncEnabledFlow().first()
 
     /** Expone el Mutex sin filtrar el objeto en si -- lo usa
      * AuthViewModel.deleteAccount() para no correr a la vez que un sync. */
@@ -351,7 +359,11 @@ class SyncCoordinator(
         _pendingChangesCount.value = 0
         _lastOutcome.value = null
         try {
-            dataStore.edit { prefs -> SYNC_PREFS_KEYS.forEach { key -> prefs -= key } }
+            dataStore.edit { prefs ->
+                SYNC_PREFS_KEYS.forEach { key -> prefs -= key }
+                // Solo en una salida confirmada: SessionCloseFailed (exitReason null) deja el interruptor como estaba.
+                if (exitReason != null) prefs -= AUTO_SYNC_ENABLED_KEY
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
