@@ -13,6 +13,12 @@ fun signingProperty(propertyName: String, envName: String): String =
     (localProperties.getProperty(propertyName) ?: System.getenv(envName))
         ?: error("Missing $propertyName in local.properties or $envName environment variable")
 
+// Version unica de la app: alimenta el versionName de Android, el packageVersion de Desktop y la constante
+// APP_VERSION que Ajustes muestra (se genera mas abajo). Formato MAJOR.MINOR.PATCH con numeros: el instalador MSI de
+// Windows no admite sufijos ("-beta") y exige MAJOR >= 1. versionCode (Android) es un entero aparte: subirlo en cada
+// publicacion en Play.
+val appVersionName = "1.0.0"
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -70,6 +76,30 @@ val generateSupabaseConfig by tasks.registering {
     }
 }
 
+// Genera AppVersion.kt (APP_VERSION) en build/ a partir de appVersionName: una sola fuente de verdad.
+val generatedAppVersionDir = layout.buildDirectory.dir("generated/appVersion/commonMain/kotlin")
+
+val generateAppVersion by tasks.registering {
+    val outputDir = generatedAppVersionDir
+    val version = appVersionName
+
+    inputs.property("appVersionName", version)
+    outputs.dir(outputDir)
+
+    doLast {
+        val packageDir = outputDir.get().asFile.resolve("org/braincards/app")
+        packageDir.mkdirs()
+        packageDir.resolve("AppVersion.kt").writeText(
+            """
+            |package org.braincards.app
+            |
+            |/** Generado por Gradle desde appVersionName (composeApp/build.gradle.kts). No editar. */
+            |const val APP_VERSION = "$version"
+            |""".trimMargin()
+        )
+    }
+}
+
 kotlin {
     androidTarget {
         compilerOptions {
@@ -94,6 +124,7 @@ kotlin {
         }
         commonMain {
             kotlin.srcDir(generateSupabaseConfig)
+            kotlin.srcDir(generateAppVersion)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -157,7 +188,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = appVersionName
     }
     packaging {
         resources {
@@ -226,7 +257,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "BrainCards"
-            packageVersion = "1.0.0"
+            packageVersion = appVersionName
 
             windows {
                 iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
