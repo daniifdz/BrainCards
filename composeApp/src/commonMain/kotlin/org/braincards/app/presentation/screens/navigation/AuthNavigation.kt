@@ -10,6 +10,20 @@ import androidx.navigation.toRoute
  * aplica sobre el NavController (se prueba a mano: no hay tests de composables).
  */
 
+/**
+ * "Atras" seguro para las flechas de las pantallas: solo hace pop si hay una pantalla a la que volver; con una sola
+ * entrada en la pila (Home) no hace nada y devuelve false.
+ *
+ * Por que: `NavController.popBackStack()` NO protege el destino raiz; con `[Home]` saca Home y deja la pila VACIA (el
+ * NavHost solo dibuja el fondo y nada responde). Y la transicion por defecto del NavHost dura 700 ms: tras el primer pop,
+ * la pantalla que se va sigue compuesta y encima, con su flecha aun debajo del dedo. Un segundo toque en ese intervalo
+ * volvia a llamar a `popBackStack()` con `[Home]`. Tras el primer pop `previousBackStackEntry` es null, asi que el
+ * segundo toque se ignora.
+ *
+ * No sirve para `popBackStack<Screen.Auth>(...)`: ese apunta a una ruta concreta y no puede vaciar la pila.
+ */
+internal fun NavController.popBackStackSafely(): Boolean = previousBackStackEntry != null && popBackStack()
+
 /** Vacia la pila y deja Home como unica pantalla. */
 internal fun NavController.goHomeClearingStack() {
     navigate(Screen.Home) { popUpTo(graph.id) { inclusive = true } }

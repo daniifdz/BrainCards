@@ -25,6 +25,7 @@ import org.braincards.app.presentation.screens.navigation.goHomeClearingStack
 import org.braincards.app.presentation.screens.navigation.goToWelcomeEntry
 import org.braincards.app.presentation.screens.navigation.isAuthFlow
 import org.braincards.app.presentation.screens.navigation.needsWelcomeGuard
+import org.braincards.app.presentation.screens.navigation.popBackStackSafely
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -112,7 +113,7 @@ fun App() {
                         navController.navigate(Screen.FlashcardsList(deckId))
                     },
                     onBackClick = {
-                        navController.popBackStack()
+                        navController.popBackStackSafely()
                     }
                 )
 
@@ -121,7 +122,7 @@ fun App() {
                 val route = backStackEntry.toRoute<Screen.FlashcardsList>()
                 FlashcardScreen(
                     deckId = route.deckId,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStackSafely() },
                     //ESTO ES LO MISMO QUE LO DE ABAJO PERO ACORTADO
                     //onStudyClick = {deckId ->
                     //  navController.navigate(Screen.StudySession(StudyScope.Deck(deckId)))
@@ -139,7 +140,7 @@ fun App() {
                     deckId = route.deckId,
 
                     onBackClick = {
-                        navController.popBackStack()
+                        navController.popBackStackSafely()
                     }
                 )
             }
@@ -147,20 +148,20 @@ fun App() {
                 SettingsScreen(
                     currentTheme = appTheme?: AppTheme.SYSTEM,
                     onThemeChange = { newTheme -> themeViewModel.setTheme(newTheme) },
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStackSafely() },
                     onNavigateToAuth = { navController.navigate(Screen.Auth()) },
                 )
             }
             composable<Screen.Stats>{
                 StudyStatsScreen(
-                    onBackClick = {navController.popBackStack()}
+                    onBackClick = {navController.popBackStackSafely()}
                 )
             }
             composable<Screen.Auth> { backStackEntry ->
                 val route = backStackEntry.toRoute<Screen.Auth>()
                 AuthScreen(
                     asEntry = route.asEntry,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStackSafely() },
                     // Entrada: se elige el modo local y se va a Home reemplazando la pantalla. Apilada: se vuelve al origen.
                     onContinueWithoutAccount = {
                         if (route.asEntry) {
@@ -168,7 +169,7 @@ fun App() {
                                 entryViewModel.chooseLocalMode()
                                 navController.goHomeClearingStack()
                             }
-                        } else if (!navController.popBackStack()) {
+                        } else if (!navController.popBackStackSafely()) {
                             navController.goHomeClearingStack()
                         }
                     },
@@ -193,14 +194,14 @@ fun App() {
                     email = route.email,
                     codeJustSent = route.codeJustSent,
                     onConfirmed = { navController.exitAuthFlow() },
-                    onBackToLogin = { navController.popBackStack() }
+                    onBackToLogin = { navController.popBackStackSafely() }
                 )
             }
             composable<Screen.ForgotPassword> { backStackEntry ->
                 val route = backStackEntry.toRoute<Screen.ForgotPassword>()
                 ForgotPasswordScreen(
                     initialEmail = route.email,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStackSafely() },
                     onCodeSent = { email -> navController.navigate(Screen.ResetPassword(email)) }
                 )
             }
@@ -208,7 +209,7 @@ fun App() {
                 val route = backStackEntry.toRoute<Screen.ResetPassword>()
                 ResetPasswordScreen(
                     email = route.email,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.popBackStackSafely() },
                     // "Volver a iniciar sesion": hasta Bienvenida (se descartan Recuperar y Restablecer).
                     onBackToLogin = { navController.popBackStack<Screen.Auth>(inclusive = false) },
                     onPasswordResetCompleted = { navController.exitAuthFlow() }
