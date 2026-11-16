@@ -12,7 +12,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -27,6 +31,7 @@ import org.braincards.app.domain.fakes.FakeLocalDataRepository
 import org.braincards.app.domain.fakes.FakeRemoteDataSource
 import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
 import org.braincards.app.domain.usecase.Auth.SignOutAndWipeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
@@ -36,6 +41,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 
 class FakeConnectivityMonitor(initial: Boolean = true) : ConnectivityMonitor {
     val online = MutableStateFlow(initial)
@@ -78,11 +87,13 @@ class SyncStatusViewModelTest {
     private class Env(
         initialAuth: AuthState,
         online: Boolean = true,
-        dataStore: DataStore<Preferences> = FakeSettingsDataStore()
+        dataStore: DataStore<Preferences> = FakeSettingsDataStore(),
+        timeSource: TimeSource = TimeSource.Monotonic
     ) {
         val auth = FakeAuthRepository(initialAuth)
         val connectivity = FakeConnectivityMonitor(online)
-        private val decks = FakeDecksRepository()
+        val remote = FakeRemoteDataSource()
+        val decks = FakeDecksRepository()
         private val topics = FakeTopicsRepository()
         private val flashcards = FakeFlashcardRepository()
         private val scheduling = FakeCardSchedulingRepository()
@@ -90,7 +101,7 @@ class SyncStatusViewModelTest {
         val coordinator = SyncCoordinator(
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
-                auth, FakeRemoteDataSource(), decks, topics, flashcards, scheduling,
+                auth, remote, decks, topics, flashcards, scheduling,
                 BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
             ),
             decksRepository = decks,
@@ -102,7 +113,7 @@ class SyncStatusViewModelTest {
             signOutAndWipeUseCase = SignOutAndWipeUseCase(auth, local),
             coroutineScope = CoroutineScope(Dispatchers.Unconfined + CoroutineExceptionHandler { _, _ -> })
         )
-        val vm = SyncStatusViewModel(auth, coordinator, connectivity)
+        val vm = SyncStatusViewModel(auth, coordinator, connectivity, timeSource)
     }
 
     private fun storeWithLast(at: Instant? = last): DataStore<Preferences> =
@@ -241,5 +252,120 @@ class SyncStatusViewModelTest {
         assertTrue(env.coordinator.lastSuccessfulSyncAtLoaded.value)
         assertEquals(last, env.coordinator.lastSuccessfulSyncAt.value)
         env.coordinator.close()
+    }
+
+    // --- Gracia del error al reconectar (solo presentacion) ---
+
+    private val userSignedIn = AuthState.Authenticated("user-1", "a@b.c", sessionConfirmed = true)
+
+    private fun pendingDeck() =
+        Deck("d1", "d1", Instant.fromEpochMilliseconds(1000), Instant.fromEpochMilliseconds(2000), null, userId = "user-1")
+
+    /** Entorno con un sync ya fallido (PUSH_PARTIAL) y con red; el tiempo es el virtual del runTest. */
+    private suspend fun TestScope.envWithFailedSync(): Env {
+        val env = Env(userSignedIn, dataStore = storeWithLast(), timeSource = testScheduler.timeSource)
+        env.remote.pushDeckIdsThatFail = setOf("d1")
+        env.decks.addDeck(pendingDeck())
+        env.coordinator.syncNow()
+        return env
+    }
+
+    private val partial = SyncIndicator.Error(SyncErrorKind.PUSH_PARTIAL)
+
+    @Test
+    fun un_error_con_la_red_estable_se_muestra_sin_gracia() = runTest {
+        val env = envWithFailedSync()
+
+        assertEquals(partial, env.vm.indicator.value)
+        env.coordinator.close()
+    }
+
+    @Test
+    fun al_reconectar_el_error_viejo_no_se_muestra_si_el_sync_acaba_dentro_de_la_gracia() = runTest {
+        val env = envWithFailedSync()
+        val seen = mutableListOf<SyncIndicator?>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.indicator.collect { seen += it } }
+        env.connectivity.online.value = false
+        assertEquals(SyncIndicator.Offline, env.vm.indicator.value)
+        val mark = seen.size
+
+        env.connectivity.online.value = true
+        assertEquals(SyncIndicator.Offline, env.vm.indicator.value)
+        advanceTimeBy(1000)
+        env.remote.pushDeckIdsThatFail = emptySet()
+        env.coordinator.syncNow()
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        assertTrue(seen.drop(mark).none { it is SyncIndicator.Error }, "se vio un error tras reconectar: $seen")
+        assertEquals(SyncIndicator.Synced(env.coordinator.lastSuccessfulSyncAt.value!!), env.vm.indicator.value)
+        env.coordinator.close()
+    }
+
+    @Test
+    fun al_reconectar_el_error_que_persiste_se_muestra_justo_al_acabar_la_gracia() = runTest {
+        val env = envWithFailedSync()
+        env.connectivity.online.value = false
+        env.connectivity.online.value = true
+
+        advanceTimeBy(SYNC_ERROR_GRACE_AFTER_RECONNECT.inWholeMilliseconds - 1)
+        runCurrent()
+        assertEquals(SyncIndicator.Offline, env.vm.indicator.value)
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(partial, env.vm.indicator.value)
+        env.coordinator.close()
+    }
+
+    @Test
+    fun si_se_pierde_la_red_durante_la_gracia_no_aparece_el_error_viejo() = runTest {
+        val env = envWithFailedSync()
+        env.connectivity.online.value = false
+        env.connectivity.online.value = true
+        advanceTimeBy(1000)
+
+        env.connectivity.online.value = false
+        advanceTimeBy(10_000)
+        runCurrent()
+
+        assertEquals(SyncIndicator.Offline, env.vm.indicator.value)
+        env.coordinator.close()
+    }
+
+    @Test
+    fun una_segunda_reconexion_empieza_una_gracia_nueva() = runTest {
+        val env = envWithFailedSync()
+        env.connectivity.online.value = false
+        env.connectivity.online.value = true
+        advanceTimeBy(10_000)
+        runCurrent()
+        assertEquals(partial, env.vm.indicator.value)
+
+        env.connectivity.online.value = false
+        advanceTimeBy(10_000)
+        env.connectivity.online.value = true
+
+        assertEquals(SyncIndicator.Offline, env.vm.indicator.value)
+        env.coordinator.close()
+    }
+
+    @Test
+    fun errorGraceRemaining_tabla() {
+        val g = 3.seconds
+        val failed = SyncIndicator.Error(SyncErrorKind.FAILED)
+        val cases: List<Triple<String, Duration, Duration>> = listOf(
+            Triple("FAILED recien reconectado", errorGraceRemaining(failed, 0.milliseconds, g), 3.seconds),
+            Triple("PUSH_PARTIAL a mitad", errorGraceRemaining(partial, 1.seconds, g), 2.seconds),
+            Triple("justo al acabar", errorGraceRemaining(failed, 3.seconds, g), Duration.ZERO),
+            Triple("pasada", errorGraceRemaining(failed, 9.seconds, g), Duration.ZERO),
+            Triple("LOCAL sin gracia", errorGraceRemaining(SyncIndicator.Error(SyncErrorKind.LOCAL), 0.milliseconds, g), Duration.ZERO),
+            Triple("REJECTED sin gracia", errorGraceRemaining(SyncIndicator.Error(SyncErrorKind.REJECTED), 0.milliseconds, g), Duration.ZERO),
+            Triple("sin reconexion", errorGraceRemaining(failed, null, g), Duration.ZERO),
+            Triple("no es error", errorGraceRemaining(SyncIndicator.Syncing, 0.milliseconds, g), Duration.ZERO),
+            Triple("Offline", errorGraceRemaining(SyncIndicator.Offline, 0.milliseconds, g), Duration.ZERO),
+            Triple("null", errorGraceRemaining(null, 0.milliseconds, g), Duration.ZERO)
+        )
+        cases.forEach { (name, actual, expected) -> assertEquals(expected, actual, name) }
     }
 }
