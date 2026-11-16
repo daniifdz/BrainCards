@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.DeckDao
+import org.braincards.app.data.local.dao.DeckSummaryRow
 import org.braincards.app.data.local.dao.PendingStampRow
 import org.braincards.app.data.local.entity.DeckEntity
 
@@ -32,6 +33,8 @@ class FakeDeckDao : DeckDao {
     override suspend fun softdeleteDeck(id: String, deletedAt: Instant) {
         decks[id]?.let { decks[id] = it.copy(deletedAt = deletedAt, updatedAt = deletedAt) }
     }
+
+    override fun observeDeckSummaries(): Flow<List<DeckSummaryRow>> = flowOf(emptyList())
 
     override fun getAllDecks(): Flow<List<DeckEntity>> =
         flowOf(decks.values.filter { it.deletedAt == null })

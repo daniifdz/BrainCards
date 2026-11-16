@@ -29,6 +29,16 @@ interface DeckDao {
     @Query("SELECT * FROM decks WHERE deletedAt IS NULL")
     fun getAllDecks(): Flow<List<DeckEntity>>
 
+    // Lista de mazos: cada mazo vivo con su recuento de tarjetas vivas en UNA consulta agregada (no N). El filtro
+    // deletedAt de las tarjetas va en el ON (no en el WHERE) para que un mazo sin tarjetas vivas siga saliendo con 0.
+    // Room re-emite cuando cambia decks o flashcards. Sin ORDER BY: el orden (con plegado de acentos) es del dominio.
+    @Query(
+        "SELECT d.*, COUNT(f.id) AS cardCount FROM decks d " +
+            "LEFT JOIN flashcards f ON f.deckId = d.id AND f.deletedAt IS NULL " +
+            "WHERE d.deletedAt IS NULL GROUP BY d.id"
+    )
+    fun observeDeckSummaries(): Flow<List<DeckSummaryRow>>
+
     @Query("SELECT * FROM decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getDeckById(id: String): DeckEntity?
 

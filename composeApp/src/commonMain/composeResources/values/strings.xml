@@ -194,4 +194,41 @@
         <item quantity="one">%1$d cambio sin sincronizar</item>
         <item quantity="other">%1$d cambios sin sincronizar</item>
     </plurals>
+
+    <!-- Lista de mazos (handoff 5.1b) -->
+    <string name="decks_title">Mis Mazos</string>
+    <string name="decks_back">Volver a Home</string>
+    <string name="decks_new">Nuevo mazo</string>
+    <string name="decks_search_placeholder">Buscar mazo…</string>
+    <string name="decks_search_clear">Borrar búsqueda</string>
+    <plurals name="decks_card_count">
+        <item quantity="one">%1$d tarjeta</item>
+        <item quantity="other">%1$d tarjetas</item>
+    </plurals>
+    <string name="decks_row_a11y">%1$s, %2$s</string>
+    <string name="decks_row_menu">Opciones del mazo %1$s</string>
+    <string name="decks_menu_edit">Editar</string>
+    <string name="decks_menu_delete">Eliminar</string>
+    <string name="decks_loading">Cargando mazos</string>
+    <string name="decks_empty_title">Todavía no tienes mazos</string>
+    <string name="decks_empty_text">Crea uno para empezar a añadir tarjetas y estudiar con repetición espaciada.</string>
+    <string name="decks_empty_cta">Crear tu primer mazo</string>
+    <string name="decks_no_results">Sin resultados para "%1$s"</string>
+    <string name="decks_no_results_hint">Prueba con otro nombre.</string>
+    <string name="decks_load_error">No se pudieron cargar tus mazos.</string>
+    <string name="decks_dialog_new_title">Nuevo mazo</string>
+    <string name="decks_dialog_edit_title">Editar mazo</string>
+    <string name="decks_name_label">Nombre del mazo</string>
+    <string name="decks_name_placeholder">Ej. Vocabulario — Inglés B2</string>
+    <string name="decks_name_duplicate">Ya tienes un mazo con ese nombre</string>
+    <string name="decks_name_blank">Escribe un nombre para el mazo.</string>
+    <string name="decks_delete_title">¿Eliminar "%1$s"?</string>
+    <string name="decks_delete_body_empty">Esta acción no se puede deshacer.</string>
+    <plurals name="decks_delete_body">
+        <item quantity="one">Se eliminará también su tarjeta. Esta acción no se puede deshacer.</item>
+        <item quantity="other">Se eliminarán también sus %1$s. Esta acción no se puede deshacer.</item>
+    </plurals>
+    <string name="decks_delete_confirm">Eliminar</string>
+    <string name="decks_save_failed">No se pudo guardar el mazo. Inténtalo de nuevo.</string>
+    <string name="decks_delete_failed">No se pudo eliminar. Inténtalo de nuevo.</string>
 </resources>

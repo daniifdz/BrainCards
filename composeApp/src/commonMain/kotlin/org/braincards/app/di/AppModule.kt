@@ -26,6 +26,7 @@ import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
 import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.LocalDataRepositoryImpl
+import org.braincards.app.data.repository.DeckSummariesObserverImpl
 import org.braincards.app.data.repository.DueCardsObserverImpl
 import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
@@ -36,6 +37,7 @@ import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
+import org.braincards.app.domain.repository.DeckSummariesObserver
 import org.braincards.app.domain.repository.DueCardsObserver
 import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.LocalModePreference
@@ -59,6 +61,7 @@ import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
+import org.braincards.app.domain.usecase.Decks.ObserveDeckSummariesUseCase
 import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
 import org.braincards.app.domain.usecase.DeleteDeckUseCase
 import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
@@ -268,11 +271,14 @@ fun appModule(
     factory { GetDeckUseCase(repository = get()) }
     factory { UpdateDeckUseCase(repository = get()) }
     factory { DeleteDeckUseCase(repository = get()) }
+    // Lista de mazos: mazos con su recuento de tarjetas (una consulta agregada), interfaz aditiva aparte.
+    single<DeckSummariesObserver> { DeckSummariesObserverImpl(deckDao = get()) }
+    factory { ObserveDeckSummariesUseCase(observer = get()) }
 
     viewModel {
         DecksViewModel(
             addDeckUseCase = get(),
-            getDecksUseCase = get(),
+            observeDeckSummaries = get(),
             updateDeckUseCase = get(),
             deleteDeckUseCase = get()
         )
