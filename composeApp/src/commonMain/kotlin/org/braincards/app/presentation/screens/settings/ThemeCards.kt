@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -66,22 +67,28 @@ internal const val THEME_BOUNCE_MS = 320
 internal const val THEME_CHECK_MS = 180
 private val OvershootEasing = CubicBezierEasing(0.34f, 1.56f, 0.64f, 1f)
 
+/** Ancho maximo del grupo de 3 tarjetas: (420 - 2 x 12) / 3 = 132 dp por tarjeta, vista previa 116 x 155 dp. */
+internal val THEME_CARDS_MAX_WIDTH = 420.dp
+
 /** Tres tarjetas en fila (Sistema / Claro / Oscuro), grupo de radio accesible. */
 @Composable
 fun ThemeCards(current: AppTheme, onThemeChange: (AppTheme) -> Unit, modifier: Modifier = Modifier) {
     val reduced = rememberReducedMotion()
-    Row(
-        modifier = modifier.fillMaxWidth().selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        AppTheme.entries.forEach { theme ->
-            ThemeCard(
-                theme = theme,
-                selected = theme == current,
-                reducedMotion = reduced,
-                onSelect = { onThemeChange(theme) },
-                modifier = Modifier.weight(1f)
-            )
+    // Grupo centrado y con ancho maximo: sin tope, la altura (3:4 del ancho) crecia sin limite en ventanas anchas.
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Row(
+            modifier = Modifier.widthIn(max = THEME_CARDS_MAX_WIDTH).fillMaxWidth().selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AppTheme.entries.forEach { theme ->
+                ThemeCard(
+                    theme = theme,
+                    selected = theme == current,
+                    reducedMotion = reduced,
+                    onSelect = { onThemeChange(theme) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
