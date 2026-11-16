@@ -140,4 +140,41 @@
     <string name="auth_reset_password_label">Contraseña nueva</string>
     <string name="auth_reset_confirm_label">Confirma la contraseña</string>
     <string name="auth_reset_action">Guardar contraseña</string>
+
+    <!-- Ajustes: tema -->
+    <string name="theme_title">Apariencia</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Oscuro</string>
+
+    <!-- Ajustes: sincronizacion -->
+    <string name="settings_sync_title">Sincronización</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="sync_detail_last">Última vez: %1$s</string>
+    <string name="sync_last_today">Hoy %1$s</string>
+    <string name="sync_last_yesterday">Ayer %1$s</string>
+    <string name="sync_last_date">%1$d %2$s %3$s</string>
+    <string-array name="sync_months_short">
+        <item>ene</item>
+        <item>feb</item>
+        <item>mar</item>
+        <item>abr</item>
+        <item>may</item>
+        <item>jun</item>
+        <item>jul</item>
+        <item>ago</item>
+        <item>sep</item>
+        <item>oct</item>
+        <item>nov</item>
+        <item>dic</item>
+    </string-array>
+    <string name="sync_detail_never">Se sincronizará en cuanto haya conexión</string>
+    <string name="sync_detail_offline">Tus cambios se guardan en este dispositivo</string>
+    <string name="sync_detail_error_local">Error local</string>
+    <string name="sync_detail_error_push_partial">Subida parcial</string>
+    <string name="sync_detail_error_failed">Fallo general</string>
+    <plurals name="sync_pending_changes">
+        <item quantity="one">%1$d cambio sin sincronizar</item>
+        <item quantity="other">%1$d cambios sin sincronizar</item>
+    </plurals>
 </resources>

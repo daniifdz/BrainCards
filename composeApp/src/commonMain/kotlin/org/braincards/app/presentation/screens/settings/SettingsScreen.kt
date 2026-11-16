@@ -1,6 +1,8 @@
 package org.braincards.app.presentation.screens.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,9 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import braincards.composeapp.generated.resources.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -33,18 +32,12 @@ import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import org.braincards.app.presentation.sync.ConnectivityMonitor
+import org.braincards.app.presentation.sync.SyncStatusViewModel
+import org.braincards.app.presentation.sync.syncDetail
 import org.koin.core.annotation.KoinExperimentalAPI
-
-// dd/MM HH:mm en hora local -- sin libreria nueva, solo kotlinx-datetime (ya en uso).
-private fun Instant.toShortLocalString(): String {
-    val local = toLocalDateTime(TimeZone.currentSystemDefault())
-    val day = local.dayOfMonth.toString().padStart(2, '0')
-    val month = local.monthNumber.toString().padStart(2, '0')
-    val hour = local.hour.toString().padStart(2, '0')
-    val minute = local.minute.toString().padStart(2, '0')
-    return "$day/$month $hour:$minute"
-}
 
 // Enum para representar las opciones de tema de forma clara y segura.
 enum class AppTheme(val displayName: String) {
@@ -61,11 +54,12 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onNavigateToAuth: () -> Unit
 ) {
-    var isDropdownExpanded by remember { mutableStateOf(false) }
     val authViewModel = koinViewModel<AuthViewModel>()
+    val syncStatusViewModel = koinViewModel<SyncStatusViewModel>()
+    val indicator by syncStatusViewModel.indicator.collectAsState()
+    val isOnline by koinInject<ConnectivityMonitor>().isOnline.collectAsState()
     val authState by authViewModel.authState.collectAsState()
     val isSyncing by authViewModel.isSyncing.collectAsState()
-    val lastSuccessfulSyncAt by authViewModel.lastSuccessfulSyncAt.collectAsState()
     val pendingChangesCount by authViewModel.pendingChangesCount.collectAsState()
     val isDeletingAccount by authViewModel.isDeletingAccount.collectAsState()
     val signOutPrompt by authViewModel.signOutPrompt.collectAsState()
@@ -130,48 +124,18 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
 
             Text(
-                text = "Apariencia",
+                text = stringResource(Res.string.theme_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            ExposedDropdownMenuBox(
-                expanded = isDropdownExpanded,
-                onExpandedChange = { isDropdownExpanded = it }
-            ) {
-                OutlinedTextField(
-                    value = currentTheme.displayName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Tema de la aplicación") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded)
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
-
-                ExposedDropdownMenu(
-                    expanded = isDropdownExpanded,
-                    onDismissRequest = { isDropdownExpanded = false }
-                ) {
-                    AppTheme.entries.forEach { themeOption ->
-                        DropdownMenuItem(
-                            text = { Text(themeOption.displayName) },
-                            onClick = {
-                                onThemeChange(themeOption)
-                                isDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            ThemeCards(current = currentTheme, onThemeChange = onThemeChange)
 
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -189,31 +153,7 @@ fun SettingsScreen(
                 is AuthState.Authenticated -> {
                     ListItem(
                         headlineContent = { Text(state.email ?: "Sesión iniciada") },
-                        supportingContent = {
-                            Text(if (state.sessionConfirmed) "Sincronización activada" else "Sin conexión")
-                        },
                         leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Sincronizar ahora") },
-                        supportingContent = { Text(if (isSyncing) "Sincronizando…" else "Sube y baja tus mazos manualmente") },
-                        leadingContent = {
-                            if (isSyncing) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.Default.Sync, contentDescription = null)
-                            }
-                        },
-                        modifier = Modifier.clickable(enabled = !isSyncing) { authViewModel.syncNow() }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Estado de sincronización") },
-                        supportingContent = {
-                            val lastSyncText = lastSuccessfulSyncAt?.let { "Última sincronización correcta: ${it.toShortLocalString()}" }
-                                ?: "Sin sincronizar todavía"
-                            Text("$lastSyncText · $pendingChangesCount cambios pendientes")
-                        },
-                        leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                     ListItem(
                         headlineContent = { Text("Cerrar sesión") },
@@ -268,6 +208,23 @@ fun SettingsScreen(
                         modifier = Modifier.clickable { onNavigateToAuth() }
                     )
                 }
+            }
+
+            // Invitado (y Unknown / aun sin estado): sin seccion. Solo con sesion iniciada.
+            val syncDetail = if (authState is AuthState.Authenticated) {
+                syncDetail(indicator, pendingChangesCount)
+            } else {
+                null
+            }
+            if (syncDetail != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(16.dp))
+                SyncSection(
+                    detail = syncDetail,
+                    canSyncNow = isOnline && !isSyncing,
+                    onSyncNow = { authViewModel.syncNow() }
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

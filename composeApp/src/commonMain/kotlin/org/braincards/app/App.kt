@@ -26,7 +26,10 @@ import org.braincards.app.presentation.screens.navigation.goToWelcomeEntry
 import org.braincards.app.presentation.screens.navigation.isAuthFlow
 import org.braincards.app.presentation.screens.navigation.needsWelcomeGuard
 import org.braincards.app.presentation.theme.BrainCardsTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import org.braincards.app.presentation.screens.navigation.THEME_LOAD_TIMEOUT_MS
+import org.braincards.app.presentation.screens.navigation.shouldShowEntryPending
 import kotlinx.coroutines.launch
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.braincards.app.presentation.screens.studyStats.StudyStatsScreen
@@ -51,9 +54,23 @@ fun App() {
     val startRoute by entryViewModel.startRoute.collectAsState()
     val welcomeNotice by entryViewModel.welcomeNotice.collectAsState()
 
-    BrainCardsTheme(darkTheme = useDarkTheme) {
-        // Auth sin resolver (arranque en frio): solo logo, nunca Bienvenida ni Home.
-        if (startRoute == EntryRoute.Pending) {
+    // Espera al tema guardado (max THEME_LOAD_TIMEOUT_MS) para no arrancar con el tema del sistema y saltar despues.
+    var themeTimedOut by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(THEME_LOAD_TIMEOUT_MS)
+        themeTimedOut = true
+    }
+    // La transicion de color solo se activa un fotograma despues de leer el tema: la carga inicial es un salto, no un fundido.
+    val animateTheme by produceState(false, appTheme != null) {
+        if (appTheme != null) {
+            withFrameNanos { }
+            value = true
+        }
+    }
+
+    BrainCardsTheme(darkTheme = useDarkTheme, animate = animateTheme) {
+        // Auth sin resolver (arranque en frio) o tema sin leer: solo logo, nunca Bienvenida ni Home.
+        if (shouldShowEntryPending(startRoute, themeLoaded = appTheme != null, themeTimedOut = themeTimedOut)) {
             EntryPendingScreen()
             return@BrainCardsTheme
         }
