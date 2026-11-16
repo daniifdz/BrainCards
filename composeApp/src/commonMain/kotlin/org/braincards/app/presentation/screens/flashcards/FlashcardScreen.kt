@@ -11,12 +11,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import braincards.composeapp.generated.resources.*
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
+import org.braincards.app.presentation.components.form.InitialFocus
+import org.braincards.app.presentation.components.form.formField
+import org.braincards.app.presentation.components.form.rememberFormFocus
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -523,6 +528,9 @@ fun TopicItem(
 
 @Composable
 fun ConfirmDeleteDialog(title: String, text: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    // Foco inicial en "Cancelar" (no en "Eliminar"): un Enter por reflejo no borra nada.
+    val cancelFocus = remember { FocusRequester() }
+    InitialFocus(cancelFocus)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -533,13 +541,17 @@ fun ConfirmDeleteDialog(title: String, text: String, onConfirm: () -> Unit, onDi
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) { Text(stringResource(Res.string.delete)) }
         },
-        dismissButton = { TextButton(onDismiss) { Text(stringResource(Res.string.cancel)) } }
+        dismissButton = {
+            TextButton(onDismiss, Modifier.focusRequester(cancelFocus)) { Text(stringResource(Res.string.cancel)) }
+        }
     )
 }
 
 @Composable
 fun AddTopicDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
+    val focus = rememberFormFocus(1)
+    InitialFocus(focus)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.new_topic)) },
@@ -548,7 +560,9 @@ fun AddTopicDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                 name,
                 { name = it },
                 label = { Text(stringResource(Res.string.topic_name_label)) },
-                singleLine = true
+                singleLine = true,
+                // Enter envia solo con el nombre no vacio.
+                modifier = Modifier.formField(focus, 0) { if (name.isNotBlank()) onConfirm(name) }
             )
         },
         confirmButton = {
@@ -561,6 +575,8 @@ fun AddTopicDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
 @Composable
 fun EditTopicDialog(topic: Topic, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
     var name by remember { mutableStateOf(topic.name) }
+    val focus = rememberFormFocus(1)
+    InitialFocus(focus)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.edit)) },
@@ -569,7 +585,8 @@ fun EditTopicDialog(topic: Topic, onDismiss: () -> Unit, onConfirm: (String) -> 
                 name,
                 { name = it },
                 label = { Text(stringResource(Res.string.name_label)) },
-                singleLine = true
+                singleLine = true,
+                modifier = Modifier.formField(focus, 0) { if (name.isNotBlank()) onConfirm(name) }
             )
         },
         confirmButton = {
@@ -632,13 +649,23 @@ fun FlashcardItem(
 fun AddFlashcardDialog(onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
     var q by remember { mutableStateOf("") }
     var a by remember { mutableStateOf("") }
+    val focus = rememberFormFocus(2)
+    InitialFocus(focus)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.new_card)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(q, { q = it }, label = { Text(stringResource(Res.string.question_label)) })
-                OutlinedTextField(a, { a = it }, label = { Text(stringResource(Res.string.answer_label)) })
+                OutlinedTextField(
+                    q, { q = it },
+                    label = { Text(stringResource(Res.string.question_label)) },
+                    modifier = Modifier.formField(focus, 0, multiline = true) { onConfirm(q, a) }
+                )
+                OutlinedTextField(
+                    a, { a = it },
+                    label = { Text(stringResource(Res.string.answer_label)) },
+                    modifier = Modifier.formField(focus, 1, multiline = true) { onConfirm(q, a) }
+                )
             }
         },
         confirmButton = {
@@ -656,13 +683,23 @@ fun EditFlashcardDialog(
 ) {
     var q by remember { mutableStateOf(flashcard.question) }
     var a by remember { mutableStateOf(flashcard.answer) }
+    val focus = rememberFormFocus(2)
+    InitialFocus(focus)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(q, { q = it }, label = { Text(stringResource(Res.string.question_label)) })
-                OutlinedTextField(a, { a = it }, label = { Text(stringResource(Res.string.answer_label)) })
+                OutlinedTextField(
+                    q, { q = it },
+                    label = { Text(stringResource(Res.string.question_label)) },
+                    modifier = Modifier.formField(focus, 0, multiline = true) { onConfirm(q, a) }
+                )
+                OutlinedTextField(
+                    a, { a = it },
+                    label = { Text(stringResource(Res.string.answer_label)) },
+                    modifier = Modifier.formField(focus, 1, multiline = true) { onConfirm(q, a) }
+                )
             }
         },
         confirmButton = {
