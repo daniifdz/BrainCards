@@ -154,13 +154,15 @@ fun AuthScreen(
     WelcomeScaffold(
         topBar = { if (!asEntry) AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) },
         snackbarHostState = snackbarHostState,
-        // Tamanos de los mockups (.auth-logo-zone): movil 40 dp + 25 sp; tablet / Desktop 44 dp + 27 sp.
-        hero = { compact ->
-            LogoMark(size = if (compact) 40.dp else 44.dp)
+        // Tamanos del handoff v4.10 (ver welcomeLogoSpec).
+        hero = { logo ->
+            LogoMark(size = logo.iconDp.dp)
             Text(
                 text = stringResource(Res.string.app_name),
-                style = BrainCardsTheme.wordmark.copy(fontSize = if (compact) 25.sp else 27.sp),
-                color = MaterialTheme.colorScheme.onBackground
+                style = BrainCardsTheme.wordmark.copy(fontSize = logo.wordmarkSp.sp),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                softWrap = false
             )
         }
     ) {
