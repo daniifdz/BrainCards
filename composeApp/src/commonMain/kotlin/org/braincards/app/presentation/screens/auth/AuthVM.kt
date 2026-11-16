@@ -150,9 +150,7 @@ class AuthViewModel(
 
     // Error del ULTIMO envio de un formulario de auth, como TIPO (campo o banner), no como texto: la pantalla lo
     // traduce a su string. null = sin error. Se limpia al empezar otro envio y cuando el usuario edita
-    // ([clearError]). Lo usan las pantallas de login / registro; el resto de flujos de auth siguen con
-    // messageEvent hasta que se migren. Los eventos de Ajustes (messageEvent, cierre de sesion, borrado de
-    // cuenta) no pasan por aqui.
+    // ([clearError]). Los eventos de Ajustes (cierre de sesion, borrado de cuenta) no pasan por aqui.
     private val _uiError = MutableStateFlow<AuthFormTarget?>(null)
     val uiError: StateFlow<AuthFormTarget?> = _uiError.asStateFlow()
 
@@ -160,9 +158,6 @@ class AuthViewModel(
     fun clearError() {
         _uiError.value = null
     }
-
-    private val _messageEvent = MutableSharedFlow<String>()
-    val messageEvent: SharedFlow<String> = _messageEvent.asSharedFlow()
 
     // Confirmaciones breves de los formularios de auth (Snackbar), como clave.
     private val _noticeEvent = MutableSharedFlow<AuthNotice>()

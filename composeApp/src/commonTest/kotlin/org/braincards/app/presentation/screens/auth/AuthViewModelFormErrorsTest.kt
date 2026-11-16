@@ -39,14 +39,12 @@ class AuthViewModelFormErrorsTest {
     }
 
     private class Recorded(
-        val messages: MutableList<String>,
         val confirmEmails: MutableList<String>,
         val notConfirmedEmails: MutableList<String>
     )
 
     private fun TestScope.record(env: AuthVmEnv): Recorded {
-        val r = Recorded(mutableListOf(), mutableListOf(), mutableListOf())
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.messageEvent.collect { r.messages += it } }
+        val r = Recorded(mutableListOf(), mutableListOf())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             env.vm.signUpConfirmationRequiredEvent.collect { r.confirmEmails += it }
         }
@@ -61,7 +59,7 @@ class AuthViewModelFormErrorsTest {
     // --- login -------------------------------------------------------------------------------------------------------
 
     @Test
-    fun login_con_fallo_de_red_es_banner_con_reintentar_y_no_usa_messageEvent() = runTest {
+    fun login_con_fallo_de_red_es_banner_con_reintentar() = runTest {
         val env = AuthVmEnv()
         val rec = record(env)
         env.auth.signInFailure = network
@@ -69,7 +67,6 @@ class AuthViewModelFormErrorsTest {
         env.vm.signIn("a@b.co", "secreto123")
 
         assertEquals(AuthFormTarget.Banner(AuthMessage.NetworkError, retryable = true), env.vm.uiError.value)
-        assertTrue(rec.messages.isEmpty())
         assertTrue(rec.notConfirmedEmails.isEmpty())
     }
 
@@ -133,7 +130,6 @@ class AuthViewModelFormErrorsTest {
 
         assertEquals(listOf("nuevo@b.co"), rec.confirmEmails)
         assertNull(env.vm.uiError.value)
-        assertTrue(rec.messages.isEmpty())
     }
 
     @Test
@@ -153,18 +149,17 @@ class AuthViewModelFormErrorsTest {
         // El aviso "Cuenta eliminada." lo muestra ahora la Bienvenida (AppEntryViewModel.welcomeNotice): el emit de
         // Ajustes no llegaba a verse porque la navegacion ocurre casi a la vez.
         val env = AuthVmEnv(AuthState.Authenticated("user-1", "a@b.co", sessionConfirmed = true))
-        val rec = record(env)
+        record(env)
 
         env.vm.deleteAccount()
 
-        assertEquals(emptyList(), rec.messages)
         assertNull(env.vm.uiError.value)
     }
 
     @Test
-    fun si_falla_el_borrado_de_cuenta_avisa_con_deleteAccountEvent_y_no_por_messageEvent() = runTest {
+    fun si_falla_el_borrado_de_cuenta_avisa_con_deleteAccountEvent() = runTest {
         val env = AuthVmEnv(AuthState.Authenticated("user-1", "a@b.co", sessionConfirmed = true))
-        val rec = record(env)
+        record(env)
         val events = mutableListOf<DeleteAccountEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.deleteAccountEvent.collect { events += it } }
         env.auth.deleteAccountFailure = IllegalStateException("x")
@@ -172,7 +167,6 @@ class AuthViewModelFormErrorsTest {
         env.vm.deleteAccount()
 
         assertEquals(listOf(DeleteAccountEvent.Failed), events)
-        assertEquals(emptyList(), rec.messages)
         assertNull(env.vm.uiError.value)
     }
 

@@ -39,7 +39,6 @@ class AuthViewModelAccountFlowsTest {
     private val network get() = HttpRequestException("fallo de red simulado", HttpRequestBuilder())
 
     private class Seen(
-        val messages: MutableList<String> = mutableListOf(),
         val notices: MutableList<AuthNotice> = mutableListOf(),
         val confirmed: MutableList<Unit> = mutableListOf(),
         val resetCodeSent: MutableList<String> = mutableListOf(),
@@ -51,7 +50,6 @@ class AuthViewModelAccountFlowsTest {
         fun <T> collectInto(flow: kotlinx.coroutines.flow.Flow<T>, sink: MutableList<T>) {
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { flow.collect { sink += it } }
         }
-        collectInto(env.vm.messageEvent, s.messages)
         collectInto(env.vm.noticeEvent, s.notices)
         collectInto(env.vm.signUpConfirmedEvent, s.confirmed)
         collectInto(env.vm.passwordResetCodeSentEvent, s.resetCodeSent)
@@ -62,7 +60,7 @@ class AuthViewModelAccountFlowsTest {
     // --- ConfirmEmail: confirmar ------------------------------------------------------------------------------------
 
     @Test
-    fun confirmar_con_exito_avisa_a_la_pantalla_y_no_usa_messageEvent() = runTest {
+    fun confirmar_con_exito_avisa_a_la_pantalla() = runTest {
         val env = AuthVmEnv()
         val seen = record(env)
 
@@ -70,7 +68,6 @@ class AuthViewModelAccountFlowsTest {
 
         assertEquals(1, seen.confirmed.size)
         assertNull(env.vm.uiError.value)
-        assertTrue(seen.messages.isEmpty())
     }
 
     @Test
@@ -116,7 +113,6 @@ class AuthViewModelAccountFlowsTest {
         assertEquals(listOf(AuthNotice.CodeResent), seen.notices)
         assertEquals(1, env.auth.resendSignUpCodeCallCount)
         assertEquals(RESEND_CODE_COOLDOWN_SECONDS, env.vm.resendCooldownSeconds.value)
-        assertTrue(seen.messages.isEmpty())
     }
 
     @Test
@@ -210,7 +206,6 @@ class AuthViewModelAccountFlowsTest {
         assertEquals(listOf("a@b.co"), seen.resetCodeSent)
         assertEquals(1, env.auth.sendPasswordResetCallCount)
         assertNull(env.vm.uiError.value)
-        assertTrue(seen.messages.isEmpty())
     }
 
     @Test
@@ -245,7 +240,6 @@ class AuthViewModelAccountFlowsTest {
 
         assertEquals(1, seen.resetCompleted.size)
         assertNull(env.vm.uiError.value)
-        assertTrue(seen.messages.isEmpty())
     }
 
     @Test

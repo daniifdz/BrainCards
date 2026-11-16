@@ -72,12 +72,6 @@ fun SettingsScreen(
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        authViewModel.messageEvent.collectLatest { message ->
-            coroutineScope.launch { snackbarHostState.showSnackbar(message) }
-        }
-    }
-
-    LaunchedEffect(Unit) {
         authViewModel.syncMessageEvent.collectLatest { message ->
             val text = when (message) {
                 SyncUserMessage.NotAuthenticated -> getString(Res.string.sync_not_authenticated)

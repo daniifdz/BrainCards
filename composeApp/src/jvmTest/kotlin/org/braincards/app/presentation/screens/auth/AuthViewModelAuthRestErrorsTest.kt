@@ -51,16 +51,13 @@ class AuthViewModelAuthRestErrorsTest {
     }
 
     @Test
-    fun login_con_credenciales_invalidas_es_banner_y_no_usa_messageEvent() = runTest {
+    fun login_con_credenciales_invalidas_es_banner() = runTest {
         val env = AuthVmEnv()
-        val messages = mutableListOf<String>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.messageEvent.collect { messages += it } }
         env.auth.signInFailure = authRest(AuthErrorCode.InvalidCredentials)
 
         env.vm.signIn("a@b.co", "secreto123")
 
         assertEquals(AuthFormTarget.Banner(AuthMessage.InvalidCredentials), env.vm.uiError.value)
-        assertTrue(messages.isEmpty())
     }
 
     @Test
@@ -68,10 +65,8 @@ class AuthViewModelAuthRestErrorsTest {
         val env = AuthVmEnv()
         val notConfirmed = mutableListOf<String>()
         val confirmRequired = mutableListOf<String>()
-        val messages = mutableListOf<String>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.emailNotConfirmedEvent.collect { notConfirmed += it } }
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.signUpConfirmationRequiredEvent.collect { confirmRequired += it } }
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.messageEvent.collect { messages += it } }
         env.auth.signInFailure = authRest(AuthErrorCode.EmailNotConfirmed)
 
         env.vm.signIn("a@b.co", "secreto123")
@@ -80,7 +75,6 @@ class AuthViewModelAuthRestErrorsTest {
         assertEquals(listOf("a@b.co"), notConfirmed)
         assertTrue(confirmRequired.isEmpty(), "no es el evento de registro (codeJustSent = true)")
         assertNull(env.vm.uiError.value)
-        assertTrue(messages.isEmpty())
     }
 
     @Test
