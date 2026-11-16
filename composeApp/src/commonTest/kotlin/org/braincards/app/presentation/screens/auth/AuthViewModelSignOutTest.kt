@@ -335,6 +335,70 @@ class AuthViewModelSignOutTest {
         assertEquals(listOf(SignOutEvent.SignedOut), env.events)
     }
 
+    // --- fases visibles del cierre ---
+
+    private fun TestScope.recordPhases(env: Env): MutableList<SignOutPhase> {
+        val phases = mutableListOf<SignOutPhase>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.signOutPhase.collect { phases += it } }
+        runCurrent()
+        return phases
+    }
+
+    @Test
+    fun sin_nada_que_perder_pasa_por_Comprobando_y_directo_a_Cerrando_sesion() = runTest(testDispatcher) {
+        val env = env()
+        val phases = recordPhases(env)
+
+        env.vm.requestSignOut()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(SignOutPhase.Idle, SignOutPhase.Checking, SignOutPhase.SigningOut, SignOutPhase.Idle),
+            phases
+        )
+    }
+
+    @Test
+    fun con_cambios_pendientes_la_comprobacion_acaba_en_dialogo_y_confirmar_pasa_a_Cerrando_sesion() = runTest(testDispatcher) {
+        val env = env()
+        env.addPendingDeck("d1")
+        val phases = recordPhases(env)
+
+        env.vm.requestSignOut()
+        advanceUntilIdle()
+        assertEquals(listOf(SignOutPhase.Idle, SignOutPhase.Checking, SignOutPhase.Idle), phases)
+        assertNotNull(env.vm.signOutPrompt.value)
+
+        env.vm.confirmSignOut()
+        advanceUntilIdle()
+        assertEquals(
+            listOf(
+                SignOutPhase.Idle, SignOutPhase.Checking, SignOutPhase.Idle,
+                SignOutPhase.SigningOut, SignOutPhase.Idle
+            ),
+            phases
+        )
+    }
+
+    @Test
+    fun a_mitad_del_cierre_la_fase_es_Cerrando_sesion_y_no_se_puede_volver_a_pedir() = runTest(testDispatcher) {
+        val env = env()
+        val gate = CompletableDeferred<Unit>()
+        env.auth.signOutGate = gate
+
+        env.vm.requestSignOut()
+        runCurrent()
+
+        assertEquals(SignOutPhase.SigningOut, env.vm.signOutPhase.value)
+        assertTrue(env.vm.isSigningOut.value)
+        env.vm.requestSignOut() // ignorado
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(listOf(SignOutEvent.SignedOut), env.events)
+        assertEquals(SignOutPhase.Idle, env.vm.signOutPhase.value)
+    }
+
     // --- borrado de cuenta ---
 
     @Test

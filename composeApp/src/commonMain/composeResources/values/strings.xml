@@ -31,12 +31,21 @@
     <string name="temas_header">Temas</string>
     <string name="general_cards_header">Cartas Generales</string>
     <string name="sign_out_progress">Cerrando sesión…</string>
-    <string name="sign_out_dialog_title">¿Cerrar sesión?</string>
-    <plurals name="sign_out_dialog_text">
-        <item quantity="one">Tienes %1$d cambio sin sincronizar que se perderá. Al cerrar sesión se borran los datos de este dispositivo.</item>
-        <item quantity="other">Tienes %1$d cambios sin sincronizar que se perderán. Al cerrar sesión se borran los datos de este dispositivo.</item>
+    <string name="sign_out_checking">Comprobando cambios pendientes…</string>
+    <string name="sign_out_checking_hint">Intentando sincronizar antes de cerrar sesión.</string>
+    <string name="sign_out_progress_hint">No cierres la aplicación. Esto puede tardar unos segundos.</string>
+    <plurals name="sign_out_loss_title">
+        <item quantity="one">Tienes %1$d cambio sin sincronizar que se perderá</item>
+        <item quantity="other">Tienes %1$d cambios sin sincronizar que se perderán</item>
     </plurals>
-    <string name="sign_out_dialog_confirm">Cerrar sesión y borrar</string>
+    <string name="sign_out_loss_text">No se pudieron subir a tu cuenta. Si cierras sesión ahora, se borrarán de este dispositivo.</string>
+    <string name="sign_out_loss_confirm">Cerrar sesión de todos modos</string>
+    <string name="delete_account_dialog_title">Eliminar tu cuenta</string>
+    <string name="delete_account_dialog_text">Esta acción borra tu cuenta y todos tus mazos de la nube de forma permanente. Los mazos guardados solo en este dispositivo no se verán afectados.</string>
+    <string name="delete_account_dialog_confirm">Eliminar cuenta</string>
+    <string name="delete_account_progress">Eliminando tu cuenta…</string>
+    <string name="delete_account_failed">No se pudo eliminar la cuenta. Revisa tu conexión e inténtalo de nuevo.</string>
+    <string name="delete_account_session_not_closed">Tu cuenta se ha eliminado, pero no se pudo cerrar la sesión en este dispositivo. Reinicia la app.</string>
     <string name="welcome_notice_signed_out">Sesión cerrada.</string>
     <string name="welcome_notice_account_deleted">Cuenta eliminada.</string>
     <string name="welcome_notice_session_expired">Tu sesión ha caducado. Vuelve a iniciar sesión.</string>
@@ -147,9 +156,17 @@
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
 
+    <!-- Ajustes: modo invitado -->
+    <string name="guest_notice_title">Estás en modo invitado</string>
+    <string name="guest_notice_text">Tus mazos se guardan solo en este dispositivo. Inicia sesión para sincronizar entre dispositivos y no perder tus datos.</string>
+    <string name="guest_notice_cta">Inicia sesión para sincronizar</string>
+
     <!-- Ajustes: sincronizacion -->
     <string name="settings_sync_title">Sincronización</string>
     <string name="sync_now">Sincronizar ahora</string>
+    <string name="settings_auto_sync_title">Sincronización automática</string>
+    <string name="settings_auto_sync_subtitle">Sincroniza en segundo plano al detectar cambios</string>
+    <string name="settings_auto_sync_save_failed">No se pudo guardar el ajuste. Inténtalo de nuevo.</string>
     <string name="sync_detail_last">Última vez: %1$s</string>
     <string name="sync_last_today">Hoy %1$s</string>
     <string name="sync_last_yesterday">Ayer %1$s</string>

@@ -55,7 +55,7 @@ class DeleteAccountUseCaseTest {
 
         val useCase = buildUseCase(authRepository, decksRepository, topicsRepository, flashcardRepository)
 
-        useCase(userId)
+        assertEquals(DeleteAccountResult.Deleted, useCase(userId))
 
         assertTrue(authRepository.deleteAccountCalled)
         assertTrue(authRepository.signOutCalled)
@@ -89,7 +89,7 @@ class DeleteAccountUseCaseTest {
     }
 
     @Test
-    fun `si el RPC tiene exito pero signOut falla, las filas quedan liberadas y no se propaga error`() = runBlocking {
+    fun `si el RPC tiene exito pero signOut falla, se cierra la sesion local y las filas quedan liberadas`() = runBlocking {
         val authRepository = FakeAuthRepository(
             initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true)
         ).apply {
@@ -103,11 +103,60 @@ class DeleteAccountUseCaseTest {
         val useCase = buildUseCase(authRepository, decksRepository, topicsRepository, flashcardRepository)
 
         // No debe lanzar: el borrado remoto ya ocurrio, un signOut() local que falla
-        // no es un fallo del borrado de cuenta.
-        useCase(userId)
+        // no es un fallo del borrado de cuenta. El respaldo cierra la sesion sin red.
+        assertEquals(DeleteAccountResult.Deleted, useCase(userId))
 
         assertTrue(authRepository.deleteAccountCalled)
         assertTrue(authRepository.signOutCalled)
+        assertTrue(authRepository.clearLocalSessionCalled)
+        assertEquals(AuthState.NotAuthenticated, authRepository.authState.first())
         assertEquals(null, decksRepository.getDeckById("deck-1")?.userId)
+    }
+
+    @Test
+    fun `el respaldo de sesion solo limpia la sesion local y los mazos locales siguen ahi`() = runBlocking {
+        val callLog = mutableListOf<String>()
+        val authRepository = FakeAuthRepository(
+            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true),
+            callLog = callLog
+        ).apply {
+            signOutFailure = RuntimeException("sin red")
+        }
+        val decksRepository = FakeDecksRepository()
+        decksRepository.addDeck(buildDeck("deck-1"))
+        decksRepository.addDeck(buildDeck("deck-2"))
+
+        val useCase = buildUseCase(authRepository, decksRepository, FakeTopicsRepository(), FakeFlashcardRepository())
+
+        assertEquals(DeleteAccountResult.Deleted, useCase(userId))
+
+        // Orden: primero signOut (falla), luego SOLO clearLocalSession; el use case ni siquiera tiene un
+        // LocalDataRepository, asi que no puede llamar a wipeAll. Los mazos siguen ahi, sin dueno.
+        assertEquals(listOf("signOut", "clearLocalSession"), callLog)
+        assertEquals(null, decksRepository.getDeckById("deck-1")?.userId)
+        assertEquals("Deck deck-1", decksRepository.getDeckById("deck-1")?.name)
+        assertEquals("Deck deck-2", decksRepository.getDeckById("deck-2")?.name)
+    }
+
+    @Test
+    fun `si fallan signOut y clearLocalSession devuelve DeletedSessionNotClosed y las filas quedan liberadas`() = runBlocking {
+        val authRepository = FakeAuthRepository(
+            initialState = AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true)
+        ).apply {
+            signOutFailure = RuntimeException("sin red")
+            clearLocalSessionFailure = RuntimeException("disco")
+        }
+        val decksRepository = FakeDecksRepository()
+        decksRepository.addDeck(buildDeck("deck-1"))
+
+        val useCase = buildUseCase(authRepository, decksRepository, FakeTopicsRepository(), FakeFlashcardRepository())
+
+        assertEquals(DeleteAccountResult.DeletedSessionNotClosed, useCase(userId))
+
+        assertEquals(null, decksRepository.getDeckById("deck-1")?.userId)
+        assertEquals(
+            AuthState.Authenticated(userId = userId, email = "a@b.com", sessionConfirmed = true),
+            authRepository.authState.first()
+        )
     }
 }

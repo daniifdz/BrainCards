@@ -22,6 +22,7 @@ import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository
 import org.braincards.app.domain.usecase.Auth.ConfirmPasswordResetUseCase
+import org.braincards.app.domain.usecase.Auth.DeleteAccountResult
 import org.braincards.app.domain.usecase.Auth.DeleteAccountUseCase
 import org.braincards.app.domain.usecase.Auth.ResendSignUpCodeUseCase
 import org.braincards.app.domain.usecase.Auth.SendPasswordResetUseCase
@@ -53,6 +54,22 @@ const val RESEND_CODE_COOLDOWN_SECONDS = 60
  * resolver recursos (stringResource): SettingsScreen traduce cada caso a su texto.
  */
 enum class SignOutEvent { SignedOut, SessionCloseFailed, WipeFailed, SessionChanged }
+
+/**
+ * Fase del cierre de sesion que ve el usuario: [Checking] = "Comprobando cambios pendientes…" (sync previo de hasta
+ * 12 s), [SigningOut] = "Cerrando sesion…" (borrado y cierre). [Idle] tambien mientras espera la decision en el
+ * dialogo de perdida de datos.
+ */
+enum class SignOutPhase { Idle, Checking, SigningOut }
+
+/** Fallos del borrado de cuenta que se quedan en Ajustes. Enum y no String: SettingsScreen resuelve los textos. */
+enum class DeleteAccountEvent {
+    /** El borrado remoto fallo: no se toco nada (ni filas ni sesion). Se puede reintentar. */
+    Failed,
+
+    /** Cuenta borrada y filas liberadas, pero la sesion local no se pudo cerrar. */
+    SessionNotClosed
+}
 
 /** Resultado del sync manual para el usuario. Cada caso tiene su texto en strings.xml. */
 sealed interface SyncUserMessage {
@@ -153,6 +170,9 @@ class AuthViewModel(
 
     private val _isDeletingAccount = MutableStateFlow(false)
     val isDeletingAccount: StateFlow<Boolean> = _isDeletingAccount.asStateFlow()
+
+    private val _deleteAccountEvent = MutableSharedFlow<DeleteAccountEvent>()
+    val deleteAccountEvent: SharedFlow<DeleteAccountEvent> = _deleteAccountEvent.asSharedFlow()
 
     // Recuperacion de contraseña por OTP.
     private val _passwordResetCodeSentEvent = MutableSharedFlow<String>()
@@ -258,10 +278,19 @@ class AuthViewModel(
     private val _signOutPrompt = MutableStateFlow<SignOutPrompt.NeedsConfirmation?>(null)
     val signOutPrompt: StateFlow<SignOutPrompt.NeedsConfirmation?> = _signOutPrompt.asStateFlow()
 
-    // true mientras se prepara (sync previo) o se ejecuta el borrado; NO mientras el dialogo
-    // espera la decision del usuario (si no, no podria pulsar sus botones).
+    // Fase visible del cierre. Idle tambien mientras el dialogo espera la decision del usuario (si no, no podria
+    // pulsar sus botones). [isSigningOut] = fase != Idle; se escriben siempre juntos (setSignOutPhase) para que
+    // no haya desfase entre los dos.
+    private val _signOutPhase = MutableStateFlow(SignOutPhase.Idle)
+    val signOutPhase: StateFlow<SignOutPhase> = _signOutPhase.asStateFlow()
+
     private val _isSigningOut = MutableStateFlow(false)
     val isSigningOut: StateFlow<Boolean> = _isSigningOut.asStateFlow()
+
+    private fun setSignOutPhase(phase: SignOutPhase) {
+        _signOutPhase.value = phase
+        _isSigningOut.value = phase != SignOutPhase.Idle
+    }
 
     private val _signOutEvent = MutableSharedFlow<SignOutEvent>()
     val signOutEvent: SharedFlow<SignOutEvent> = _signOutEvent.asSharedFlow()
@@ -274,12 +303,15 @@ class AuthViewModel(
     fun requestSignOut() {
         if (_isSigningOut.value || _signOutPrompt.value != null) return
         val userId = (authState.value as? AuthState.Authenticated)?.userId ?: return
-        _isSigningOut.value = true
+        setSignOutPhase(SignOutPhase.Checking)
         signOutUserId = userId
         viewModelScope.launch {
             try {
                 when (val prompt = syncCoordinator.prepareSignOut()) {
-                    SignOutPrompt.ReadyToSignOut -> finishSignOut(userId, confirmedCount = 0)
+                    SignOutPrompt.ReadyToSignOut -> {
+                        setSignOutPhase(SignOutPhase.SigningOut)
+                        finishSignOut(userId, confirmedCount = 0)
+                    }
                     is SignOutPrompt.NeedsConfirmation -> _signOutPrompt.value = prompt
                 }
             } catch (e: CancellationException) {
@@ -288,7 +320,7 @@ class AuthViewModel(
                 logError("Error al preparar el cierre de sesión", e)
                 _signOutEvent.emit(SignOutEvent.WipeFailed)
             } finally {
-                _isSigningOut.value = false
+                setSignOutPhase(SignOutPhase.Idle)
             }
         }
     }
@@ -298,7 +330,7 @@ class AuthViewModel(
         if (_isSigningOut.value) return
         val prompt = _signOutPrompt.value ?: return
         val userId = signOutUserId ?: return
-        _isSigningOut.value = true
+        setSignOutPhase(SignOutPhase.SigningOut)
         viewModelScope.launch {
             try {
                 finishSignOut(userId, prompt.unsyncedChanges)
@@ -309,7 +341,7 @@ class AuthViewModel(
                 _signOutPrompt.value = null
                 _signOutEvent.emit(SignOutEvent.WipeFailed)
             } finally {
-                _isSigningOut.value = false
+                setSignOutPhase(SignOutPhase.Idle)
             }
         }
     }
@@ -362,15 +394,25 @@ class AuthViewModel(
                 try {
                     // Salida esperada (como el cierre de sesion): la sesion puede caer antes de que acabe el borrado.
                     syncCoordinator.markExpectedUserExit(SessionExitReason.AccountDeleted)
-                    deleteAccountUseCase(userId)
-                    // La siguiente cuenta no debe heredar "ultima sincronizacion" ni el
-                    // contador de pendientes de esta (los datos locales si se conservan).
-                    // Sin Snackbar aqui: el aviso "Cuenta eliminada." lo muestra la Bienvenida a la que se navega.
-                    syncCoordinator.resetSyncState(SessionExitReason.AccountDeleted)
+                    when (deleteAccountUseCase(userId)) {
+                        // La siguiente cuenta no debe heredar "ultima sincronizacion" ni el
+                        // contador de pendientes de esta (los datos locales si se conservan).
+                        // Sin Snackbar aqui: el aviso "Cuenta eliminada." lo muestra la Bienvenida a la que se navega.
+                        DeleteAccountResult.Deleted -> syncCoordinator.resetSyncState(SessionExitReason.AccountDeleted)
+                        // Cuenta borrada pero la sesion sigue viva: como SessionCloseFailed del cierre de sesion, el
+                        // estado de sync se olvida SIN motivo de salida (no hay salida) y el usuario sigue en Ajustes.
+                        DeleteAccountResult.DeletedSessionNotClosed -> {
+                            syncCoordinator.resetSyncState()
+                            _deleteAccountEvent.emit(DeleteAccountEvent.SessionNotClosed)
+                        }
+                    }
+                } catch (e: CancellationException) {
+                    syncCoordinator.clearExpectedUserExit()
+                    throw e
                 } catch (e: Exception) {
                     syncCoordinator.clearExpectedUserExit()
                     logError("Error al eliminar la cuenta", e)
-                    _messageEvent.emit("No se pudo eliminar la cuenta")
+                    _deleteAccountEvent.emit(DeleteAccountEvent.Failed)
                 } finally {
                     _isDeletingAccount.value = false
                 }

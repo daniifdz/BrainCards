@@ -5,7 +5,17 @@ import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
+import kotlinx.coroutines.CancellationException
 import org.braincards.app.util.logError
+
+/** Como acabo un borrado de cuenta que SI llego a borrar la cuenta remota (si el RPC falla, la funcion lanza). */
+enum class DeleteAccountResult {
+    /** Cuenta borrada, filas locales liberadas y sesion local cerrada. */
+    Deleted,
+
+    /** Cuenta borrada y filas liberadas, pero ni signOut() ni clearLocalSession() cerraron la sesion local. */
+    DeletedSessionNotClosed
+}
 
 /**
  * Borra la cuenta del usuario (Bloque F). Orden deliberado:
@@ -19,7 +29,10 @@ import org.braincards.app.util.logError
  *    siempre (ni pendiente ni reclamable). No hay transaccion unica entre repositorios.
  * 3. signOut() el ultimo paso, envuelto aparte: el borrado remoto y la liberacion
  *    local ya ocurrieron, asi que un fallo aqui (sesion que no se puede cerrar del
- *    todo) no debe aparentar que el borrado de cuenta fallo.
+ *    todo) no debe aparentar que el borrado de cuenta fallo. Si signOut() falla (p. ej.
+ *    sin red) se intenta clearLocalSession(): limpia SOLO la sesion local, sin red y SIN
+ *    tocar los datos locales (nunca wipeAll: el usuario conserva sus mazos). Solo si
+ *    tambien falla se devuelve [DeleteAccountResult.DeletedSessionNotClosed].
  */
 class DeleteAccountUseCase(
     private val authRepository: AuthRepository,
@@ -28,7 +41,7 @@ class DeleteAccountUseCase(
     private val flashcardRepository: FlashcardRepository,
     private val cardSchedulingRepository: CardSchedulingRepository
 ) {
-    suspend operator fun invoke(userId: String) {
+    suspend operator fun invoke(userId: String): DeleteAccountResult {
         authRepository.deleteAccount()
 
         cardSchedulingRepository.releaseFromUser(userId)
@@ -36,10 +49,24 @@ class DeleteAccountUseCase(
         topicsRepository.releaseFromUser(userId)
         decksRepository.releaseFromUser(userId)
 
-        try {
+        return try {
             authRepository.signOut()
+            DeleteAccountResult.Deleted
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            logError("Cuenta borrada, pero signOut() local fallo", e)
+            logError("Cuenta borrada, pero signOut() fallo", e)
+            clearLocalSessionOnly()
         }
+    }
+
+    private suspend fun clearLocalSessionOnly(): DeleteAccountResult = try {
+        authRepository.clearLocalSession()
+        DeleteAccountResult.Deleted
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        logError("Cuenta borrada, pero clearLocalSession() fallo", e)
+        DeleteAccountResult.DeletedSessionNotClosed
     }
 }

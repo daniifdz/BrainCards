@@ -15,22 +15,21 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import braincards.composeapp.generated.resources.*
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
+import org.braincards.app.APP_VERSION
 import org.braincards.app.presentation.screens.auth.AuthViewModel
+import org.braincards.app.presentation.screens.auth.DeleteAccountEvent
 import org.braincards.app.presentation.screens.auth.SignOutEvent
+import org.braincards.app.presentation.screens.auth.SignOutPhase
 import org.braincards.app.presentation.screens.auth.SyncUserMessage
 import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -63,7 +62,10 @@ fun SettingsScreen(
     val pendingChangesCount by authViewModel.pendingChangesCount.collectAsState()
     val isDeletingAccount by authViewModel.isDeletingAccount.collectAsState()
     val signOutPrompt by authViewModel.signOutPrompt.collectAsState()
-    val isSigningOut by authViewModel.isSigningOut.collectAsState()
+    val signOutPhase by authViewModel.signOutPhase.collectAsState()
+    val isSigningOut = signOutPhase != SignOutPhase.Idle
+    val autoSyncViewModel = koinViewModel<AutoSyncSettingViewModel>()
+    val autoSyncEnabled by autoSyncViewModel.enabled.collectAsState()
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -93,6 +95,25 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
+        authViewModel.deleteAccountEvent.collectLatest { event ->
+            val text = when (event) {
+                DeleteAccountEvent.Failed -> getString(Res.string.delete_account_failed)
+                DeleteAccountEvent.SessionNotClosed -> getString(Res.string.delete_account_session_not_closed)
+            }
+            coroutineScope.launch { snackbarHostState.showSnackbar(text) }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        autoSyncViewModel.events.collectLatest { event ->
+            val text = when (event) {
+                AutoSyncSettingEvent.SaveFailed -> getString(Res.string.settings_auto_sync_save_failed)
+            }
+            coroutineScope.launch { snackbarHostState.showSnackbar(text) }
+        }
+    }
+
+    LaunchedEffect(Unit) {
         authViewModel.signOutEvent.collectLatest { event ->
             val message = when (event) {
                 // El aviso "Sesion cerrada." lo muestra la Bienvenida (la navegacion ocurria casi a la vez y este
@@ -111,8 +132,8 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("Ajustes") },
                 navigationIcon = {
-                    // Desactivada a mitad del cierre de sesion: no se sale de Ajustes mientras se borra.
-                    IconButton(onClick = onBackClick, enabled = !isSigningOut) {
+                    // Desactivada a mitad del cierre de sesion o del borrado de cuenta: no se sale de Ajustes.
+                    IconButton(onClick = onBackClick, enabled = !isSigningOut && !isDeletingAccount) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -138,98 +159,65 @@ fun SettingsScreen(
             ThemeCards(current = currentTheme, onThemeChange = onThemeChange)
 
 
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Cuenta",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
             when (val state = authState) {
                 is AuthState.Authenticated -> {
+                    SectionDivider()
+                    Text(
+                        text = "Cuenta",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     ListItem(
                         headlineContent = { Text(state.email ?: "Sesión iniciada") },
                         leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
                     )
                     ListItem(
                         headlineContent = { Text("Cerrar sesión") },
-                        supportingContent = if (isSigningOut) {
-                            { Text(stringResource(Res.string.sign_out_progress)) }
-                        } else {
-                            null
-                        },
-                        leadingContent = {
-                            if (isSigningOut) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
-                            }
-                        },
-                        modifier = Modifier.clickable(enabled = !isSigningOut) { authViewModel.requestSignOut() }
+                        leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
+                        modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
+                            authViewModel.requestSignOut()
+                        }
                     )
                     ListItem(
                         headlineContent = {
                             Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
                         },
-                        supportingContent = {
-                            Text(
-                                if (isDeletingAccount) "Eliminando…" else "Borra tu cuenta y tus datos en la nube"
+                        supportingContent = { Text("Borra tu cuenta y todos tus datos en la nube") },
+                        leadingContent = {
+                            Icon(
+                                Icons.Default.DeleteForever,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
                             )
                         },
-                        leadingContent = {
-                            if (isDeletingAccount) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            } else {
-                                Icon(
-                                    Icons.Default.DeleteForever,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        },
-                        modifier = Modifier.clickable(enabled = !isDeletingAccount) {
+                        modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
                             showDeleteAccountDialog = true
                         }
                     )
+
+                    val syncDetail = syncDetail(indicator, pendingChangesCount)
+                    if (syncDetail != null) {
+                        SectionDivider()
+                        SyncSection(
+                            detail = syncDetail,
+                            canSyncNow = isOnline && !isSyncing,
+                            onSyncNow = { authViewModel.syncNow() },
+                            autoSyncEnabled = autoSyncEnabled,
+                            onAutoSyncChange = { autoSyncViewModel.setEnabled(it) }
+                        )
+                    }
                 }
-                else -> {
-                    ListItem(
-                        headlineContent = { Text("Sincronizar entre dispositivos") },
-                        supportingContent = { Text("Inicia sesión para guardar tus mazos en la nube") },
-                        leadingContent = { Icon(Icons.Default.Sync, contentDescription = null) },
-                        modifier = Modifier.clickable { onNavigateToAuth() }
-                    )
+                // Invitado: sin Cuenta ni Sincronizacion, solo el aviso con el boton hacia Bienvenida.
+                AuthState.NotAuthenticated -> {
+                    SectionDivider()
+                    GuestNotice(onSignInClick = onNavigateToAuth)
                 }
+                // Aun sin estado de sesion: no se dibuja nada (evita parpadeos entre Cuenta y aviso).
+                AuthState.Loading -> Unit
             }
 
-            // Invitado (y Unknown / aun sin estado): sin seccion. Solo con sesion iniciada.
-            val syncDetail = if (authState is AuthState.Authenticated) {
-                syncDetail(indicator, pendingChangesCount)
-            } else {
-                null
-            }
-            if (syncDetail != null) {
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider()
-                Spacer(modifier = Modifier.height(16.dp))
-                SyncSection(
-                    detail = syncDetail,
-                    canSyncNow = isOnline && !isSyncing,
-                    onSyncNow = { authViewModel.syncNow() }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            SectionDivider()
 
             Text(
                 text = "Acerca de",
@@ -240,7 +228,7 @@ fun SettingsScreen(
 
             ListItem(
                 headlineContent = { Text("Versión de BrainCards") },
-                supportingContent = { Text("v1.0.0") },
+                supportingContent = { Text(APP_VERSION) },
                 leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
             )
 
@@ -257,7 +245,7 @@ fun SettingsScreen(
                 modifier = Modifier.clickable {
                     openEmailClient(
                         recipient = "braincards.soporte@proton.me",
-                        subject = "Feedback para BrainCards v1.0.0",
+                        subject = "Feedback para BrainCards v$APP_VERSION",
                         body = "Hola, tengo una sugerencia/problema:\n\n"
                     )
                 }
@@ -265,100 +253,44 @@ fun SettingsScreen(
 
             ListItem(
                 headlineContent = { Text("Copyright") },
-                supportingContent = { Text("© 2024 BrainCards. Todos los derechos reservados.") },
+                supportingContent = { Text("© 2026 BrainCards. Todos los derechos reservados.") },
                 leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
             )
         }
     }
 
-    // Confirmacion de cierre de sesion: solo si hay cambios sin sincronizar que se perderian.
-    // Con isSigningOut (borrado en curso) el dialogo no se puede cerrar ni volver a pulsar.
-    signOutPrompt?.let { prompt ->
-        AlertDialog(
-            onDismissRequest = { if (!isSigningOut) authViewModel.dismissSignOut() },
-            properties = DialogProperties(
-                dismissOnBackPress = !isSigningOut,
-                dismissOnClickOutside = !isSigningOut
-            ),
-            title = { Text(stringResource(Res.string.sign_out_dialog_title)) },
-            text = {
-                Column {
-                    Text(
-                        pluralStringResource(
-                            Res.plurals.sign_out_dialog_text,
-                            prompt.unsyncedChanges,
-                            prompt.unsyncedChanges
-                        )
-                    )
-                    if (isSigningOut) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(stringResource(Res.string.sign_out_progress))
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { authViewModel.confirmSignOut() }, enabled = !isSigningOut) {
-                    Text(
-                        stringResource(Res.string.sign_out_dialog_confirm),
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { authViewModel.dismissSignOut() }, enabled = !isSigningOut) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            }
-        )
-    }
-
-    // Sin dialogo de confirmacion pero con cierre en curso (sync previo, o nada que perder):
-    // progreso modal no descartable para que no se pueda lanzar nada a mitad.
-    if (signOutPrompt == null && isSigningOut) {
-        Dialog(
-            onDismissRequest = {},
-            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
-        ) {
-            Surface(shape = MaterialTheme.shapes.medium) {
-                Row(
-                    modifier = Modifier.padding(24.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Text(stringResource(Res.string.sign_out_progress))
-                }
-            }
+    // Cierre de sesion: la comprobacion previa y el cierre propiamente dicho son modales NO descartables; el dialogo de
+    // perdida de datos solo se ve mientras se espera la decision (fase Idle con prompt).
+    when (signOutPhase) {
+        SignOutPhase.Checking -> CheckingPendingDialog()
+        SignOutPhase.SigningOut -> SigningOutDialog()
+        SignOutPhase.Idle -> signOutPrompt?.let { prompt ->
+            SignOutLossDialog(
+                unsyncedChanges = prompt.unsyncedChanges,
+                onConfirm = { authViewModel.confirmSignOut() },
+                onDismiss = { authViewModel.dismissSignOut() }
+            )
         }
     }
 
+    if (isDeletingAccount) {
+        DeletingAccountDialog()
+    }
+
     if (showDeleteAccountDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteAccountDialog = false },
-            title = { Text("Eliminar cuenta") },
-            text = {
-                Text(
-                    "Esta acción es irreversible: se borrarán los datos de tu cuenta " +
-                        "en la nube. Los datos locales de este dispositivo se conservarán."
-                )
+        DeleteAccountDialog(
+            onConfirm = {
+                showDeleteAccountDialog = false
+                authViewModel.deleteAccount()
             },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteAccountDialog = false
-                    authViewModel.deleteAccount()
-                }) {
-                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteAccountDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
+            onDismiss = { showDeleteAccountDialog = false }
         )
     }
+}
+
+@Composable
+private fun SectionDivider() {
+    Spacer(modifier = Modifier.height(24.dp))
+    HorizontalDivider()
+    Spacer(modifier = Modifier.height(16.dp))
 }

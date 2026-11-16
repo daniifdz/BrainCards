@@ -42,6 +42,7 @@ class FakeAuthRepository(
     var updatePasswordFailure: Throwable? = null
 
     var deleteAccountCalled = false
+    var deleteAccountCallCount = 0
     var signOutCalled = false
     // Contadores, no solo booleanos -- ConfirmPasswordResetUseCaseTest necesita
     // comprobar que verify() NO se repite en un reintento.
@@ -113,6 +114,7 @@ class FakeAuthRepository(
 
     override suspend fun deleteAccount() {
         deleteAccountCalled = true
+        deleteAccountCallCount++
         deleteAccountFailure?.let { throw it }
     }
 

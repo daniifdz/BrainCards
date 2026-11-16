@@ -81,6 +81,7 @@ import org.braincards.app.presentation.screens.home.HomeViewModel
 import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
 import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
+import org.braincards.app.presentation.screens.settings.AutoSyncSettingViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.screens.studyStats.StudyStatsVM
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
@@ -102,6 +103,7 @@ fun appModule(
 
     single<DataStore<Preferences>> { settingsDataStore }
     viewModel { ThemeViewModel(dataStore = get()) }
+    viewModel { AutoSyncSettingViewModel(preference = get()) }
 
     // Cliente de Supabase (Singleton) -- URL/clave via SupabaseConfig.kt generado en build/
     // a partir de local.properties/env vars, nunca hardcodeadas (ver Sprint 12 Bloque B).

@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -14,10 +15,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import braincards.composeapp.generated.resources.*
 import org.braincards.app.presentation.sync.LastSyncLabel
@@ -30,9 +33,18 @@ import org.jetbrains.compose.resources.stringResource
 
 private const val DETAIL_SEPARATOR = " · "
 
-/** Seccion "Sincronizacion" de Ajustes: estado detallado (8 estados con sesion) + "Sincronizar ahora". */
+/**
+ * Seccion "Sincronizacion" de Ajustes: estado detallado (8 estados con sesion) + "Sincronizar ahora" + interruptor de
+ * sincronizacion automatica. [autoSyncEnabled] `null` = aun no leido: el interruptor sale deshabilitado.
+ */
 @Composable
-internal fun SyncSection(detail: SyncDetail, canSyncNow: Boolean, onSyncNow: () -> Unit) {
+internal fun SyncSection(
+    detail: SyncDetail,
+    canSyncNow: Boolean,
+    onSyncNow: () -> Unit,
+    autoSyncEnabled: Boolean?,
+    onAutoSyncChange: (Boolean) -> Unit
+) {
     val extra = BrainCardsTheme.extraColors
     val scheme = MaterialTheme.colorScheme
     val tint = when {
@@ -105,6 +117,20 @@ internal fun SyncSection(detail: SyncDetail, canSyncNow: Boolean, onSyncNow: () 
             headlineContent = { Text(stringResource(Res.string.sync_now)) },
             leadingContent = { Icon(Icons.Default.Sync, contentDescription = null) },
             modifier = Modifier.clickable(enabled = canSyncNow, onClick = onSyncNow)
+        )
+        ListItem(
+            headlineContent = { Text(stringResource(Res.string.settings_auto_sync_title)) },
+            supportingContent = { Text(stringResource(Res.string.settings_auto_sync_subtitle)) },
+            trailingContent = {
+                // La fila entera es el control (toggleable); el Switch solo dibuja el estado.
+                Switch(checked = autoSyncEnabled ?: true, onCheckedChange = null, enabled = autoSyncEnabled != null)
+            },
+            modifier = Modifier.toggleable(
+                value = autoSyncEnabled ?: true,
+                enabled = autoSyncEnabled != null,
+                role = Role.Switch,
+                onValueChange = onAutoSyncChange
+            )
         )
     }
 }

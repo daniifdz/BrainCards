@@ -162,14 +162,17 @@ class AuthViewModelFormErrorsTest {
     }
 
     @Test
-    fun si_falla_el_borrado_de_cuenta_sigue_el_mensaje_de_siempre_por_messageEvent() = runTest {
+    fun si_falla_el_borrado_de_cuenta_avisa_con_deleteAccountEvent_y_no_por_messageEvent() = runTest {
         val env = AuthVmEnv(AuthState.Authenticated("user-1", "a@b.co", sessionConfirmed = true))
         val rec = record(env)
+        val events = mutableListOf<DeleteAccountEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.deleteAccountEvent.collect { events += it } }
         env.auth.deleteAccountFailure = IllegalStateException("x")
 
         env.vm.deleteAccount()
 
-        assertEquals(listOf("No se pudo eliminar la cuenta"), rec.messages)
+        assertEquals(listOf(DeleteAccountEvent.Failed), events)
+        assertEquals(emptyList(), rec.messages)
         assertNull(env.vm.uiError.value)
     }
 
