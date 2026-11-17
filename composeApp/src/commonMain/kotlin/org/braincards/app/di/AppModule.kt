@@ -79,10 +79,9 @@ import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
 import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.braincards.app.presentation.screens.auth.WelcomeViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
-import org.braincards.app.presentation.screens.flashcards.FlashCardViewModel
+import org.braincards.app.presentation.screens.flashcards.DeckContentViewModel
 import org.braincards.app.presentation.screens.home.HomeViewModel
 import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
-import org.braincards.app.presentation.screens.flashcards.TopicVM
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.AutoSyncSettingViewModel
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
@@ -290,21 +289,19 @@ fun appModule(
     factory { UpdateFlashcardUseCase(repository = get()) }
     factory { DeleteFlashcardUseCase(repository = get()) }
 
-    viewModel {
-        FlashCardViewModel(
+    // Contenido de un mazo (temas + tarjetas + subnivel). El id del mazo llega como parametro de Koin.
+    viewModel { (deckId: String) ->
+        DeckContentViewModel(
+            deckId = deckId,
+            getDecks = get(),
+            getTopics = get(),
+            getFlashcards = get(),
+            addTopicUseCase = get(),
+            updateTopicUseCase = get(),
+            deleteTopicUseCase = get(),
             addFlashcardUseCase = get(),
-            getFlashcardUseCase = get(),
             updateFlashcardUseCase = get(),
             deleteFlashcardUseCase = get()
-        )
-    }
-
-    viewModel {
-        TopicVM(
-            addTopicUseCase = get(),
-            getTopicsUseCase = get(),
-            updateTopicUseCase = get(),
-            deleteTopicUseCase = get()
         )
     }
 

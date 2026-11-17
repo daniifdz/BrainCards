@@ -8,7 +8,7 @@ import org.braincards.app.presentation.screens.auth.ConfirmEmailScreen
 import org.braincards.app.presentation.screens.auth.ForgotPasswordScreen
 import org.braincards.app.presentation.screens.auth.ResetPasswordScreen
 import org.braincards.app.presentation.screens.decks.DecksScreen
-import org.braincards.app.presentation.screens.flashcards.FlashcardScreen
+import org.braincards.app.presentation.screens.flashcards.DeckContentScreen
 import org.braincards.app.presentation.screens.navigation.Screen
 import org.braincards.app.presentation.screens.study.StudyScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -120,13 +120,11 @@ fun App() {
             }
             composable<Screen.FlashcardsList> { backStackEntry ->
                 val route = backStackEntry.toRoute<Screen.FlashcardsList>()
-                FlashcardScreen(
+                DeckContentScreen(
                     deckId = route.deckId,
                     onBackClick = { navController.popBackStackSafely() },
-                    //ESTO ES LO MISMO QUE LO DE ABAJO PERO ACORTADO
-                    //onStudyClick = {deckId ->
-                    //  navController.navigate(Screen.StudySession(StudyScope.Deck(deckId)))
-                    //},
+                    // Si el mazo desaparece (p. ej. borrado en otro dispositivo): salida segura, nunca popBackStack().
+                    onDeckGone = { navController.popBackStackSafely() },
                     onStudyClick = { deckId ->
 
                         val destination = Screen.StudySession(deckId = deckId)
