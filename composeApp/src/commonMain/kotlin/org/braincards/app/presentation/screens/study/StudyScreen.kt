@@ -82,11 +82,18 @@ fun StudyScreen(
                             Text("Volver a los mazos")
                         }
 
-                        if (deckId != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            OutlinedButton(onClick = { viewModel.reviewAllCards(deckId) }) {
-                                Text("Repasar todo de todas formas")
-                            }
+                    }
+                }
+
+                is StudyState.Error -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "No se pudo cargar la sesión de estudio.",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = { viewModel.retry() }) {
+                            Text("Reintentar")
                         }
                     }
                 }
@@ -112,11 +119,11 @@ fun StudyScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Repasaste ${currentState.totalReviewed} tarjetas",
+                            "Repasaste ${currentState.results.totalReviews} tarjetas",
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            "✔️ ${currentState.correctCount} correctas   ❌ ${currentState.failedCount} falladas",
+                            "✔️ ${currentState.results.totalReviews - currentState.results.countOf(ReviewQuality.AGAIN)} correctas   ❌ ${currentState.results.countOf(ReviewQuality.AGAIN)} falladas",
                             style = MaterialTheme.typography.bodyLarge
                         )
 
@@ -210,7 +217,7 @@ fun ReviewCard(
 
         // Contador restante
         Text(
-            text = "${state.remainingCount} flashcards restantes",
+            text = "${state.remaining} flashcards restantes",
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             textAlign = TextAlign.Center

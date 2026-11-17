@@ -67,8 +67,10 @@ import org.braincards.app.domain.usecase.DeleteDeckUseCase
 import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFlashcardByIdUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
+import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 import org.braincards.app.domain.usecase.Stats.GetStudyStatsUseCase
@@ -335,11 +337,15 @@ fun appModule(
     //stdy
     factory { GetDueFlashcardsUseCase(repository = get()) }
     factory { ReviewFlashcardUseCase(reviewLogRepository = get(), cardSchedulingRepository = get()) }
+    factory { GetFlashcardByIdUseCase(repository = get()) }
+    // factory: una instancia por sesion de estudio, y su cache de nombres de mazo/tema vive lo que el VM.
+    factory { ResolveStudyLabelUseCase(decksRepository = get(), topicsRepository = get()) }
     viewModel {
         StudyViewModel(
             getDueFlashcardsUseCase = get(),
             reviewFlashcardUseCase = get(),
-            getFlashcardUseCase = get(),
+            getFlashcardByIdUseCase = get(),
+            resolveStudyLabelUseCase = get(),
             syncPauseGate = get()
         )
     }

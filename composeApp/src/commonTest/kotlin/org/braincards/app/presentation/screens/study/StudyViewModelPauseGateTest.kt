@@ -11,6 +11,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
+import org.braincards.app.domain.fakes.FakeDecksRepository
+import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
 import org.braincards.app.domain.fakes.FakeReviewLogRepository
 import org.braincards.app.domain.models.CardType
@@ -19,7 +21,8 @@ import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
-import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFlashcardByIdUseCase
+import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.PauseReason
@@ -61,6 +64,8 @@ class StudyViewModelPauseGateTest {
         override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant) = cards
         override suspend fun getAllDueFlashcards(now: Instant) = cards
         override fun getFlashcardsByDeckId(deckId: String): Flow<List<Flashcard>> = flowOf(cards)
+        // La cola comprueba que cada tarjeta SIGUE existiendo antes de mostrarla (las borradas se saltan).
+        override suspend fun getFlashcardById(id: String): Flashcard? = cards.firstOrNull { it.id == id }
     }
 
     private inner class Env(cards: List<Flashcard>) {
@@ -75,7 +80,8 @@ class StudyViewModelPauseGateTest {
                     StudyViewModel(
                         getDueFlashcardsUseCase = GetDueFlashcardsUseCase(repo),
                         reviewFlashcardUseCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), FakeCardSchedulingRepository()),
-                        getFlashcardUseCase = GetFlashcardUseCase(repo),
+                        getFlashcardByIdUseCase = GetFlashcardByIdUseCase(repo),
+                        resolveStudyLabelUseCase = ResolveStudyLabelUseCase(FakeDecksRepository(), FakeTopicsRepository()),
                         syncPauseGate = gate
                     )
                 }
@@ -101,16 +107,6 @@ class StudyViewModelPauseGateTest {
         assertEquals(1, env.studyPauses)
     }
 
-    @Test
-    fun repasar_todo_el_mazo_tambien_toma_la_puerta() {
-        val env = Env(listOf(card("a")))
-
-        env.vm.reviewAllCards("deck-1")
-
-        assertIs<StudyState.Reviewing>(env.vm.state.value)
-        assertEquals(1, env.studyPauses)
-    }
-
     // --- liberacion en cada camino ---
 
     @Test
@@ -118,16 +114,6 @@ class StudyViewModelPauseGateTest {
         val env = Env(emptyList())
 
         env.vm.initSession(StudyScope.Deck("deck-1"))
-
-        assertEquals(StudyState.Empty, env.vm.state.value)
-        assertEquals(0, env.studyPauses)
-    }
-
-    @Test
-    fun repasar_todo_un_mazo_vacio_libera_la_puerta() {
-        val env = Env(emptyList())
-
-        env.vm.reviewAllCards("deck-1")
 
         assertEquals(StudyState.Empty, env.vm.state.value)
         assertEquals(0, env.studyPauses)
@@ -172,8 +158,8 @@ class StudyViewModelPauseGateTest {
         val env = Env(listOf(card("a"), card("b")))
 
         env.vm.initSession(StudyScope.All)
-        env.vm.initSession(StudyScope.All)
-        env.vm.reviewAllCards("deck-1")
+        env.vm.initSession(StudyScope.All) // idempotente: no vuelve a tomar la puerta
+        env.vm.retry()                     // reabrir la sesion libera el lease anterior antes de tomar otro
 
         assertEquals(1, env.studyPauses)
         env.clear()
