@@ -217,6 +217,8 @@
     <string name="deckcontent_new_card">Nueva tarjeta</string>
     <string name="deckcontent_add_card_short">Tarjeta</string>
     <string name="deckcontent_study">Estudiar mazo</string>
+    <string name="deckcontent_study_button">Estudiar</string>
+    <string name="deckcontent_topic_none">Sin tema</string>
     <string name="deckcontent_search_placeholder">Buscar en temas y tarjetas…</string>
     <string name="deckcontent_search_clear">Borrar búsqueda</string>
     <string name="deckcontent_section_topics">Temas · %1$d</string>

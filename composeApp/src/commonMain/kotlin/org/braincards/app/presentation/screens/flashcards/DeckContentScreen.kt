@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -83,6 +85,8 @@ import braincards.composeapp.generated.resources.deckcontent_section_cards
 import braincards.composeapp.generated.resources.deckcontent_section_loose
 import braincards.composeapp.generated.resources.deckcontent_section_topics
 import braincards.composeapp.generated.resources.deckcontent_study
+import braincards.composeapp.generated.resources.deckcontent_study_button
+import braincards.composeapp.generated.resources.deckcontent_topic_none
 import braincards.composeapp.generated.resources.deckcontent_topic_empty_text
 import braincards.composeapp.generated.resources.deckcontent_topic_empty_title
 import org.braincards.app.domain.models.Flashcard
@@ -100,8 +104,8 @@ import org.koin.core.parameter.parametersOf
 /** Ancho maximo del contenido en pantallas anchas (Desktop/tablet), como el mockup (820 dp con padding). */
 private val CONTENT_MAX_WIDTH = 820.dp
 
-/** Por debajo de este ancho, los botones de la cabecera bajan a una segunda linea (mockup mobile). */
-private val COMPACT_WIDTH = 560.dp
+/** Por debajo de este ancho, los botones de la cabecera bajan a una segunda linea (mockup mobile). PROVISIONAL: se afina a mano. */
+private val COMPACT_WIDTH = 720.dp
 
 /**
  * Contenido de un mazo (handoff 5.1c). Nivel del mazo (temas + tarjetas sin tema + buscador) y subnivel de un tema.
@@ -190,24 +194,24 @@ fun DeckContentScreen(
                         )
                     }
                     is DeckContentUiState.Empty -> DeckHeader(
-                        deckName = current.deckName, showStudy = false, onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.NoResults -> DeckHeader(
-                        deckName = current.deckName, showStudy = false, onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.Search -> DeckHeader(
-                        deckName = current.deckName, showStudy = false, onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.Root -> DeckHeader(
                         deckName = current.deckName,
-                        // Provisional: el mockup no dibuja "Estudiar mazo"; solo con tarjetas y sin busqueda activa.
-                        showStudy = current.hasCards,
+                        // Solo en el nivel del mazo con tarjetas y sin busqueda activa (ver showStudyButton).
+                        showStudy = showStudyButton(current),
                         onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
                         onStudy = { onStudyClick(deckId) }
@@ -242,6 +246,7 @@ fun DeckContentScreen(
                         topics = current.topics,
                         cards = current.looseCards.map { CardHit(it, null) },
                         cardsTitle = Res.string.deckcontent_section_loose,
+                        showTopicOnCards = false,
                         onOpenTopic = viewModel::openTopic,
                         onEditTopic = { viewModel.clearErrors(); editTopicId = it },
                         onDeleteTopic = { deleteTopicId = it },
@@ -252,6 +257,7 @@ fun DeckContentScreen(
                         topics = current.topics,
                         cards = current.cards,
                         cardsTitle = Res.string.deckcontent_section_cards,
+                        showTopicOnCards = true,
                         onOpenTopic = viewModel::openTopic,
                         onEditTopic = { viewModel.clearErrors(); editTopicId = it },
                         onDeleteTopic = { deleteTopicId = it },
@@ -266,6 +272,7 @@ fun DeckContentScreen(
                                 topics = emptyList(),
                                 cards = current.cards.map { CardHit(it, null) },
                                 cardsTitle = null,
+                                showTopicOnCards = false,
                                 onOpenTopic = {},
                                 onEditTopic = {},
                                 onDeleteTopic = {},
@@ -355,7 +362,12 @@ fun DeckContentScreen(
 
 // ---- cabeceras ----
 
-/** Cabecera del nivel del mazo: flecha + nombre, "Nuevo tema" (outline) y "Nueva tarjeta" (primaria). */
+/**
+ * Cabecera del nivel del mazo: flecha + nombre y, a la derecha (o debajo si no cabe), los botones en este orden:
+ * "Estudiar" (accion PRIMARIA, rellena; solo con tarjetas y sin busqueda: [showStudy]), "Nuevo tema" y "Nueva tarjeta"
+ * (ambos outline). Los botones van en un FlowRow: si no caben en una linea, envuelven (mockup: `flex-wrap`).
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DeckHeader(
     deckName: String,
@@ -365,16 +377,27 @@ private fun DeckHeader(
     onNewCard: () -> Unit,
     onStudy: () -> Unit
 ) {
+    val studyLabel = stringResource(Res.string.deckcontent_study_button)
+    val studyDescription = stringResource(Res.string.deckcontent_study)
     val newTopicLabel = stringResource(Res.string.deckcontent_new_topic)
     val newCardLabel = stringResource(Res.string.deckcontent_new_card)
+    val backLabel = stringResource(Res.string.deckcontent_back_to_decks)
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val actions: @Composable () -> Unit = {
+            if (showStudy) {
+                // La descripcion accesible sustituye a "Estudiar" por "Estudiar mazo".
+                Button(onClick = onStudy, modifier = Modifier.semantics { contentDescription = studyDescription }) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(studyLabel)
+                }
+            }
             OutlinedButton(onClick = onNewTopic) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(newTopicLabel)
             }
-            Button(onClick = onNewCard) {
+            OutlinedButton(onClick = onNewCard) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
                 Text(newCardLabel)
@@ -382,19 +405,19 @@ private fun DeckHeader(
         }
         if (maxWidth < COMPACT_WIDTH) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                BackAndTitle(
-                    title = deckName, backLabel = stringResource(Res.string.deckcontent_back_to_decks),
-                    showStudy = showStudy, onBack = onBack, onStudy = onStudy, modifier = Modifier.fillMaxWidth()
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { actions() }
+                BackAndTitle(title = deckName, backLabel = backLabel, onBack = onBack, modifier = Modifier.fillMaxWidth())
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) { actions() }
             }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                BackAndTitle(
-                    title = deckName, backLabel = stringResource(Res.string.deckcontent_back_to_decks),
-                    showStudy = showStudy, onBack = onBack, onStudy = onStudy, modifier = Modifier.weight(1f)
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { actions() }
+                BackAndTitle(title = deckName, backLabel = backLabel, onBack = onBack, modifier = Modifier.weight(1f))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) { actions() }
             }
         }
     }
@@ -404,9 +427,7 @@ private fun DeckHeader(
 private fun BackAndTitle(
     title: String,
     backLabel: String,
-    showStudy: Boolean,
     onBack: () -> Unit,
-    onStudy: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -421,11 +442,6 @@ private fun BackAndTitle(
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).semantics { heading() }
         )
-        if (showStudy) {
-            IconButton(onClick = onStudy) {
-                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(Res.string.deckcontent_study))
-            }
-        }
     }
 }
 
@@ -466,12 +482,14 @@ private fun RootList(
     topics: List<TopicWithCount>,
     cards: List<CardHit>,
     cardsTitle: org.jetbrains.compose.resources.StringResource?,
+    showTopicOnCards: Boolean,
     onOpenTopic: (String) -> Unit,
     onEditTopic: (String) -> Unit,
     onDeleteTopic: (String) -> Unit,
     onEditCard: (String) -> Unit,
     onDeleteCard: (String) -> Unit
 ) {
+    val noTopic = stringResource(Res.string.deckcontent_topic_none)
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -497,7 +515,8 @@ private fun RootList(
                 val hit = cards[index]
                 CardRow(
                     card = hit.card,
-                    topicName = hit.topicName,
+                    // Solo en los resultados de busqueda: el tema de la tarjeta o "Sin tema". Lista normal y subnivel: sin segunda linea.
+                    secondLine = if (showTopicOnCards) (hit.topicName ?: noTopic) else null,
                     onClick = { onEditCard(hit.card.id) },
                     onEdit = { onEditCard(hit.card.id) },
                     onDelete = { onDeleteCard(hit.card.id) }

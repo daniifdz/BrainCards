@@ -130,22 +130,22 @@ fun TopicRow(
 }
 
 /**
- * Fila de una tarjeta: icono + anverso (+ [topicName] como segunda linea en los resultados de busqueda) + menu (⋮).
+ * Fila de una tarjeta: icono + anverso (+ [secondLine] solo en los resultados de busqueda: el nombre del tema o "Sin tema"; null = sin segunda linea (lista normal y subnivel)) + menu (⋮).
  * Tocar la fila abre "Editar tarjeta".
  */
 @Composable
 fun CardRow(
     card: Flashcard,
-    topicName: String?,
+    secondLine: String?,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val rowDescription = if (topicName == null) {
+    val rowDescription = if (secondLine == null) {
         card.question
     } else {
-        stringResource(Res.string.deckcontent_row_a11y, card.question, topicName)
+        stringResource(Res.string.deckcontent_row_a11y, card.question, secondLine)
     }
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -177,9 +177,9 @@ fun CardRow(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (topicName != null) {
+                    if (secondLine != null) {
                         Text(
-                            text = topicName,
+                            text = secondLine,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,

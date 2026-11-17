@@ -114,6 +114,13 @@ internal fun buildDeckContentState(
 }
 
 /**
+ * ¿Se dibuja el boton "Estudiar" de la cabecera? Solo en el nivel del mazo con al menos una tarjeta y SIN busqueda
+ * activa (con el buscador en uso seria ambiguo: ¿los resultados o el mazo entero?). Vuelve al borrar el texto.
+ */
+internal fun showStudyButton(state: DeckContentUiState): Boolean =
+    state is DeckContentUiState.Root && state.hasCards
+
+/**
  * Contenido de UN mazo ([deckId]): temas + tarjetas, buscador y subnivel de tema. Sustituye a FlashCardViewModel y
  * TopicVM. El tema abierto vive aqui (no en la ruta): handoff 5.1e.
  *
