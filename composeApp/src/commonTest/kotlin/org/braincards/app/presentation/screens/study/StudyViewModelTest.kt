@@ -127,6 +127,12 @@ class StudyViewModelTest {
         val state get() = vm.state.value
         val reviewing get() = assertIs<StudyState.Reviewing>(vm.state.value)
         val finished get() = assertIs<StudyState.Finished>(vm.state.value)
+
+        /** Revela la respuesta y puntua (el VM no puntua con la respuesta oculta). */
+        fun rate(quality: ReviewQuality) {
+            vm.showAnswer()
+            vm.rateCard(quality)
+        }
     }
 
     private fun TestScope.collectMessages(vm: StudyViewModel): List<StudyMessage> {
@@ -169,7 +175,7 @@ class StudyViewModelTest {
         val e = Env(listOf(card("a"), card("b"), card("c")))
         e.vm.initSession(StudyScope.All)
         e.vm.showAnswer()
-        e.vm.rateCard(GOOD) // a sale; ya no es "pendiente" en la base, pero la cola en memoria sigue siendo la de la sesion
+        e.rate(GOOD) // a sale; ya no es "pendiente" en la base, pero la cola en memoria sigue siendo la de la sesion
         e.repo.due = listOf(card("b"), card("c")) // lo que devolveria ahora la consulta (a ya esta puntuada)
         val before = e.reviewing
 
@@ -211,14 +217,14 @@ class StudyViewModelTest {
         val e = Env(listOf(card("a"), card("b")))
         e.vm.initSession(StudyScope.All)
 
-        e.vm.rateCard(AGAIN)
+        e.rate(AGAIN)
 
         assertEquals("b", e.reviewing.currentCard.id)
         assertEquals(2, e.reviewing.remaining)
         assertEquals(2, e.reviewing.total)
         assertEquals(false, e.reviewing.isAnswerVisible)
 
-        e.vm.rateCard(GOOD) // b
+        e.rate(GOOD) // b
 
         assertEquals("a", e.reviewing.currentCard.id) // reaparece
         assertEquals(1, e.reviewing.remaining)
@@ -230,10 +236,10 @@ class StudyViewModelTest {
         val e = Env(listOf(card("a"), card("b"), card("c")))
         e.vm.initSession(StudyScope.All)
 
-        e.vm.rateCard(AGAIN)
+        e.rate(AGAIN)
         assertEquals(0f, e.reviewing.progress)
 
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
         assertEquals(1f / 3, e.reviewing.progress)
     }
 
@@ -245,9 +251,9 @@ class StudyViewModelTest {
         val e = Env(listOf(card("a"), card("b")))
         e.vm.initSession(StudyScope.All)
 
-        e.vm.rateCard(AGAIN) // a vuelve
-        e.vm.rateCard(HARD)  // b
-        e.vm.rateCard(EASY)  // a
+        e.rate(AGAIN) // a vuelve
+        e.rate(HARD)  // b
+        e.rate(EASY)  // a
 
         val results = e.finished.results
         assertEquals(1, results.countOf(AGAIN))
@@ -267,7 +273,7 @@ class StudyViewModelTest {
         e.vm.initSession(StudyScope.All)
         e.repo.deleted += "b" // se borra (otro dispositivo) mientras se estudia "a"
 
-        e.vm.rateCard(GOOD) // a sale; b esta borrada -> se salta; sale c
+        e.rate(GOOD) // a sale; b esta borrada -> se salta; sale c
 
         val r = e.reviewing
         assertEquals("c", r.currentCard.id)
@@ -304,7 +310,7 @@ class StudyViewModelTest {
         e.vm.initSession(StudyScope.All)
         e.repo.deleted += "b"
 
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertEquals(1, e.finished.results.totalReviews)
     }
@@ -320,7 +326,7 @@ class StudyViewModelTest {
         e.vm.showAnswer()
         e.scheduling.failure = IOException("disco lleno")
 
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertEquals(listOf(StudyMessage.RateFailed), messages)
         val r = e.reviewing
@@ -330,9 +336,9 @@ class StudyViewModelTest {
 
         // Se reintenta con exito: el repaso fallido NO cuenta, solo el guardado.
         e.scheduling.failure = null
-        e.vm.rateCard(GOOD) // a
+        e.rate(GOOD) // a
         assertEquals("b", e.reviewing.currentCard.id) // no se salto b
-        e.vm.rateCard(GOOD) // b
+        e.rate(GOOD) // b
         assertEquals(2, e.finished.results.totalReviews) // 2 guardados, no 3
         assertEquals(2, e.finished.results.countOf(GOOD))
     }
@@ -343,10 +349,10 @@ class StudyViewModelTest {
         val e = Env(listOf(card("a")))
         e.vm.initSession(StudyScope.All)
         e.scheduling.failure = IOException("x")
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         e.scheduling.failure = null
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertEquals(1, e.finished.results.totalReviews)
     }
@@ -357,11 +363,11 @@ class StudyViewModelTest {
         val messages = collectMessages(e.vm)
         e.vm.initSession(StudyScope.All)
         e.scheduling.failure = CancellationException("cancelada")
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertTrue(messages.isEmpty())
         e.scheduling.failure = null
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertEquals(1, e.finished.results.totalReviews)
     }
@@ -408,7 +414,7 @@ class StudyViewModelTest {
 
         e.vm.initSession(StudyScope.All)
         val first = e.reviewing.label
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
         val second = e.reviewing.label
 
         assertEquals("Inglés B2", first?.deckName)
@@ -427,7 +433,7 @@ class StudyViewModelTest {
         assertEquals("Inglés B2", e.reviewing.label?.deckName)
         assertNull(e.reviewing.label?.topicName)
 
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
 
         assertNull(e.reviewing.label) // el mazo de "b" no existe
     }
@@ -438,7 +444,7 @@ class StudyViewModelTest {
     fun puntuar_sin_tarjeta_en_pantalla_no_hace_nada() {
         val e = Env(listOf(card("a")))
 
-        e.vm.rateCard(GOOD) // aun Loading: sin sesion
+        e.rate(GOOD) // aun Loading: sin sesion
 
         assertEquals(StudyState.Loading, e.state)
         assertEquals(0, e.scheduling.inner.upsertCalls.size)
@@ -452,7 +458,35 @@ class StudyViewModelTest {
         e.vm.showAnswer()
         assertEquals(true, e.reviewing.isAnswerVisible)
 
-        e.vm.rateCard(GOOD)
+        e.rate(GOOD)
         assertEquals(false, e.reviewing.isAnswerVisible)
+    }
+
+    // ---- segunda barrera: no se puntua con la respuesta oculta ----
+
+    // Mutacion V4: si rateCard no comprobara isAnswerVisible, este test fallaria.
+    @Test
+    fun puntuar_con_la_respuesta_oculta_no_hace_nada() {
+        val e = Env(listOf(card("a"), card("b")))
+        e.vm.initSession(StudyScope.All)
+        val before = e.reviewing
+
+        e.vm.rateCard(GOOD) // sin showAnswer()
+
+        assertEquals(before, e.state)
+        assertEquals(0, e.scheduling.inner.upsertCalls.size)
+        assertEquals(2, e.reviewing.remaining)
+    }
+
+    @Test
+    fun una_vez_revelada_la_respuesta_si_se_puede_puntuar() {
+        val e = Env(listOf(card("a"), card("b")))
+        e.vm.initSession(StudyScope.All)
+
+        e.vm.showAnswer()
+        e.vm.rateCard(GOOD)
+
+        assertEquals("b", e.reviewing.currentCard.id)
+        assertEquals(1, e.scheduling.inner.upsertCalls.size)
     }
 }

@@ -185,7 +185,7 @@ class StudyViewModel(
     }
 
     /**
-     * Puntua la tarjeta en pantalla. El repaso se GUARDA primero; solo si sale bien entra en los contadores y la cola
+     * Puntua la tarjeta en pantalla (solo con la respuesta visible). El repaso se GUARDA primero; solo si sale bien entra en los contadores y la cola
      * avanza. Si falla al guardar: la tarjeta se queda en pantalla, la cola no avanza, el repaso no se cuenta y llega un
      * [StudyMessage.RateFailed] (se puede volver a puntuar).
      */
@@ -194,6 +194,8 @@ class StudyViewModel(
         if (isSubmitting) return //puntuación en curso, ignora pulsación
 
         val currentState = _state.value as? StudyState.Reviewing ?: return
+        // Segunda barrera (la primera es la UI/el teclado): no se puntua una tarjeta cuya respuesta no se ha visto.
+        if (!currentState.isAnswerVisible) return
         val card = currentState.currentCard
         isSubmitting = true
         pauseLease?.renew()

@@ -92,6 +92,12 @@ class StudyViewModelPauseGateTest {
         fun clear() = store.clear()
 
         val studyPauses get() = gate.activeCount(PauseReason.STUDY)
+
+        /** Revela la respuesta y puntua (el VM no puntua con la respuesta oculta). */
+        fun rate(quality: ReviewQuality) {
+            vm.showAnswer()
+            vm.rateCard(quality)
+        }
     }
 
     // --- toma ---
@@ -124,9 +130,9 @@ class StudyViewModelPauseGateTest {
         val env = Env(listOf(card("a"), card("b")))
         env.vm.initSession(StudyScope.All)
 
-        env.vm.rateCard(ReviewQuality.GOOD)
+        env.rate(ReviewQuality.GOOD)
         assertEquals(1, env.studyPauses, "a media sesion sigue en pausa")
-        env.vm.rateCard(ReviewQuality.EASY)
+        env.rate(ReviewQuality.EASY)
 
         assertIs<StudyState.Finished>(env.vm.state.value)
         assertEquals(0, env.studyPauses)
@@ -175,11 +181,11 @@ class StudyViewModelPauseGateTest {
 
         // Cada 20 min se puntua una: 20, 40 min... con un plazo fijo de 30 min la puerta se habria abierto.
         env.time += 20.minutes
-        env.vm.rateCard(ReviewQuality.GOOD)
+        env.rate(ReviewQuality.GOOD)
         env.time += 20.minutes
 
         assertEquals(PauseReason.STUDY, env.gate.activeReason(), "40 min desde el inicio, 20 desde la ultima tarjeta")
-        env.vm.rateCard(ReviewQuality.GOOD)
+        env.rate(ReviewQuality.GOOD)
         env.time += 20.minutes
         assertEquals(PauseReason.STUDY, env.gate.activeReason(), "60 min desde el inicio, 20 desde la ultima tarjeta")
     }
@@ -203,7 +209,7 @@ class StudyViewModelPauseGateTest {
         env.time += STUDY_PAUSE_INACTIVITY_TTL + 5.minutes
         assertEquals(null, env.gate.activeReason())
 
-        env.vm.rateCard(ReviewQuality.GOOD)
+        env.rate(ReviewQuality.GOOD)
 
         assertEquals(PauseReason.STUDY, env.gate.activeReason())
     }

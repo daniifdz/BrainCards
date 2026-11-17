@@ -266,4 +266,31 @@
     <string name="deckcontent_save_topic_failed">No se pudo guardar el tema. Inténtalo de nuevo.</string>
     <string name="deckcontent_save_card_failed">No se pudo guardar la tarjeta. Inténtalo de nuevo.</string>
     <string name="deckcontent_delete_failed">No se pudo eliminar. Inténtalo de nuevo.</string>
+
+    <!-- Sesion de estudio (handoff 5.5, v4.18) -->
+    <string name="study_close">Cerrar sesión de estudio</string>
+    <string name="study_progress">Quedan %1$d de %2$d</string>
+    <string name="study_label_deck_topic">%1$s · %2$s</string>
+    <string name="study_show_answer">Mostrar respuesta</string>
+    <string name="study_show_answer_hint">o pulsa Espacio</string>
+    <string name="study_question_a11y">Pregunta: %1$s</string>
+    <string name="study_question_answer_a11y">Pregunta: %1$s. Respuesta: %2$s</string>
+    <string name="study_again">Otra vez</string>
+    <string name="study_hard">Difícil</string>
+    <string name="study_good">Bien</string>
+    <string name="study_easy">Fácil</string>
+    <string name="study_loading">Cargando tarjetas</string>
+    <string name="study_load_error">No se pudo cargar la cola de repaso.</string>
+    <string name="study_rate_failed">No se pudo guardar el repaso. Inténtalo de nuevo.</string>
+    <string name="study_empty_title">¡Estamos al día!</string>
+    <string name="study_empty_text">No hay tarjetas pendientes ahora mismo. Vuelve más tarde o repasa un mazo concreto.</string>
+    <string name="study_empty_cta">Volver al inicio</string>
+    <!-- PROVISIONAL (7.3 lo sustituye por la pantalla de Resultados) -->
+    <string name="study_finished_title">¡Sesión completada!</string>
+    <plurals name="study_finished_reviews">
+        <item quantity="one">%1$d repaso</item>
+        <item quantity="other">%1$d repasos</item>
+    </plurals>
+    <string name="study_finished_breakdown">%1$d correctas · %2$d falladas</string>
+    <string name="study_finished_back">Volver a los mazos</string>
 </resources>
