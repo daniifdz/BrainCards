@@ -25,15 +25,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import braincards.composeapp.generated.resources.Res
-import braincards.composeapp.generated.resources.study_empty_cta
 import braincards.composeapp.generated.resources.study_empty_text
 import braincards.composeapp.generated.resources.study_empty_title
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.stringResource
 
-/** Estado vacio «¡Estamos al día!» (mockup `estudio-vacio.html`): icono en chip, titulo, texto y un unico boton. */
+/** Estado vacio «¡Estamos al día!» (mockup `estudio-vacio.html`): icono en chip, titulo, texto y un unico boton; el boton dice "Volver al inicio" (Home) o "Volver al mazo" (mazo) y vuelve al origen. */
 @Composable
-fun StudyEmpty(onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun StudyEmpty(origin: StudyOrigin, onBack: () -> Unit, modifier: Modifier = Modifier) {
     val extra = BrainCardsTheme.extraColors
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -57,7 +56,7 @@ fun StudyEmpty(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 modifier = Modifier.widthIn(max = 260.dp)
             )
             OutlinedButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp)) {
-                Text(stringResource(Res.string.study_empty_cta), fontSize = 15.sp)
+                Text(studyBackLabel(origin), fontSize = 15.sp)
             }
         }
     }

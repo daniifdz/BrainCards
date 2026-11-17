@@ -50,8 +50,11 @@ sealed class StudyState {
         val progress: Float get() = if (total <= 0) 0f else (total - remaining).toFloat() / total
     }
 
-    /** Fin de la sesion: pulsaciones por calidad (el total es su suma). */
-    data class Finished(val results: StudyResults) : StudyState()
+    /**
+     * Fin de la sesion: pulsaciones por calidad (el total es su suma) y la [label] de Resultados (nombre del mazo o
+     * "Estudiar Todo"; null si el nombre del mazo no se pudo resolver).
+     */
+    data class Finished(val results: StudyResults, val label: StudyResultsLabel?) : StudyState()
 }
 
 /** Mensajes de fallo general (Snackbar); el texto vive en recursos. */
@@ -171,10 +174,31 @@ class StudyViewModel(
         }
     }
 
-    private fun finishOrEmpty(queue: StudyQueue) {
+    private suspend fun finishOrEmpty(queue: StudyQueue) {
         // Cola agotada: con alguna pulsacion es el final de la sesion; si no (todas borradas), no habia nada que estudiar.
-        _state.value = if (queue.totalReviews > 0) StudyState.Finished(queue.results()) else StudyState.Empty
+        _state.value = if (queue.totalReviews > 0) {
+            StudyState.Finished(queue.results(), resultsLabelFor(currentScope))
+        } else {
+            StudyState.Empty
+        }
         resumeAutoSync()
+    }
+
+    /** Etiqueta de Resultados: "Estudiar Todo" (global) o el nombre del mazo; un fallo al leerlo no impide mostrar Resultados. */
+    private suspend fun resultsLabelFor(scope: StudyScope?): StudyResultsLabel? {
+        if (scope == null) return null
+        val deckName = when (scope) {
+            is StudyScope.All -> null
+            is StudyScope.Deck -> try {
+                resolveStudyLabelUseCase.deckName(scope.deckId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                logError("No se pudo leer el nombre del mazo", e)
+                null
+            }
+        }
+        return resultsLabel(scope, deckName)
     }
 
     fun showAnswer() {

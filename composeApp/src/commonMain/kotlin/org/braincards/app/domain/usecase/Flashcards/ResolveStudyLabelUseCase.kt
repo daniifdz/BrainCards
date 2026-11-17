@@ -24,7 +24,8 @@ class ResolveStudyLabelUseCase(
         return StudyCardLabel(deckName, topicName)
     }
 
-    private suspend fun deckName(deckId: String): String? {
+    /** Nombre del mazo (con la misma cache); null si ya no existe. La usa el VM para la etiqueta de Resultados. */
+    suspend fun deckName(deckId: String): String? {
         if (!deckNames.containsKey(deckId)) deckNames[deckId] = decksRepository.getDeckById(deckId)?.name
         return deckNames[deckId]
     }

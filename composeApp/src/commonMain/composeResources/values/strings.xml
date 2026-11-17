@@ -284,13 +284,14 @@
     <string name="study_rate_failed">No se pudo guardar el repaso. Inténtalo de nuevo.</string>
     <string name="study_empty_title">¡Estamos al día!</string>
     <string name="study_empty_text">No hay tarjetas pendientes ahora mismo. Vuelve más tarde o repasa un mazo concreto.</string>
-    <string name="study_empty_cta">Volver al inicio</string>
-    <!-- PROVISIONAL (7.3 lo sustituye por la pantalla de Resultados) -->
-    <string name="study_finished_title">¡Sesión completada!</string>
-    <plurals name="study_finished_reviews">
+    <string name="study_back_home">Volver al inicio</string>
+    <string name="study_back_deck">Volver al mazo</string>
+    <!-- Resultados (handoff v4.18): total = pulsaciones, no tarjetas -->
+    <string name="study_results_all">Estudiar Todo</string>
+    <string name="study_results_title">¡Sesión completada!</string>
+    <plurals name="study_results_count">
         <item quantity="one">%1$d repaso</item>
         <item quantity="other">%1$d repasos</item>
     </plurals>
-    <string name="study_finished_breakdown">%1$d correctas · %2$d falladas</string>
-    <string name="study_finished_back">Volver a los mazos</string>
+    <string name="study_results_stat_a11y">%1$s: %2$d</string>
 </resources>

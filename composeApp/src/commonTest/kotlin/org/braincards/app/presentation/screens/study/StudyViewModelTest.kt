@@ -96,8 +96,10 @@ class StudyViewModelTest {
 
     private class CountingDecks(val inner: FakeDecksRepository = FakeDecksRepository()) : DecksRepository by inner {
         var calls = 0
+        var failure: Exception? = null
         override suspend fun getDeckById(id: String): Deck? {
             calls++
+            failure?.let { throw it }
             return inner.getDeckById(id)
         }
     }
@@ -488,5 +490,55 @@ class StudyViewModelTest {
 
         assertEquals("b", e.reviewing.currentCard.id)
         assertEquals(1, e.scheduling.inner.upsertCalls.size)
+    }
+    // ---- etiqueta de Resultados (7.3) ----
+
+    @Test
+    fun finished_de_una_sesion_de_un_mazo_lleva_solo_el_nombre_del_mazo() = runTest {
+        val e = Env(listOf(card("a", topicId = "t1")))
+        e.decks.inner.addDeck(Deck("d1", "Inglés B2", t0, t0, null))
+        e.topics.inner.addTopic(Topic("t1", "d1", "Phrasal verbs", t0, t0))
+        e.vm.initSession(StudyScope.Deck("d1"))
+
+        e.rate(GOOD)
+
+        assertEquals(StudyResultsLabel.DeckName("Inglés B2"), e.finished.label) // sin el tema
+    }
+
+    @Test
+    fun finished_de_la_sesion_global_es_Estudiar_Todo() = runTest {
+        val e = Env(listOf(card("a")))
+        e.decks.inner.addDeck(Deck("d1", "Inglés B2", t0, t0, null))
+        e.vm.initSession(StudyScope.All)
+
+        e.rate(GOOD)
+
+        assertEquals(StudyResultsLabel.AllDecks, e.finished.label)
+    }
+
+    @Test
+    fun finished_de_un_mazo_que_ya_no_existe_no_lleva_etiqueta_pero_sigue_siendo_valido() = runTest {
+        val e = Env(listOf(card("a")))
+        e.vm.initSession(StudyScope.Deck("d1")) // el mazo no esta en el repositorio
+
+        e.rate(GOOD)
+
+        assertNull(e.finished.label)
+        assertEquals(1, e.finished.results.totalReviews)
+    }
+
+    @Test
+    fun un_fallo_al_leer_el_nombre_del_mazo_no_impide_mostrar_Resultados() = runTest {
+        val e = Env(listOf(card("a")))
+        e.decks.inner.addDeck(Deck("zz", "Otro", t0, t0, null))
+        // Alcance "zz": su nombre no esta en cache (las tarjetas son de "d1"), asi que se lee al terminar.
+        e.vm.initSession(StudyScope.Deck("zz"))
+        e.decks.failure = IOException("boom")
+
+        e.rate(GOOD)
+
+        assertNull(e.finished.label)
+        assertEquals(1, e.finished.results.totalReviews)
+        assertEquals(0, e.pauses)
     }
 }
