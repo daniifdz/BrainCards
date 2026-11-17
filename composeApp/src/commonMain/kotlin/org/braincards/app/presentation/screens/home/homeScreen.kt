@@ -154,6 +154,8 @@ internal fun HomeContent(
                             dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
                         )
                         HomeUiState.NoDecks -> FirstUseCard(compact = compact, onCreateDeck = onNavigateToDecks)
+                        // 5.º estado: mazos sin ninguna tarjeta. Sin "Estudiar Todo": no hay nada que estudiar.
+                        HomeUiState.NoCards -> NoCardsCard(compact = compact, onGoToDecks = onNavigateToDecks)
                         HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
                         else -> StudyAllOutlineButton(compact = compact, onClick = onNavigateToStudy)
                     }
@@ -366,6 +368,30 @@ private fun StudyAllButton(dueCount: Int, compact: Boolean, onClick: () -> Unit)
  */
 @Composable
 private fun FirstUseCard(compact: Boolean, onCreateDeck: () -> Unit) {
+    EmptyActionCard(
+        title = stringResource(Res.string.home_first_use_title),
+        text = stringResource(Res.string.home_first_use_text),
+        cta = stringResource(Res.string.home_first_use_cta),
+        compact = compact,
+        onClick = onCreateDeck
+    )
+}
+
+/** 5.º estado: hay mazos pero ninguna tarjeta. Mismo patron visual que el primer uso; lleva a Mis Mazos. */
+@Composable
+private fun NoCardsCard(compact: Boolean, onGoToDecks: () -> Unit) {
+    EmptyActionCard(
+        title = stringResource(Res.string.home_no_cards_title),
+        text = stringResource(Res.string.home_no_cards_text),
+        cta = stringResource(Res.string.home_no_cards_cta),
+        compact = compact,
+        onClick = onGoToDecks
+    )
+}
+
+/** Tarjeta con icono, titulo, texto y un boton de accion: primer uso (0 mazos) y mazos sin tarjetas. */
+@Composable
+private fun EmptyActionCard(title: String, text: String, cta: String, compact: Boolean, onClick: () -> Unit) {
     val extra = BrainCardsTheme.extraColors
     Surface(
         shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
@@ -388,23 +414,23 @@ private fun FirstUseCard(compact: Boolean, onCreateDeck: () -> Unit) {
             }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = stringResource(Res.string.home_first_use_title),
+                    text = title,
                     style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = stringResource(Res.string.home_first_use_text),
+                    text = text,
                     style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp, lineHeight = 21.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.widthIn(max = 480.dp)
                 )
             }
             Button(
-                onClick = onCreateDeck,
+                onClick = onClick,
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = PaddingValues(horizontal = 22.dp, vertical = 13.dp)
             ) {
                 Text(
-                    text = stringResource(Res.string.home_first_use_cta),
+                    text = cta,
                     style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                 )
             }

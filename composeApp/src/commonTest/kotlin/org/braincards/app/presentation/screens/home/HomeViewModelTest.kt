@@ -24,7 +24,9 @@ import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.DueCardsObserver
-import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
+import org.braincards.app.domain.models.DeckSummary
+import org.braincards.app.domain.repository.DeckSummariesObserver
+import org.braincards.app.domain.usecase.Decks.ObserveDeckSummariesUseCase
 import org.braincards.app.domain.usecase.Flashcards.DUE_COUNT_TICK
 import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import kotlin.test.AfterTest
@@ -67,17 +69,23 @@ class HomeViewModelTest {
     private val aDeck = Deck(id = "d1", name = "Mazo", createdAt = Instant.fromEpochMilliseconds(0),
         updatedAt = Instant.fromEpochMilliseconds(0), description = null)
 
-    /** Por defecto hay un mazo (los tests de pendientes no quieren NoDecks); [decks] lo sustituye. */
+    /**
+     * Por defecto hay un mazo CON tarjetas (los tests de pendientes no quieren NoDecks ni NoCards); [decks] lo sustituye
+     * y [cardsPerDeck] fija cuantas tarjetas vivas tiene cada mazo.
+     */
     private fun TestScope.vmWith(
         observer: DueCardsObserver,
-        decks: Flow<List<Deck>> = flowOf(listOf(aDeck))
-    ): HomeViewModel {
-        val repository = object : DecksRepository by FakeDecksRepository() {
-            override fun getAllDecks(): Flow<List<Deck>> = decks
+        decks: Flow<List<Deck>> = flowOf(listOf(aDeck)),
+        cardsPerDeck: Int = 1
+    ): HomeViewModel = vmWithSummaries(observer, decks.map { list -> list.map { DeckSummary(it, cardsPerDeck) } })
+
+    private fun TestScope.vmWithSummaries(observer: DueCardsObserver, summaries: Flow<List<DeckSummary>>): HomeViewModel {
+        val summariesObserver = object : DeckSummariesObserver {
+            override fun observeDeckSummaries(): Flow<List<DeckSummary>> = summaries
         }
         return HomeViewModel(
             ObserveDueCountUseCase(observer, SchedulerClock(testScheduler), DUE_COUNT_TICK),
-            GetDeckUseCase(repository)
+            ObserveDeckSummariesUseCase(summariesObserver)
         )
     }
 
@@ -273,5 +281,66 @@ class HomeViewModelTest {
         runCurrent()
 
         assertEquals(HomeUiState.Content(2), seen.last())
+    }
+    // --- 5.º estado: mazos sin ninguna tarjeta ------------------------------------------------------------------------
+
+    @Test
+    fun con_mazos_pero_sin_ninguna_tarjeta_es_NoCards_y_no_Empty() = runTest {
+        val observer = ManualObserver()
+        val vm = vmWith(observer, decks = flowOf(listOf(aDeck)), cardsPerDeck = 0)
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+
+        assertEquals(HomeUiState.NoCards, seen.last())
+    }
+
+    @Test
+    fun crear_la_primera_tarjeta_sale_de_NoCards_y_borrar_la_ultima_vuelve_a_NoCards() = runTest {
+        val observer = ManualObserver()
+        val summaries = MutableStateFlow(listOf(DeckSummary(aDeck, 0)))
+        val vm = vmWithSummaries(observer, summaries)
+        val seen = collect(vm)
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+        assertEquals(HomeUiState.NoCards, seen.last())
+
+        summaries.value = listOf(DeckSummary(aDeck, 1)) // se crea una tarjeta (aun sin repasar: pendiente)
+        observer.counts.emit(Result.success(1))
+        runCurrent()
+        assertEquals(HomeUiState.Content(1), seen.last())
+
+        summaries.value = listOf(DeckSummary(aDeck, 0)) // se borra la ultima tarjeta
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+        assertEquals(HomeUiState.NoCards, seen.last())
+    }
+
+    @Test
+    fun el_primer_mazo_sale_de_NoDecks_a_NoCards_y_con_una_tarjeta_pasa_a_pendientes() = runTest {
+        val observer = ManualObserver()
+        val summaries = MutableStateFlow(emptyList<DeckSummary>())
+        val vm = vmWithSummaries(observer, summaries)
+        val seen = collect(vm)
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+        assertEquals(HomeUiState.NoDecks, seen.last())
+
+        summaries.value = listOf(DeckSummary(aDeck, 0))
+        runCurrent()
+        assertEquals(HomeUiState.NoCards, seen.last())
+    }
+
+    @Test
+    fun un_fallo_al_leer_los_mazos_con_recuentos_tambien_es_Error() = runTest {
+        val observer = ManualObserver()
+        val vm = vmWithSummaries(observer, flow { throw IllegalStateException("boom") })
+        val seen = collect(vm)
+
+        observer.counts.emit(Result.success(0))
+        runCurrent()
+
+        assertEquals(HomeUiState.Error, seen.last())
     }
 }

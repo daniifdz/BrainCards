@@ -310,7 +310,7 @@ fun appModule(
     // Home: contador reactivo de tarjetas pendientes (mismo criterio que el estudio) e indicador de sync.
     single<DueCardsObserver> { DueCardsObserverImpl(flashcardDao = get()) }
     factory { ObserveDueCountUseCase(observer = get()) }
-    viewModel { HomeViewModel(observeDueCount = get(), getDecks = get()) }
+    viewModel { HomeViewModel(observeDueCount = get(), observeDeckSummaries = get()) }
     viewModel { WelcomeViewModel(getDecks = get()) }
 
     // Arranque: flag de "modo local elegido" (DataStore) y ruta de entrada / sesion perdida.

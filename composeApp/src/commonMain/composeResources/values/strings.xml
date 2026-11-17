@@ -54,6 +54,9 @@
     <string name="home_first_use_title">¡Bienvenido a BrainCards!</string>
     <string name="home_first_use_text">Crea tu primer mazo para empezar a estudiar con repetición espaciada.</string>
     <string name="home_first_use_cta">Crear tu primer mazo</string>
+    <string name="home_no_cards_title">Añade tarjetas para empezar a estudiar</string>
+    <string name="home_no_cards_text">Tus mazos todavía no tienen ninguna tarjeta. Entra en uno de ellos para crear la primera.</string>
+    <string name="home_no_cards_cta">Ir a Mis Mazos</string>
 
     <!-- Indicador de sync (pildora de Home) -->
     <string name="sync_pill_syncing">Sincronizando…</string>
