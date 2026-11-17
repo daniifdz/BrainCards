@@ -29,6 +29,7 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.CardField
 import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
@@ -167,7 +168,7 @@ class DeckContentViewModelTest {
             updateTopicUseCase = UpdateTopicUseCase(topicRepo),
             deleteTopicUseCase = DeleteTopicUseCase(topicRepo),
             addFlashcardUseCase = AddFlashcardUseCase(cardRepo),
-            updateFlashcardUseCase = UpdateFlashcardUseCase(cardRepo),
+            updateFlashcardUseCase = UpdateFlashcardUseCase(cardRepo, FixedClock(Instant.fromEpochMilliseconds(9_000))),
             deleteFlashcardUseCase = DeleteFlashcardUseCase(cardRepo),
             clock = FixedClock(Instant.fromEpochMilliseconds(9_000))
         )
@@ -483,6 +484,95 @@ class DeckContentViewModelTest {
         e.vm.deleteCard(c) { done++ }
         assertEquals(1, done)
         assertEquals(listOf(ContentMessage.DeleteFailed), messages)
+    }
+
+    // ---- 6b.3: errores por campo, selector de tema ----
+
+    @Test
+    fun crear_una_tarjeta_con_el_anverso_en_blanco_publica_el_error_de_campo_no_cierra_y_no_escribe() = runTest {
+        val e = env()
+        val messages = collectMessages(e.vm)
+        collectStates(e.vm)
+        e.load()
+        var done = false
+
+        e.vm.createCard("  ", "respuesta", null) { done = true }
+
+        assertFalse(done)
+        assertEquals(setOf(CardField.Question), e.vm.cardFieldErrors.value)
+        assertTrue(e.cardRepo.added.isEmpty())
+        assertTrue(messages.isEmpty()) // es un error de campo, no un Snackbar
+        assertFalse(e.vm.saving.value)
+    }
+
+    @Test
+    fun editar_una_tarjeta_con_el_reverso_en_blanco_publica_el_error_de_campo_y_clearErrors_lo_limpia() = runTest {
+        val e = env()
+        collectStates(e.vm)
+        val c = card("1")
+        e.load(cards = listOf(c))
+
+        e.vm.updateCard(c, "Q", "", null) {}
+
+        assertEquals(setOf(CardField.Answer), e.vm.cardFieldErrors.value)
+        assertTrue(e.cardRepo.inner.updateFlashcardCalls.isEmpty())
+
+        e.vm.clearErrors()
+        assertTrue(e.vm.cardFieldErrors.value.isEmpty())
+    }
+
+    @Test
+    fun una_escritura_correcta_limpia_los_errores_de_campo_anteriores() = runTest {
+        val e = env()
+        collectStates(e.vm)
+        e.load()
+        e.vm.createCard("", "", null) {}
+        assertEquals(setOf(CardField.Question, CardField.Answer), e.vm.cardFieldErrors.value)
+
+        e.vm.createCard("Q", "A", null) {}
+
+        assertTrue(e.vm.cardFieldErrors.value.isEmpty())
+    }
+
+    @Test
+    fun sacar_una_tarjeta_de_su_tema_la_guarda_con_topicId_null() = runTest {
+        val e = env()
+        collectStates(e.vm)
+        val original = card("1", "t1")
+        e.load(topics = listOf(topic("t1", "A")), cards = listOf(original))
+
+        e.vm.updateCard(original, "Q", "A", null) {}
+
+        assertNull(e.cardRepo.inner.updateFlashcardCalls.single().topicId)
+    }
+
+    // Mutacion T2: si no se ordenara, este test fallaria. Mutacion T1: si no filtrara los borrados, tambien.
+    @Test
+    fun topicOptions_son_los_temas_vivos_ordenados_por_nombre() = runTest {
+        val e = env()
+        collectStates(e.vm)
+        val options = mutableListOf<List<Topic>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { e.vm.topicOptions.collect { options += it } }
+        val borrado = topic("tb", "Borrado").copy(deletedAt = Instant.fromEpochMilliseconds(5))
+
+        e.load(topics = listOf(topic("z", "zeta"), borrado, topic("a", "Árbol"), topic("b", "banco")))
+
+        assertEquals(listOf("Árbol", "banco", "zeta"), options.last().map { it.name })
+    }
+
+    @Test
+    fun topicOptions_se_actualiza_al_borrarse_un_tema_y_esta_disponible_con_el_mazo_vacio_de_tarjetas() = runTest {
+        val e = env()
+        val seen = collectStates(e.vm)
+        val options = mutableListOf<List<Topic>>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { e.vm.topicOptions.collect { options += it } }
+        e.load(topics = listOf(topic("t1", "A"), topic("t2", "B")))
+        assertIs<DeckContentUiState.Root>(seen.last()) // solo temas, sin tarjetas: aun asi hay opciones
+        assertEquals(listOf("t1", "t2"), options.last().map { it.id })
+
+        e.topics.source.value = Result.success(listOf(topic("t2", "B")))
+
+        assertEquals(listOf("t2"), options.last().map { it.id })
     }
 
     // ---- funcion pura ----

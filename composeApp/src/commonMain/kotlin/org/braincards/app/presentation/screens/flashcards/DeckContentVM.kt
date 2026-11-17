@@ -7,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,7 +28,9 @@ import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Flashcards.AddFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.CardField
 import org.braincards.app.domain.usecase.Flashcards.DeleteFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.FlashcardFieldException
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
@@ -38,6 +42,7 @@ import org.braincards.app.domain.usecase.Topics.TopicNameError
 import org.braincards.app.domain.usecase.Topics.TopicNameException
 import org.braincards.app.domain.usecase.Topics.TopicWithCount
 import org.braincards.app.domain.usecase.Topics.UpdateTopicUseCase
+import org.braincards.app.domain.usecase.Topics.topicComparator
 import org.braincards.app.domain.util.IdGenerator
 import org.braincards.app.util.logError
 
@@ -114,6 +119,14 @@ internal fun buildDeckContentState(
 }
 
 /**
+ * Tema que se guarda al aceptar el dialogo de tarjeta: el elegido si sigue entre los temas vivos [options]; si ya no
+ * esta (se borro con el dialogo abierto, p. ej. por sincronizacion) o no se eligio ninguno, "Sin tema" (null). Asi nunca
+ * se escribe una tarjeta con un topicId colgando (violaria la clave foranea de Room).
+ */
+internal fun resolveTopicSelection(selectedId: String?, options: List<Topic>): String? =
+    selectedId?.takeIf { id -> options.any { it.id == id } }
+
+/**
  * ¿Se dibuja el boton "Estudiar" de la cabecera? Solo en el nivel del mazo con al menos una tarjeta y SIN busqueda
  * activa (con el buscador en uso seria ambiguo: ¿los resultados o el mazo entero?). Vuelve al borrar el texto.
  */
@@ -160,6 +173,10 @@ class DeckContentViewModel(
     /** Error de campo del dialogo de tema abierto (nombre repetido o en blanco); null = sin error. */
     val topicNameError: StateFlow<TopicNameError?> = _topicNameError.asStateFlow()
 
+    private val _cardFieldErrors = MutableStateFlow<Set<CardField>>(emptySet())
+    /** Campos en blanco del dialogo de tarjeta abierto (anverso y/o reverso); vacio = sin error. */
+    val cardFieldErrors: StateFlow<Set<CardField>> = _cardFieldErrors.asStateFlow()
+
     private val _saving = MutableStateFlow(false)
     /** Hay una escritura en curso: la UI deshabilita los botones y se ignoran los toques repetidos. */
     val saving: StateFlow<Boolean> = _saving.asStateFlow()
@@ -167,9 +184,25 @@ class DeckContentViewModel(
     private val messages = Channel<ContentMessage>(Channel.BUFFERED)
     val messageEvent: Flow<ContentMessage> = messages.receiveAsFlow()
 
+    // UNA sola suscripcion a mazo + temas + tarjetas para `state` y `topicOptions`. replayExpirationMillis = 0: al
+    // quedarse sin suscriptores se olvida el ultimo valor y al volver se pasa por Loading.
     @OptIn(ExperimentalCoroutinesApi::class)
+    private val sourceFlow: SharedFlow<Source> = attempt
+        .flatMapLatest { source() }
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), replay = 1)
+
+    /**
+     * Temas vivos del mazo por nombre ([topicComparator]), para el selector del dialogo de tarjeta. Disponible en TODOS
+     * los estados desde los que se abre ese dialogo (nivel del mazo, busqueda, subnivel, mazo vacio, sin resultados).
+     */
+    val topicOptions: StateFlow<List<Topic>> = sourceFlow
+        .map { source ->
+            (source as? Source.Data)?.topics.orEmpty().filter { it.deletedAt == null }.sortedWith(topicComparator)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val state: StateFlow<DeckContentUiState> = combine(
-        attempt.flatMapLatest { source() },
+        sourceFlow,
         _searchQuery,
         _openTopicId
     ) { source, query, openTopicId ->
@@ -215,6 +248,7 @@ class DeckContentViewModel(
     /** El usuario edita el campo o abre/cierra un dialogo: el error de campo anterior ya no aplica. */
     fun clearErrors() {
         _topicNameError.value = null
+        _cardFieldErrors.value = emptySet()
     }
 
     // ---- temas ----
@@ -248,11 +282,11 @@ class DeckContentViewModel(
             )
         }
 
-    /** Conserva todo lo demas de la tarjeta: solo cambian anverso, reverso, tema y updatedAt. */
+    /** Conserva todo lo demas de la tarjeta: solo cambian anverso, reverso y tema (`updatedAt` lo fija UpdateFlashcardUseCase). */
     fun updateCard(card: Flashcard, question: String, answer: String, topicId: String?, onSuccess: () -> Unit) =
         write(ContentMessage.SaveCardFailed, "No se pudo guardar la tarjeta", onSuccess) {
             updateFlashcardUseCase(
-                card.copy(question = question, answer = answer, topicId = topicId, updatedAt = clock.now())
+                card.copy(question = question, answer = answer, topicId = topicId)
             )
         }
 
@@ -262,12 +296,15 @@ class DeckContentViewModel(
     private fun write(failure: ContentMessage, logContext: String, onSuccess: () -> Unit, action: suspend () -> Unit) {
         if (!_saving.compareAndSet(expect = false, update = true)) return // toque repetido: ya hay una escritura
         _topicNameError.value = null
+        _cardFieldErrors.value = emptySet()
         viewModelScope.launch {
             try {
                 action()
                 onSuccess()
             } catch (e: TopicNameException) {
                 _topicNameError.value = e.reason
+            } catch (e: FlashcardFieldException) {
+                _cardFieldErrors.value = e.fields
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

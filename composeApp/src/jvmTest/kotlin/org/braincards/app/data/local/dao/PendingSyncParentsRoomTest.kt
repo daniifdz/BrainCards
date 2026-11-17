@@ -128,6 +128,22 @@ class PendingSyncParentsRoomTest {
         assertEquals(emptyList(), pendingCards())
     }
 
+    // 6b.3: una tarjeta ya sincronizada (con dueno) que se MUEVE a un tema recien creado con la sesion iniciada (userId
+    // NULL, aun sin adoptar) no es subible hasta que el backfill (SyncEngineUseCase.invoke, ANTES del push) adopte el
+    // tema; despues si. Fija el comportamiento del selector de tema del dialogo de tarjeta.
+    @Test
+    fun una_flashcard_movida_a_un_topic_aun_sin_dueno_se_sube_tras_adoptarlo() = runBlocking {
+        deck("deck-1", synced = true)
+        topic("topic-nuevo", "deck-1", owner = null)
+        card("c1", "deck-1", topicId = "topic-nuevo", synced = true, updatedAt = 5) // editada (5) despues de sincronizar (2)
+
+        assertEquals(emptyList(), pendingCards())
+
+        db.topicDao().claimOrphanedTopics(me)
+
+        assertEquals(listOf("c1"), pendingCards())
+    }
+
     @Test
     fun una_flashcard_con_topic_propio_es_subible() = runBlocking {
         deck("deck-1")

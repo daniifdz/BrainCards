@@ -1,13 +1,9 @@
 <resources>
     <string name="app_name">BrainCards</string>
-    <string name="new_card">Nueva Carta</string>
-    <string name="edit">Editar</string>
     <string name="cancel">Cancelar</string>
     <string name="save">Guardar</string>
     <string name="create">Crear</string>
     <string name="confirm_add">Añadir</string>
-    <string name="question_label">Pregunta</string>
-    <string name="answer_label">Respuesta</string>
     <string name="sign_out_progress">Cerrando sesión…</string>
     <string name="sign_out_checking">Comprobando cambios pendientes…</string>
     <string name="sign_out_checking_hint">Intentando sincronizar antes de cerrar sesión.</string>
@@ -219,6 +215,15 @@
     <string name="deckcontent_study">Estudiar mazo</string>
     <string name="deckcontent_study_button">Estudiar</string>
     <string name="deckcontent_topic_none">Sin tema</string>
+    <string name="deckcontent_card_dialog_new">Añadir tarjeta</string>
+    <string name="deckcontent_card_dialog_edit">Editar tarjeta</string>
+    <string name="deckcontent_card_question_label">Anverso (pregunta)</string>
+    <string name="deckcontent_card_answer_label">Reverso (respuesta)</string>
+    <string name="deckcontent_card_question_placeholder">Ej. ¿Qué significa "to get along with"?</string>
+    <string name="deckcontent_card_answer_placeholder">Ej. Llevarse bien con alguien</string>
+    <string name="deckcontent_card_topic_label">Tema (opcional)</string>
+    <string name="deckcontent_card_question_blank">Escribe la pregunta de la tarjeta.</string>
+    <string name="deckcontent_card_answer_blank">Escribe la respuesta de la tarjeta.</string>
     <string name="deckcontent_search_placeholder">Buscar en temas y tarjetas…</string>
     <string name="deckcontent_search_clear">Borrar búsqueda</string>
     <string name="deckcontent_section_topics">Temas · %1$d</string>

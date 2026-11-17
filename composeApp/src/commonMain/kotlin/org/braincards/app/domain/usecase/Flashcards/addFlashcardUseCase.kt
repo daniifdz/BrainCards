@@ -4,13 +4,10 @@ import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.repository.FlashcardRepository
 
 class AddFlashcardUseCase(private val repository: FlashcardRepository) {
+
+    /** Lanza [FlashcardFieldException] si el anverso o el reverso estan en blanco (ver [checkFlashcardFields]). */
     suspend operator fun invoke(flashcard: Flashcard) {
-
-        //validaciones
-        if (flashcard.question.isBlank() || flashcard.answer.isBlank()) {
-            throw IllegalArgumentException("La pregunta y la respuesta no pueden estar vacías")
-
-        }
+        checkFlashcardFields(flashcard.question, flashcard.answer)
         repository.addFlashcard(flashcard)
     }
 }

@@ -127,6 +127,8 @@ fun DeckContentScreen(
     val query by viewModel.searchQuery.collectAsState()
     val topicNameError by viewModel.topicNameError.collectAsState()
     val saving by viewModel.saving.collectAsState()
+    val topicOptions by viewModel.topicOptions.collectAsState()
+    val cardFieldErrors by viewModel.cardFieldErrors.collectAsState()
 
     // Dialogos: sobreviven a la rotacion (solo guardan el id, nunca el objeto).
     var showCreateTopic by rememberSaveable { mutableStateOf(false) }
@@ -169,6 +171,16 @@ fun DeckContentScreen(
         showCreateTopic = true
     }
 
+    fun openCreateCard() {
+        viewModel.clearErrors()
+        showAddCard = true
+    }
+
+    fun openEditCard(cardId: String) {
+        viewModel.clearErrors()
+        editCardId = cardId
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -185,7 +197,7 @@ fun DeckContentScreen(
                         TopicHeader(
                             topicName = current.topic.name,
                             onBack = viewModel::closeTopic,
-                            onAddCard = { showAddCard = true }
+                            onAddCard = ::openCreateCard
                         )
                         Text(
                             text = stringResource(Res.string.deckcontent_inside, current.deckName),
@@ -195,17 +207,17 @@ fun DeckContentScreen(
                     }
                     is DeckContentUiState.Empty -> DeckHeader(
                         deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
-                        onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
+                        onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.NoResults -> DeckHeader(
                         deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
-                        onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
+                        onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.Search -> DeckHeader(
                         deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
-                        onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
+                        onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
                         onStudy = { onStudyClick(deckId) }
                     )
                     is DeckContentUiState.Root -> DeckHeader(
@@ -213,7 +225,7 @@ fun DeckContentScreen(
                         // Solo en el nivel del mazo con tarjetas y sin busqueda activa (ver showStudyButton).
                         showStudy = showStudyButton(current),
                         onBack = onBackClick,
-                        onNewTopic = ::openCreateTopic, onNewCard = { showAddCard = true },
+                        onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
                         onStudy = { onStudyClick(deckId) }
                     )
                     DeckContentUiState.Loading, DeckContentUiState.Error, DeckContentUiState.DeckGone ->
@@ -240,7 +252,7 @@ fun DeckContentScreen(
                         message = stringResource(Res.string.deckcontent_load_error),
                         onRetry = viewModel::retry
                     )
-                    is DeckContentUiState.Empty -> ContentEmpty(onAddCard = { showAddCard = true })
+                    is DeckContentUiState.Empty -> ContentEmpty(onAddCard = ::openCreateCard)
                     is DeckContentUiState.NoResults -> ContentNoResults(query = current.query)
                     is DeckContentUiState.Root -> RootList(
                         topics = current.topics,
@@ -250,7 +262,7 @@ fun DeckContentScreen(
                         onOpenTopic = viewModel::openTopic,
                         onEditTopic = { viewModel.clearErrors(); editTopicId = it },
                         onDeleteTopic = { deleteTopicId = it },
-                        onEditCard = { editCardId = it },
+                        onEditCard = ::openEditCard,
                         onDeleteCard = { deleteCardId = it }
                     )
                     is DeckContentUiState.Search -> RootList(
@@ -261,7 +273,7 @@ fun DeckContentScreen(
                         onOpenTopic = viewModel::openTopic,
                         onEditTopic = { viewModel.clearErrors(); editTopicId = it },
                         onDeleteTopic = { deleteTopicId = it },
-                        onEditCard = { editCardId = it },
+                        onEditCard = ::openEditCard,
                         onDeleteCard = { deleteCardId = it }
                     )
                     is DeckContentUiState.TopicLevel ->
@@ -276,7 +288,7 @@ fun DeckContentScreen(
                                 onOpenTopic = {},
                                 onEditTopic = {},
                                 onDeleteTopic = {},
-                                onEditCard = { editCardId = it },
+                                onEditCard = ::openEditCard,
                                 onDeleteCard = { deleteCardId = it }
                             )
                         }
@@ -336,17 +348,32 @@ fun DeckContentScreen(
         }
 
         if (showAddCard) {
-            AddFlashcardDialog(
-                onDismiss = { showAddCard = false },
-                onConfirm = { q, a -> viewModel.createCard(q, a, openTopicId) { showAddCard = false } }
+            CreateCardDialog(
+                initialTopicId = openTopicId, // dentro de un tema, la tarjeta nace ya asociada a el
+                topicOptions = topicOptions,
+                errors = cardFieldErrors,
+                saving = saving,
+                onFieldChange = viewModel::clearErrors,
+                onConfirm = { q, a, topicId -> viewModel.createCard(q, a, topicId) { showAddCard = false } },
+                onDismiss = {
+                    viewModel.clearErrors()
+                    showAddCard = false
+                }
             )
         }
 
         cards.firstOrNull { it.id == editCardId }?.let { card ->
-            EditFlashcardDialog(
-                flashcard = card,
-                onDismiss = { editCardId = null },
-                onConfirm = { q, a -> viewModel.updateCard(card, q, a, card.topicId) { editCardId = null } }
+            EditCardDialog(
+                card = card,
+                topicOptions = topicOptions,
+                errors = cardFieldErrors,
+                saving = saving,
+                onFieldChange = viewModel::clearErrors,
+                onConfirm = { q, a, topicId -> viewModel.updateCard(card, q, a, topicId) { editCardId = null } },
+                onDismiss = {
+                    viewModel.clearErrors()
+                    editCardId = null
+                }
             )
         }
 
