@@ -11,7 +11,6 @@ import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.repository.CardSchedulingRepository
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.util.IdGenerator
-import kotlin.math.roundToInt
 
 class ReviewFlashcardUseCase(
     private val reviewLogRepository: ReviewLogRepository,
@@ -19,57 +18,32 @@ class ReviewFlashcardUseCase(
 ) {
 
     suspend operator fun invoke(flashcard: Flashcard, quality: ReviewQuality) {
-        val q = quality.value
-
         // Punto de partida: el scheduling ya guardado, o los valores por defecto de una
         // tarjeta que todavia no se ha repasado nunca (los mismos que se usaban al crearla).
         val existingScheduling = cardSchedulingRepository.getByCardId(flashcard.id)
-        val currentEaseFactor = existingScheduling?.easeFactor ?: 2.5
-        val currentInterval = existingScheduling?.interval ?: 0
-        val currentRepetitions = existingScheduling?.repetitions ?: 0
+        val current = existingScheduling?.let {
+            Sm2Schedule(easeFactor = it.easeFactor, interval = it.interval, repetitions = it.repetitions)
+        } ?: Sm2Schedule.NEW
 
-        // 1. Calcular nuevo Ease Factor (Factor de facilidad)
-        // Fórmula SM-2: EF' = EF + (0.1 - (5-q)*(0.08 + (5-q)*0.02))
-        // El EF no suele bajar de 1.3 para evitar el "infierno de repeticiones".
-        var newEaseFactor = currentEaseFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-        if (newEaseFactor < 1.3) newEaseFactor = 1.3
+        // El calculo (factor de facilidad, intervalo, repeticiones) es una funcion pura: ver calculateNextSchedule.
+        val next = calculateNextSchedule(current, quality)
 
-        // 2. Calcular Intervalo (Días hasta el próximo repaso) y Repeticiones
-        var newRepetitions = currentRepetitions
-        var newInterval = currentInterval
-
-        if (q < 3) {
-            // Fallo (Again): Reseteamos repeticiones e intervalo
-            newRepetitions = 0
-            newInterval = 0 // 0 días = Repasar hoy mismo (o en 1 minuto en lógica más compleja)
-        } else {
-            // Acierto (Hard, Good, Easy)
-            newRepetitions += 1
-
-            newInterval = when (newRepetitions) {
-                1 -> 1 // Primer acierto -> 1 día
-                2 -> 6 // Segundo acierto -> 6 días
-                else -> (newInterval * newEaseFactor).roundToInt() // Siguientes -> Expansión exponencial
-            }
-        }
-
-        // 3. Calcular nueva fecha (Next Review)
-        // Sumamos los días (newInterval) a la fecha actual
+        // Nueva fecha (Next Review): hoy + intervalo en dias. Intervalo 0 = se repasa YA.
         val now = Clock.System.now()
-        val nextReviewDate = if (newInterval == 0) {
-            now // Si es 0, se repasa YA (o podrías sumar 10 minutos)
+        val nextReviewDate = if (next.interval == 0) {
+            now
         } else {
-            now.plus(newInterval, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
+            now.plus(next.interval, DateTimeUnit.DAY, TimeZone.currentSystemDefault())
         }
 
-        // 4. Guardar el scheduling actualizado. upsert = crea la fila si la tarjeta nunca
+        // Guardar el scheduling actualizado. upsert = crea la fila si la tarjeta nunca
         // se habia repasado, la reemplaza entera si ya existia.
         cardSchedulingRepository.upsert(
             CardScheduling(
                 cardId = flashcard.id,
-                easeFactor = newEaseFactor,
-                interval = newInterval,
-                repetitions = newRepetitions,
+                easeFactor = next.easeFactor,
+                interval = next.interval,
+                repetitions = next.repetitions,
                 nextReview = nextReviewDate,
                 updatedAt = now,
                 // El scheduling siempre hereda el dueno de su flashcard (la RLS de Supabase
@@ -88,9 +62,9 @@ class ReviewFlashcardUseCase(
                 id = IdGenerator.newId(),
                 cardId = flashcard.id,
                 timestamp = now,
-                grade = q,
-                previousInterval = currentInterval,
-                newInterval = newInterval,
+                grade = quality.value,
+                previousInterval = current.interval,
+                newInterval = next.interval,
                 userId = flashcard.userId
             )
         )

@@ -51,7 +51,8 @@ class ReviewFlashcardUseCaseTest {
     fun easeFactor_no_baja_de_1_3_incluso_con_AGAIN_desde_un_valor_bajo() = runBlocking {
         val reviewLogRepository = FakeReviewLogRepository()
         val cardSchedulingRepository = FakeCardSchedulingRepository()
-        cardSchedulingRepository.upsert(buildScheduling(easeFactor = 1.5))
+        // 1.35 - 0.20 = 1.15 sin suelo: con 1.5 la nueva delta (-0.20) ya daria 1.30 y no ejercitaria el suelo.
+        cardSchedulingRepository.upsert(buildScheduling(easeFactor = 1.35))
         val useCase = ReviewFlashcardUseCase(reviewLogRepository, cardSchedulingRepository)
         val flashcard = buildFlashcard()
 
@@ -106,14 +107,12 @@ class ReviewFlashcardUseCaseTest {
         assertEquals(6, updated.interval)
     }
 
+    // Antes (SM-2 puro): EASY desde (EF 2.5, intervalo 6, 2 aciertos) -> EF 2.6 e intervalo 16 (round(6 * 2.6)).
+    // Ahora (estilo Anki): EF +0.15 = 2.65 e intervalo = round(Bien * 1.3) = round(15 * 1.3) = 20.
     @Test
-    fun acierto_posterior_usa_el_nuevo_easeFactor_no_el_original() = runBlocking {
+    fun facil_sube_el_easeFactor_0_15_y_aplica_el_bonus_1_3_sobre_el_intervalo_de_bien() = runBlocking {
         val reviewLogRepository = FakeReviewLogRepository()
         val cardSchedulingRepository = FakeCardSchedulingRepository()
-        // EASY con EF=2.5 -> nuevo EF=2.6 (distinto del original: 2.5 + 0.1).
-        // Si el codigo usara el EF original (2.5) el interval saldria en 15
-        // (round(6*2.5)); al usar el nuevo (2.6) sale en 16 (round(6*2.6)=15.6->16),
-        // asi que este caso SI distingue si el orden de la formula esta invertido.
         cardSchedulingRepository.upsert(buildScheduling(easeFactor = 2.5, interval = 6, repetitions = 2))
         val useCase = ReviewFlashcardUseCase(reviewLogRepository, cardSchedulingRepository)
         val flashcard = buildFlashcard()
@@ -121,8 +120,28 @@ class ReviewFlashcardUseCaseTest {
         useCase(flashcard, ReviewQuality.EASY)
 
         val updated = cardSchedulingRepository.upsertCalls.last()
-        assertEquals(2.6, updated.easeFactor, absoluteTolerance = 0.0001)
-        assertEquals(16, updated.interval)
+        assertEquals(2.65, updated.easeFactor, absoluteTolerance = 0.0001)
+        assertEquals(20, updated.interval)
+    }
+
+    // Dificil desde el mismo estado: EF 2.5 - 0.15 = 2.35 e intervalo 7 (max(6 + 1, round(6 * 1.2))), menor que los 15 de Bien.
+    @Test
+    fun dificil_guarda_un_intervalo_menor_que_bien_y_baja_el_easeFactor_0_15() = runBlocking {
+        val reviewLogRepository = FakeReviewLogRepository()
+        val cardSchedulingRepository = FakeCardSchedulingRepository()
+        cardSchedulingRepository.upsert(buildScheduling(easeFactor = 2.5, interval = 6, repetitions = 2))
+        val useCase = ReviewFlashcardUseCase(reviewLogRepository, cardSchedulingRepository)
+
+        useCase(buildFlashcard(), ReviewQuality.HARD)
+
+        val updated = cardSchedulingRepository.upsertCalls.last()
+        assertEquals(2.35, updated.easeFactor, absoluteTolerance = 0.0001)
+        assertEquals(7, updated.interval)
+        assertEquals(3, updated.repetitions)
+        val log = reviewLogRepository.addedLogs.single()
+        assertEquals(ReviewQuality.HARD.value, log.grade)
+        assertEquals(6, log.previousInterval)
+        assertEquals(7, log.newInterval)
     }
 
     @Test
