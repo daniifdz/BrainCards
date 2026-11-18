@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import braincards.composeapp.generated.resources.Res
+import braincards.composeapp.generated.resources.free_review
 import braincards.composeapp.generated.resources.study_again
 import braincards.composeapp.generated.resources.study_back_deck
 import braincards.composeapp.generated.resources.study_back_home
@@ -59,8 +61,8 @@ import braincards.composeapp.generated.resources.study_good
 import braincards.composeapp.generated.resources.study_hard
 import braincards.composeapp.generated.resources.study_results_all
 import braincards.composeapp.generated.resources.study_results_count
+import braincards.composeapp.generated.resources.study_results_free_notice
 import braincards.composeapp.generated.resources.study_results_stat_a11y
-import braincards.composeapp.generated.resources.study_results_title
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.models.StudyResults
 import org.braincards.app.domain.models.StudyScope
@@ -126,7 +128,9 @@ fun StudyFinished(
     label: StudyResultsLabel?,
     origin: StudyOrigin,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Repaso libre (paso 14): titulo «¡Repaso completado!», chip «Repaso libre» bajo el badge y el aviso «No afecta a tu programacion de repaso.». */
+    freeReview: Boolean = false
 ) {
     val scheme = MaterialTheme.colorScheme
     val extra = BrainCardsTheme.extraColors
@@ -188,6 +192,7 @@ fun StudyFinished(
                             scaleY = pulseScale.value
                         }
                     )
+                    if (showFreeReviewChip(freeReview)) FreeReviewChip(label = stringResource(Res.string.free_review))
                     if (labelText != null) {
                         Text(
                             text = labelText,
@@ -199,7 +204,7 @@ fun StudyFinished(
                         )
                     }
                     Text(
-                        text = stringResource(Res.string.study_results_title),
+                        text = stringResource(studyResultsTitleRes(freeReview)),
                         style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -216,6 +221,16 @@ fun StudyFinished(
                         }
                     ) {
                         CountingTotal(total = results.totalReviews, progress = { countProgress.value })
+                    }
+                    // «No afecta a tu programacion de repaso.»: `.hint` con margin-top -8 px (pegado al total).
+                    if (showResultsFreeNotice(freeReview)) {
+                        Text(
+                            text = stringResource(Res.string.study_results_free_notice),
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
+                            color = scheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.negativeTopMargin(8.dp)
+                        )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
@@ -282,4 +297,11 @@ private fun CountingTotal(total: Int, progress: () -> Float) {
         textAlign = TextAlign.Center,
         modifier = Modifier.clearAndSetSemantics { }
     )
+}
+
+/** Equivalente al `margin-top` negativo del mockup: el elemento sube [amount] y TAMBIEN deja de reservar ese espacio (lo que va debajo sube con el). */
+private fun Modifier.negativeTopMargin(amount: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val shift = amount.roundToPx()
+    layout(placeable.width, (placeable.height - shift).coerceAtLeast(0)) { placeable.place(0, -shift) }
 }

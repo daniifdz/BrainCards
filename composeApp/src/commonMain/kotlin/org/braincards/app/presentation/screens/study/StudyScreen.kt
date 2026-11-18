@@ -2,6 +2,7 @@ package org.braincards.app.presentation.screens.study
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -98,7 +99,8 @@ fun StudyScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        Box(
+        // BoxWithConstraints: el ancho disponible decide si el chip del repaso libre lleva su aviso (>= 600 dp, D5).
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
@@ -113,6 +115,7 @@ fun StudyScreen(
                 ),
             contentAlignment = Alignment.TopCenter
         ) {
+            val widthDp = maxWidth.value // ancho disponible (en el ambito del Box; dentro de la Column hay que capturarlo antes)
             Column(
                 modifier = Modifier.widthIn(max = STUDY_MAX_WIDTH).fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
@@ -138,14 +141,16 @@ fun StudyScreen(
                         onClose = onBackClick,
                         onReveal = viewModel::showAnswer,
                         onRate = rate,
-                        ratePulse = ratePulse
+                        ratePulse = ratePulse,
+                        showFreeNotice = showFreeReviewNotice(widthDp)
                     )
 
                     is StudyState.Finished -> StudyFinished(
                         results = current.results,
                         label = current.label,
                         origin = origin,
-                        onBack = onBackClick
+                        onBack = onBackClick,
+                        freeReview = current.freeReview
                     )
                 }
             }

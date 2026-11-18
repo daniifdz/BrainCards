@@ -64,6 +64,7 @@ import org.braincards.app.presentation.sync.SyncErrorKind
 import org.braincards.app.presentation.sync.SyncIndicator
 import org.braincards.app.presentation.sync.SyncStatusViewModel
 import org.braincards.app.presentation.components.BrandBadge
+import org.braincards.app.presentation.components.Pill
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -229,7 +230,7 @@ private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick:
 private data class PillStyle(val container: Color, val content: Color, val icon: ImageVector, val spinning: Boolean = false)
 
 @Composable
-private fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () -> Unit) {
+internal fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () -> Unit) {
     val extra = BrainCardsTheme.extraColors
     val scheme = MaterialTheme.colorScheme
     val style = when (indicator) {
@@ -258,40 +259,16 @@ private fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () -> 
             SyncIndicator.Unknown -> Res.string.sync_pill_synced // inalcanzable (return arriba)
         }
     )
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = style.container,
-        contentColor = style.content,
-        border = BorderStroke(1.dp, scheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier.padding(
-                horizontal = if (compact) 10.dp else 14.dp,
-                vertical = if (compact) 6.dp else 8.dp
-            ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)
-        ) {
-            if (style.spinning) {
-                val angle by rememberInfiniteTransition().animateFloat(
-                    initialValue = 0f,
-                    targetValue = 360f,
-                    animationSpec = infiniteRepeatable(tween(1400, easing = LinearEasing), RepeatMode.Restart)
-                )
-                Icon(style.icon, contentDescription = null, modifier = Modifier.size(16.dp).rotate(angle))
-            } else {
-                Icon(style.icon, contentDescription = null, modifier = Modifier.size(16.dp))
-            }
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = if (compact) 12.sp else 13.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-        }
-    }
+    // El aspecto lo da el Pill compartido (mismas medidas que antes: ver pillMetrics y PillMetricsTest).
+    Pill(
+        label = label,
+        icon = style.icon,
+        container = style.container,
+        content = style.content,
+        compact = compact,
+        spinning = style.spinning,
+        onClick = onClick
+    )
 }
 
 // --- Estudiar Todo (segun estado) ---------------------------------------------------------------------------------

@@ -93,10 +93,14 @@ fun StudyReviewing(
     onReveal: () -> Unit,
     onRate: (ReviewQuality) -> Unit,
     modifier: Modifier = Modifier,
-    ratePulse: RatePulseState = RatePulseState()
+    ratePulse: RatePulseState = RatePulseState(),
+    /** Repaso libre: junto al chip, el aviso «No cambia tu programacion.» (solo en ancho >= 600 dp; lo decide el anfitrion). */
+    showFreeNotice: Boolean = false
 ) {
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         StudyHeader(onClose = onClose, progress = state.progress, remaining = state.remaining, total = state.total)
+        // Chip «Repaso libre» (+ aviso en ancho): visible durante TODA la sesion de repaso libre; nunca en la normal.
+        if (showFreeReviewChip(state.freeReview)) FreeReviewHeader(showNotice = showFreeNotice)
         state.label?.let { StudyLabel(it) }
         StudyCard(state = state, onReveal = onReveal, modifier = Modifier.weight(1f))
         // Zona de controles. Tras puntuar la tarjeta avanza y los botones reales salen; el FANTASMA (13d2) los mantiene dibujados
