@@ -73,6 +73,15 @@ class DueCountRoomTest {
         card("futura", nextReview = 20_000)              // no vencida
         card("borrada-vencida", nextReview = 5_000, deleted = true)  // borrada logicamente: no cuenta
         card("borrada-sin-scheduling", nextReview = null, deleted = true)
+        // Deuda (e): tarjeta VIVA y vencida bajo un mazo en tombstone (llegada por sync): no cuenta ni entra en la cola.
+        db.deckDao().addDeck(
+            DeckEntity(id = "d-borrado", name = "d-borrado", createdAt = ms(1), updatedAt = ms(2), description = null,
+                deletedAt = ms(2), lastSyncedAt = null, userId = null)
+        )
+        db.flashcardDao().addFlashcard(
+            FlashcardEntity(id = "de-mazo-borrado", deckId = "d-borrado", question = "Q", answer = "A", cardType = CardType.FLIP,
+                createdAt = ms(1), updatedAt = ms(1), deletedAt = null)
+        )
     }
 
     private suspend fun count(at: Instant) = observer.observeDueCount(flowOf(at)).first()

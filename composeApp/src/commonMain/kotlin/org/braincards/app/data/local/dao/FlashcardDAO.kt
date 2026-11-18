@@ -10,6 +10,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.entity.FlashcardEntity
 
+/**
+ * REGLA UNICA de "tarjeta activa" para las LECTURAS de estudio, recuento y estadisticas (deuda (e)): ademas de
+ * `flashcards.deletedAt IS NULL`, su mazo debe existir y estar vivo. Una tarjeta viva bajo un mazo en tombstone (llegada
+ * por sync: otro dispositivo la anadio o edito despues del borrado) NO cuenta en Home, ni entra en una sesion de estudio,
+ * ni en las estadisticas. Es solo lectura: no escribe ni cambia el protocolo de sync, y si el mazo vuelve a estar vivo
+ * (pull con `deletedAt = null`) sus tarjetas reaparecen solas.
+ *
+ * Se usa con `FROM flashcards` + esta cadena + el WHERE. NO aplicar a `getFlashcardsByDeckId` (`deleteDeck` marca el mazo
+ * ANTES de leer sus tarjetas para borrarlas) ni a las consultas de sync (deben ver tombstones y huerfanas para subirlas).
+ * `FlashcardQueryRuleGuardTest` comprueba que cada consulta de lectura la usa o esta en su lista de permitidas.
+ */
+internal const val LIVE_DECK_JOIN = "INNER JOIN decks ON decks.id = flashcards.deckId AND decks.deletedAt IS NULL "
+
 @Dao
 interface FlashcardDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -19,13 +32,16 @@ interface FlashcardDao {
     suspend fun updateFlashcard(flashcard: FlashcardEntity)
 
 
-    @Query("SELECT * FROM flashcards WHERE id = :id AND deletedAt IS NULL")
+    // Tarjeta activa (ver LIVE_DECK_JOIN): la usa la sesion de estudio para saltar tarjetas borradas o de mazos borrados.
+    @Query("SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN + "WHERE flashcards.id = :id AND flashcards.deletedAt IS NULL")
     suspend fun getFlashcardById(id: String): FlashcardEntity?
 
     // sync (Bloque E, LWW) -- ver comentario en DeckDao.getDeckByIdIncludingDeleted.
     @Query("SELECT * FROM flashcards WHERE id = :id")
     suspend fun getFlashcardByIdIncludingDeleted(id: String): FlashcardEntity?
 
+    // SIN filtro de mazo vivo A PROPOSITO: DeckRepositoryImpl.deleteDeck marca el mazo ANTES de leer sus tarjetas para
+    // borrarlas (con el filtro no encontraria ninguna y las dejaria vivas). TopicRepositoryImpl.deleteTopic tambien la usa.
     @Query("SELECT * FROM flashcards WHERE deckId = :deckId AND deletedAt IS NULL")
     fun getFlashcardsByDeckId(deckId: String): Flow<List<FlashcardEntity>>
 
@@ -41,30 +57,34 @@ interface FlashcardDao {
     @Query(
         "SELECT flashcards.* FROM flashcards " +
             "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            LIVE_DECK_JOIN +
             "WHERE flashcards.deckId = :deckId AND flashcards.deletedAt IS NULL " +
             "AND COALESCE(card_scheduling.nextReview, 0) <= :now " +
             "ORDER BY COALESCE(card_scheduling.nextReview, 0) ASC"
     )
     suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<FlashcardEntity>
 
-    @Query("SELECT * FROM flashcards WHERE deletedAt IS NULL")
+    // Estadisticas: solo tarjetas activas (ver LIVE_DECK_JOIN).
+    @Query("SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN + "WHERE flashcards.deletedAt IS NULL")
     fun getAllFlashcards(): Flow<List<FlashcardEntity>>
 
 
     @Query(
         "SELECT flashcards.* FROM flashcards " +
             "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            LIVE_DECK_JOIN +
             "WHERE flashcards.deletedAt IS NULL AND COALESCE(card_scheduling.nextReview, 0) <= :now " +
             "ORDER BY COALESCE(card_scheduling.nextReview, 0) ASC"
     )
     suspend fun getAllDueFlashcards(now: Instant): List<FlashcardEntity>
 
     // Home: tarjetas pendientes de repaso, alcance "todas". DEBE mantener el mismo FROM/WHERE que getAllDueFlashcards
-    // (LEFT JOIN + deletedAt IS NULL + COALESCE(nextReview, 0) <= :now): es el criterio de la sesion de estudio
+    // (LEFT JOIN + LIVE_DECK_JOIN + deletedAt IS NULL + COALESCE(nextReview, 0) <= :now): es el criterio de la sesion de estudio
     // (StudyScope.All). Un test de propiedad (DueCountRoomTest) compara ambos.
     @Query(
         "SELECT COUNT(*) FROM flashcards " +
             "LEFT JOIN card_scheduling ON flashcards.id = card_scheduling.cardId " +
+            LIVE_DECK_JOIN +
             "WHERE flashcards.deletedAt IS NULL AND COALESCE(card_scheduling.nextReview, 0) <= :now"
     )
     fun observeDueCount(now: Instant): Flow<Int>

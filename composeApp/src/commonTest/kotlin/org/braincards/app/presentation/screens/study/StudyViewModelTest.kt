@@ -80,8 +80,12 @@ class StudyViewModelTest {
 
         override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard> = getAllDueFlashcards(now)
 
-        override suspend fun getFlashcardById(id: String): Flashcard? =
-            if (id in deleted) null else due.firstOrNull { it.id == id }
+        var lookupFailure: Exception? = null
+
+        override suspend fun getFlashcardById(id: String): Flashcard? {
+            lookupFailure?.let { throw it }
+            return if (id in deleted) null else due.firstOrNull { it.id == id }
+        }
     }
 
     /** card_scheduling cuyo upsert puede fallar (el repaso no se guarda). */
@@ -540,5 +544,51 @@ class StudyViewModelTest {
         assertNull(e.finished.label)
         assertEquals(1, e.finished.results.totalReviews)
         assertEquals(0, e.pauses)
+    }
+    // ---- deuda (e): el mazo de la tarjeta se borra (por sync) mientras se estudia ----
+    // ReviewFlashcardUseCase NO consulta getFlashcardById: recibe la tarjeta que se muestra. Solo la sesion la consulta,
+    // ANTES de mostrar cada tarjeta; si devuelve null (borrada o de un mazo borrado) se salta, y un fallo de lectura acaba
+    // en el estado Error ya existente. Nunca en una excepcion sin capturar.
+
+    @Test
+    fun si_el_mazo_de_la_tarjeta_en_pantalla_se_borra_justo_antes_de_puntuar_el_repaso_se_guarda_y_la_sesion_sigue() {
+        val e = Env(listOf(card("a"), card("b")))
+        e.vm.initSession(StudyScope.All)
+        e.repo.deleted += "a" // su mazo se borra mientras "a" esta en pantalla: getFlashcardById("a") ya da null
+
+        e.rate(GOOD)
+
+        assertEquals(1, e.scheduling.inner.upsertCalls.size) // el repaso de "a" se guardo (no depende de getFlashcardById)
+        assertEquals("b", e.reviewing.currentCard.id)
+        assertEquals(2, e.reviewing.total)
+    }
+
+    @Test
+    fun si_se_borra_el_mazo_de_la_ultima_tarjeta_en_pantalla_antes_de_puntuar_termina_con_su_repaso_contado() {
+        val e = Env(listOf(card("a")))
+        e.vm.initSession(StudyScope.All)
+        e.repo.deleted += "a"
+
+        e.rate(GOOD)
+
+        assertEquals(1, e.finished.results.totalReviews)
+        assertEquals(0, e.pauses)
+    }
+
+    @Test
+    fun si_la_comprobacion_de_la_siguiente_tarjeta_falla_la_sesion_acaba_en_Error_y_no_revienta() {
+        val e = Env(listOf(card("a"), card("b")))
+        e.vm.initSession(StudyScope.All)
+        e.repo.lookupFailure = IOException("disco")
+
+        e.rate(GOOD)
+
+        assertEquals(StudyState.Error, e.state)
+        assertEquals(1, e.scheduling.inner.upsertCalls.size) // el repaso ya estaba guardado
+        assertEquals(0, e.pauses)
+
+        e.repo.lookupFailure = null
+        e.vm.retry()
+        assertIs<StudyState.Reviewing>(e.state)
     }
 }
