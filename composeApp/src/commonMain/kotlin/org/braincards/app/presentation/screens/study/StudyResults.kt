@@ -1,10 +1,14 @@
 package org.braincards.app.presentation.screens.study
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,22 +21,24 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -58,7 +64,10 @@ import braincards.composeapp.generated.resources.study_results_title
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.models.StudyResults
 import org.braincards.app.domain.models.StudyScope
+import org.braincards.app.platform.rememberReducedMotion
+import org.braincards.app.presentation.components.BrandBadge
 import org.braincards.app.presentation.theme.BrainCardsTheme
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -100,11 +109,16 @@ fun studyBackLabel(origin: StudyOrigin): String = when (origin) {
 private class ResultStat(val label: String, val count: Int, val color: Color)
 
 /**
- * Resultados de la sesion (mockup `resultados.html`): icono, etiqueta, «¡Sesión completada!», «N repasos» (pulsaciones,
+ * Resultados de la sesion (mockup `resultados.html`): badge del logo (64 dp, 56 dp en ancho compacto; sustituye al check), etiqueta, «¡Sesión completada!», «N repasos» (pulsaciones,
  * suma de las 4 casillas), desglose por calidad con los colores de Estudio y un UNICO boton hacia el origen.
  *
  * Foco inicial en ese boton [PROPUESTO]: es el unico control y Enter/Espacio lo activan (el teclado de la sesion solo
  * trata Esc aqui). Esc y el atras del sistema vuelven al mismo sitio. El titulo es un encabezado y live region educada.
+ *
+ * Celebracion al entrar (13c, `ResultsMotion.kt`): el badge da UN pulso (muelle 0.45 / 500, pico 1.08) y los 5 numeros cuentan de 0
+ * a su valor en 500 ms, solapados. Accesibilidad: los textos que cuentan llevan `clearAndSetSemantics {}` (TalkBack nunca anuncia
+ * un numero intermedio) y el valor final vive en un nodo estatico (el total, con live region) o en la descripcion de cada casilla.
+ * Rotacion: la bandera `rememberSaveable` de «ya vista» hace que, tras rotar, salgan los valores finales sin pulso.
  */
 @Composable
 fun StudyFinished(
@@ -133,7 +147,23 @@ fun StudyFinished(
         runCatching { buttonFocus.requestFocus() }
     }
 
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    // Celebracion: una sola vez por pantalla (la bandera sobrevive a la rotacion) y nunca con "reducir animaciones".
+    val reducedMotion = rememberReducedMotion()
+    var celebrationSeen by rememberSaveable { mutableStateOf(false) }
+    val play = remember { shouldPlayResultsCelebration(alreadySeen = celebrationSeen, reducedMotion = reducedMotion) }
+    val countProgress = remember { Animatable(if (play) 0f else 1f) }
+    val pulseScale = remember { Animatable(1f) }
+    LaunchedEffect(Unit) {
+        celebrationSeen = true // marcada ANTES de animar: si se rota a mitad, la nueva composicion sale en su valor final
+        if (play) {
+            launch { countProgress.animateTo(1f, tween(RESULTS_COUNT_MS, easing = LinearEasing)) }
+            launch { pulseScale.animateTo(1f, RESULTS_PULSE_SPRING, initialVelocity = RESULTS_PULSE_KICK_VELOCITY) }
+        }
+    }
+    val totalText = pluralStringResource(Res.plurals.study_results_count, results.totalReviews, results.totalReviews)
+
+    BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        val badge = resultsBadgeSpec(maxWidth.value)
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center,
@@ -150,11 +180,14 @@ fun StudyFinished(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Surface(shape = RoundedCornerShape(20.dp), color = extra.chipTealBg, contentColor = extra.chipTeal) {
-                        Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.CheckCircleOutline, contentDescription = null, modifier = Modifier.size(34.dp))
+                    BrandBadge(
+                        size = badge.sizeDp.dp,
+                        cornerPercent = badge.cornerPercent,
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = pulseScale.value
+                            scaleY = pulseScale.value
                         }
-                    }
+                    )
                     if (labelText != null) {
                         Text(
                             text = labelText,
@@ -175,17 +208,20 @@ fun StudyFinished(
                             liveRegion = LiveRegionMode.Polite
                         }
                     )
-                    Text(
-                        text = pluralStringResource(Res.plurals.study_results_count, results.totalReviews, results.totalReviews),
-                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
-                        color = scheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
+                    // Nodo ESTATICO con el valor final (live region educada); el texto que cuenta no aporta semantica.
+                    Box(
+                        modifier = Modifier.semantics {
+                            contentDescription = totalText
+                            liveRegion = LiveRegionMode.Polite
+                        }
+                    ) {
+                        CountingTotal(total = results.totalReviews, progress = { countProgress.value })
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        stats.forEach { StatTile(it, Modifier.weight(1f)) }
+                        stats.forEach { StatTile(it, progress = { countProgress.value }, modifier = Modifier.weight(1f)) }
                     }
                     Button(
                         onClick = onBack,
@@ -201,7 +237,7 @@ fun StudyFinished(
 }
 
 @Composable
-private fun StatTile(stat: ResultStat, modifier: Modifier = Modifier) {
+private fun StatTile(stat: ResultStat, progress: () -> Float, modifier: Modifier = Modifier) {
     val description = stringResource(Res.string.study_results_stat_a11y, stat.label, stat.count)
     Column(
         modifier = modifier
@@ -213,7 +249,7 @@ private fun StatTile(stat: ResultStat, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Box(Modifier.size(10.dp).background(stat.color, CircleShape).clearAndSetSemantics { })
-        Text(text = stat.count.toString(), fontSize = 19.sp, fontWeight = FontWeight.Bold)
+        CountingNumber(target = stat.count, progress = progress)
         Text(
             text = stat.label,
             fontSize = 11.5.sp,
@@ -222,4 +258,28 @@ private fun StatTile(stat: ResultStat, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis
         )
     }
+}
+
+/** Numero de una casilla que cuenta de 0 a [target]. Hoja propia: solo ESTE texto recompone mientras cuenta. Sin semantica. */
+@Composable
+private fun CountingNumber(target: Int, progress: () -> Float) {
+    Text(
+        text = countUpValue(target, progress()).toString(),
+        fontSize = 19.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.clearAndSetSemantics { }
+    )
+}
+
+/** «N repasos» que cuenta de 0 a [total] (plural segun el valor mostrado). Hoja propia y sin semantica: la lee el nodo estatico. */
+@Composable
+private fun CountingTotal(total: Int, progress: () -> Float) {
+    val shown = countUpValue(total, progress())
+    Text(
+        text = pluralStringResource(Res.plurals.study_results_count, shown, shown),
+        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.clearAndSetSemantics { }
+    )
 }

@@ -28,9 +28,9 @@ class BrandBadgeRenderTest {
     private val vector: ImageVector = xml.readText().toByteArray().decodeToImageVector(Density(1f))
 
     @OptIn(ExperimentalComposeUiApi::class)
-    private fun render(side: Int = 100): Bitmap {
+    private fun render(side: Int = 100, cornerPercent: Int = BADGE_CORNER_PERCENT): Bitmap {
         val scene = ImageComposeScene(side, side, Density(1f)) {
-            BrandBadgeContent(side.dp, rememberVectorPainter(vector))
+            BrandBadgeContent(side.dp, rememberVectorPainter(vector), cornerPercent = cornerPercent)
         }
         try {
             return Bitmap.makeFromImage(scene.render())
@@ -49,6 +49,13 @@ class BrandBadgeRenderTest {
         assertEquals(0, bmp.getColor(99, 99) ushr 24, "esquina opuesta transparente")
         assertEquals(purple, bmp.getColor(50, 3), "borde superior, morado de marca opaco")
         assertEquals(purple, bmp.getColor(50, 50), "hueco entre hemisferios, morado")
+    }
+
+    @Test
+    fun el_radio_es_configurable_para_la_tarjeta_de_resultados() {
+        // Pixel (8,8) de un badge de 100 px: con esquinas del 22 % queda DENTRO (opaco); con el 31 % de Resultados, FUERA.
+        assertEquals(purple, render(cornerPercent = BADGE_CORNER_PERCENT).getColor(8, 8), "22 %: dentro")
+        assertEquals(0, render(cornerPercent = 31).getColor(8, 8) ushr 24, "31 %: fuera (mas redondo)")
     }
 
     @Test
