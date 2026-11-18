@@ -2,7 +2,11 @@ package org.braincards.app.presentation.screens.study
 
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.ui.input.key.Key
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.models.CardType
 import org.braincards.app.domain.models.Flashcard
@@ -167,13 +171,17 @@ class StudyMotionTest {
     }
 
     @Test
-    fun un_boton_solo_se_pulsa_con_pulso_nuevo_de_su_calidad_y_sin_reducir_animaciones() {
-        val own = ReviewQuality.GOOD
-        assertTrue(shouldRunStudyPress(reducedMotion = false, token = 1, baseToken = 0, pulsed = own, own = own))
-        assertFalse(shouldRunStudyPress(reducedMotion = true, token = 1, baseToken = 0, pulsed = own, own = own), "reducir animaciones")
-        assertFalse(shouldRunStudyPress(false, token = 3, baseToken = 3, pulsed = own, own = own), "boton recien compuesto: no repite un pulso viejo")
-        assertFalse(shouldRunStudyPress(false, token = 1, baseToken = 0, pulsed = ReviewQuality.AGAIN, own = own), "pulso de otro boton")
-        assertFalse(shouldRunStudyPress(false, token = 1, baseToken = 0, pulsed = null, own = own))
+    fun el_pulso_solo_se_reproduce_si_es_nuevo_y_sin_reducir_animaciones() {
+        assertTrue(shouldPlayStudyPulse(reducedMotion = false, token = 1, baseToken = 0))
+        assertFalse(shouldPlayStudyPulse(reducedMotion = true, token = 1, baseToken = 0), "reducir animaciones")
+        assertFalse(shouldPlayStudyPulse(false, token = 3, baseToken = 3), "pantalla recien compuesta: no repite un pulso viejo")
+    }
+
+    @Test
+    fun cada_boton_solo_ve_el_progreso_del_pulso_si_es_el_suyo() {
+        assertEquals(0.7f, studyPressProgress(ReviewQuality.GOOD, ReviewQuality.GOOD, 0.7f))
+        assertEquals(0f, studyPressProgress(ReviewQuality.AGAIN, ReviewQuality.GOOD, 0.7f), "pulso de otro boton")
+        assertEquals(0f, studyPressProgress(null, ReviewQuality.GOOD, 0.7f), "sin pulso")
     }
 
     // ---- estado compartido y teclado (D7) ----
@@ -242,5 +250,95 @@ class StudyMotionTest {
         val handler = ratingHandler(pulse) { }
         handler(ReviewQuality.EASY)
         assertNotEquals(0, pulse.token)
+    }
+
+    // ---- fantasma (13d2) ----
+
+    @Test
+    fun el_interruptor_del_fantasma_y_su_ventana() {
+        assertEquals(240, STUDY_PULSE_GHOST_MS)
+        assertTrue(studyGhostEnabled(STUDY_PULSE_GHOST_MS, reducedMotion = false))
+        assertFalse(studyGhostEnabled(0, reducedMotion = false), "con 0 queda deshabilitado (reversion a 13d)")
+        assertFalse(studyGhostEnabled(STUDY_PULSE_GHOST_MS, reducedMotion = true), "reducir animaciones: sin fantasma")
+        assertFalse(studyGhostEnabled(-5, reducedMotion = false))
+    }
+
+    @Test
+    fun el_fantasma_solo_se_dibuja_en_su_ventana_y_cuando_los_botones_reales_ya_no_estan() {
+        assertTrue(studyShowGhost(enabled = true, fading = true, answerVisible = false))
+        assertFalse(studyShowGhost(true, fading = true, answerVisible = true), "los botones reales siguen: no hay fantasma (p. ej. fallo al guardar)")
+        assertFalse(studyShowGhost(true, fading = false, answerVisible = false), "ventana terminada")
+        assertFalse(studyShowGhost(enabled = false, fading = true, answerVisible = false), "deshabilitado")
+    }
+
+    @Test
+    fun el_fantasma_se_desvanece_lineal_de_1_a_0() {
+        assertEquals(1f, studyGhostAlpha(0f))
+        assertNear(0.5f, studyGhostAlpha(0.5f))
+        assertEquals(0f, studyGhostAlpha(1f))
+        assertEquals(0f, studyGhostAlpha(1.4f), "no es negativo")
+        assertEquals(1f, studyGhostAlpha(-0.2f), "no pasa de 1")
+    }
+
+    /** Avanza el reloj de fotogramas manual (sin tiempo real) hasta [ms]. */
+    private fun BroadcastFrameClock.at(ms: Long) = sendFrame(ms * 1_000_000L)
+
+    @Test
+    fun play_reproduce_el_pulso_y_la_ventana_del_fantasma_y_vuelve_al_reposo() = runTest {
+        val clock = BroadcastFrameClock()
+        val pulse = RatePulseState()
+        pulse.fire(ReviewQuality.GOOD)
+        val job = launch(clock) { pulse.play(STUDY_PULSE_GHOST_MS) }
+        runCurrent()
+        assertEquals(0f, pulse.ghostFade.value, "ventana recien abierta")
+        clock.at(0); runCurrent()
+        clock.at(60); runCurrent()
+        assertNear(1f, pulse.press.value, 0.02f, "a los 60 ms el boton esta pulsado a fondo")
+        assertTrue(pulse.ghostFade.value in 0.2f..0.3f, "a los 60 ms la ventana va por ~25 %: ${pulse.ghostFade.value}")
+        clock.at(120); runCurrent()
+        assertTrue(pulse.ghostFade.value in 0.45f..0.55f, "a los 120 ms, a la mitad: ${pulse.ghostFade.value}")
+        clock.at(240); runCurrent()
+        assertEquals(1f, pulse.ghostFade.value, "la ventana acaba a los 240 ms")
+        for (t in 300..1500 step 60) { clock.at(t.toLong()); runCurrent() }
+        assertTrue(abs(pulse.press.value) < 0.01f, "el pulso vuelve al reposo: ${pulse.press.value}")
+        job.cancel()
+    }
+
+    @Test
+    fun un_pulso_nuevo_sustituye_al_fantasma_anterior_no_lo_acumula() = runTest {
+        val clock = BroadcastFrameClock()
+        val pulse = RatePulseState()
+        pulse.fire(ReviewQuality.HARD)
+        val first = launch(clock) { pulse.play(STUDY_PULSE_GHOST_MS) }
+        runCurrent(); clock.at(0); runCurrent(); clock.at(120); runCurrent()
+        assertTrue(pulse.ghostFade.value in 0.45f..0.55f, "primer fantasma a mitad: ${pulse.ghostFade.value}")
+        // Segunda pulsacion rapida: la pantalla cancela la corrutina anterior (LaunchedEffect(token)) y lanza otra.
+        first.cancel()
+        pulse.fire(ReviewQuality.EASY)
+        val second = launch(clock) { pulse.play(STUDY_PULSE_GHOST_MS) }
+        runCurrent()
+        assertEquals(0f, pulse.ghostFade.value, "la ventana REINICIA (un solo fantasma): no sigue por la mitad")
+        assertEquals(ReviewQuality.EASY, pulse.quality, "el fantasma pasa a mostrar la ultima calidad")
+        clock.at(180); runCurrent(); clock.at(300); runCurrent()
+        assertTrue(pulse.ghostFade.value in 0.45f..0.55f, "la nueva ventana tambien dura 240 ms: ${pulse.ghostFade.value}")
+        clock.at(420); runCurrent()
+        assertEquals(1f, pulse.ghostFade.value)
+        second.cancel()
+    }
+
+    @Test
+    fun con_el_interruptor_a_0_la_ventana_del_fantasma_nunca_se_abre() = runTest {
+        val clock = BroadcastFrameClock()
+        val pulse = RatePulseState()
+        pulse.fire(ReviewQuality.GOOD)
+        val job = launch(clock) { pulse.play(0) }
+        runCurrent()
+        assertEquals(1f, pulse.ghostFade.value, "ni siquiera al lanzar (antes de cualquier fotograma) se abre la ventana")
+        for (t in 0..600 step 30) {
+            clock.at(t.toLong()); runCurrent()
+            assertEquals(1f, pulse.ghostFade.value, "sin fantasma en $t ms")
+            assertFalse(studyShowGhost(studyGhostEnabled(0, false), pulse.ghostFade.value < 1f, answerVisible = false))
+        }
+        job.cancel()
     }
 }

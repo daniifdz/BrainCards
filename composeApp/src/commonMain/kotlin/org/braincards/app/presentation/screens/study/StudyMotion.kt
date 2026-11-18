@@ -1,12 +1,17 @@
 package org.braincards.app.presentation.screens.study
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.braincards.app.domain.models.ReviewQuality
 
 /*
@@ -20,6 +25,14 @@ import org.braincards.app.domain.models.ReviewQuality
  * NOTA sobre el mockup: el fotograma de la barra dibuja un pico exagerado (25 % -> 36 % -> 33 %). Un spring(0.6) real solo pasa de
  * largo ~9,5 % del tramo recorrido (ver el test), asi que con un tramo de 1/12 el rebote real es de ~0,8 puntos: es sutil por diseno.
  */
+
+/**
+ * Botones "fantasma" (13d2): tras puntuar, los botones de dificultad siguen DIBUJADOS este tiempo (ms) encima de la zona de
+ * "Mostrar respuesta" para que el pulso se vea entero, aunque la tarjeta ya haya avanzado (el guardado es rapido y los botones
+ * reales salen de composicion antes de que acabe el pulso). El fantasma es solo dibujo: no recibe toques ni foco ni semantica, y no
+ * retrasa nada. INTERRUPTOR DE REVERSION: con 0 no hay fantasma y todo se comporta como en 13d.
+ */
+const val STUDY_PULSE_GHOST_MS = 240
 
 /** Barra de progreso: muelle al avanzar tras cada repaso. */
 const val STUDY_PROGRESS_DAMPING = 0.6f
@@ -53,17 +66,23 @@ fun studyPressScale(p: Float): Float = 1f - (1f - STUDY_PRESS_SCALE) * p
 /** Opacidad de la superposicion blanca (brillo) para [p]; nunca negativa aunque el muelle de vuelta pase de 0. */
 fun studyPressOverlayAlpha(p: Float): Float = (STUDY_PRESS_BRIGHTNESS * p).coerceIn(0f, STUDY_PRESS_BRIGHTNESS)
 
+/** El pulso se reproduce si NO hay "reducir animaciones" y es NUEVO desde que la pantalla se compuso (no repite uno viejo tras recomponer). */
+fun shouldPlayStudyPulse(reducedMotion: Boolean, token: Int, baseToken: Int): Boolean = !reducedMotion && token != baseToken
+
+/** Progreso de pulsacion (0..1) que ve un boton: el del pulso en marcha solo si es SU calidad; los demas, en reposo. */
+fun studyPressProgress(pulsed: ReviewQuality?, own: ReviewQuality, press: Float): Float = if (pulsed == own) press else 0f
+
+/** Fantasma habilitado: interruptor distinto de 0 y sin "reducir animaciones". */
+fun studyGhostEnabled(ghostMs: Int, reducedMotion: Boolean): Boolean = ghostMs > 0 && !reducedMotion
+
 /**
- * Un boton debe pulsarse visualmente si NO hay "reducir animaciones", el pulso es NUEVO desde que el boton entro en
- * composicion ([token] != [baseToken]: un boton recien compuesto no repite un pulso viejo) y es de su calidad.
+ * El fantasma se dibuja SOLO mientras dura su ventana ([fading]) Y los botones reales ya no estan (la respuesta dejo de verse): si
+ * la puntuacion falla, los botones reales siguen en pantalla y acaban su pulso ellos mismos.
  */
-fun shouldRunStudyPress(
-    reducedMotion: Boolean,
-    token: Int,
-    baseToken: Int,
-    pulsed: ReviewQuality?,
-    own: ReviewQuality
-): Boolean = !reducedMotion && token != baseToken && pulsed == own
+fun studyShowGhost(enabled: Boolean, fading: Boolean, answerVisible: Boolean): Boolean = enabled && fading && !answerVisible
+
+/** Opacidad del fantasma para un avance [fade] de 0 (recien puntuado) a 1 (ventana terminada): se desvanece lineal. */
+fun studyGhostAlpha(fade: Float): Float = (1f - fade).coerceIn(0f, 1f)
 
 /**
  * Estado COMPARTIDO del pulso de puntuacion (D7): lo disparan igual el clic/toque en un boton y las teclas 1-4 de Desktop, porque
@@ -74,12 +93,32 @@ fun shouldRunStudyPress(
 class RatePulseState {
     var token: Int by mutableIntStateOf(0)
         private set
-    var quality: ReviewQuality? = null
+    var quality: ReviewQuality? by mutableStateOf(null)
         private set
+
+    /** 0 = reposo, 1 = pulsado a fondo (el muelle de vuelta puede pasar de 0). Se lee en la fase de dibujo. */
+    val press = Animatable(0f)
+
+    /** 0 = recien puntuado (fantasma opaco) .. 1 = ventana del fantasma terminada. Un solo Animatable: no hay fantasmas apilados. */
+    val ghostFade = Animatable(1f)
 
     fun fire(quality: ReviewQuality) {
         this.quality = quality
         token += 1
+    }
+
+    /**
+     * Reproduce el pulso y la ventana del fantasma. Vive aqui (no en cada boton) para que el fantasma CONTINUE el pulso cuando los
+     * botones reales salen de composicion. Un pulso nuevo cancela el anterior (la corrutina de la pantalla se reinicia) y el fundido
+     * vuelve a 0: el fantasma anterior se SUSTITUYE, nunca se acumulan.
+     */
+    suspend fun play(ghostMs: Int) = coroutineScope {
+        if (ghostMs > 0) {
+            ghostFade.snapTo(0f)
+            launch { ghostFade.animateTo(1f, tween(ghostMs, easing = LinearEasing)) }
+        }
+        press.animateTo(1f, STUDY_PRESS_DOWN_SPEC)
+        press.animateTo(0f, STUDY_PRESS_UP_SPRING)
     }
 }
 

@@ -1,7 +1,6 @@
 package org.braincards.app.presentation.screens.study
 
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,6 +39,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -98,10 +99,34 @@ fun StudyReviewing(
         StudyHeader(onClose = onClose, progress = state.progress, remaining = state.remaining, total = state.total)
         state.label?.let { StudyLabel(it) }
         StudyCard(state = state, onReveal = onReveal, modifier = Modifier.weight(1f))
-        if (state.isAnswerVisible) {
-            QualityButtons(onRate = onRate, ratePulse = ratePulse)
-        } else {
-            RevealControls(onReveal = onReveal)
+        // Zona de controles. Tras puntuar la tarjeta avanza y los botones reales salen; el FANTASMA (13d2) los mantiene dibujados
+        // ~240 ms encima de "Mostrar respuesta" para que el pulso se vea entero. Es solo dibujo: no recibe toques ni foco.
+        val reduced = rememberReducedMotion()
+        val ghostEnabled = studyGhostEnabled(STUDY_PULSE_GHOST_MS, reduced)
+        val baseToken = remember { ratePulse.token }
+        LaunchedEffect(ratePulse.token) {
+            if (shouldPlayStudyPulse(reduced, ratePulse.token, baseToken)) ratePulse.play(if (ghostEnabled) STUDY_PULSE_GHOST_MS else 0)
+        }
+        // Solo cambia (y recompone) al empezar/acabar la ventana: el fundido y el pulso se leen en la fase de dibujo.
+        val fading by remember { derivedStateOf { ratePulse.ghostFade.value < 1f } }
+        Box(Modifier.fillMaxWidth()) {
+            if (state.isAnswerVisible) {
+                QualityButtons(onRate = onRate, ratePulse = ratePulse)
+            } else {
+                RevealControls(onReveal = onReveal)
+            }
+            if (studyShowGhost(ghostEnabled, fading, state.isAnswerVisible)) {
+                QualityButtons(
+                    onRate = {},
+                    ratePulse = ratePulse,
+                    ghost = true,
+                    modifier = Modifier
+                        .matchParentSize()
+                        .wrapContentHeight(align = Alignment.Bottom, unbounded = true)
+                        .graphicsLayer { alpha = studyGhostAlpha(ratePulse.ghostFade.value) }
+                        .clearAndSetSemantics { }
+                )
+            }
         }
     }
 }
@@ -288,30 +313,64 @@ private class QualityStyle(
  * sobre el contenedor con el color del mockup (ground o *Text): contraste >= 4.9:1 en claro y oscuro.
  */
 @Composable
-private fun QualityButtons(onRate: (ReviewQuality) -> Unit, ratePulse: RatePulseState) {
+private fun qualityStyles(): List<QualityStyle> {
     val scheme = MaterialTheme.colorScheme
     val extra = BrainCardsTheme.extraColors
-    val styles = listOf(
+    return listOf(
         QualityStyle(ReviewQuality.AGAIN, stringResource(Res.string.study_again), "1", scheme.error, scheme.background),
         QualityStyle(ReviewQuality.HARD, stringResource(Res.string.study_hard), "2", extra.cta, extra.ctaText),
         QualityStyle(ReviewQuality.GOOD, stringResource(Res.string.study_good), "3", extra.chipTeal, scheme.background),
         QualityStyle(ReviewQuality.EASY, stringResource(Res.string.study_easy), "4", scheme.primary, scheme.onPrimary)
     )
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+}
+
+/** [ghost] = copia SOLO de dibujo (13d2): sin `Button`, sin clic, sin foco; el llamador le quita la semantica. */
+@Composable
+private fun QualityButtons(
+    onRate: (ReviewQuality) -> Unit,
+    ratePulse: RatePulseState,
+    modifier: Modifier = Modifier,
+    ghost: Boolean = false
+) {
+    val styles = qualityStyles()
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         if (maxWidth < QUALITY_GRID_WIDTH) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 styles.chunked(2).forEach { pair ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        pair.forEach { QualityButton(it, onRate, ratePulse, Modifier.weight(1f)) }
+                        pair.forEach { QualityButton(it, onRate, ratePulse, ghost, Modifier.weight(1f)) }
                     }
                 }
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                styles.forEach { QualityButton(it, onRate, ratePulse, Modifier.weight(1f)) }
+                styles.forEach { QualityButton(it, onRate, ratePulse, ghost, Modifier.weight(1f)) }
             }
         }
     }
+}
+
+/**
+ * Pulso al puntuar (D7): escala 0.95 + brillo (superposicion BLANCA al 12 %, solo dibujo). El progreso (0..1) sale del estado
+ * COMPARTIDO `ratePulse` (clic y teclas 1-4), se lee en la fase de dibujo y solo lo ve el boton de la calidad pulsada.
+ */
+@Composable
+private fun Modifier.qualityPressEffect(ratePulse: RatePulseState, quality: ReviewQuality): Modifier {
+    val cornerPx = with(androidx.compose.ui.platform.LocalDensity.current) { 14.dp.toPx() }
+    return this
+        .graphicsLayer {
+            val scale = studyPressScale(studyPressProgress(ratePulse.quality, quality, ratePulse.press.value))
+            scaleX = scale
+            scaleY = scale
+        }
+        .drawWithContent {
+            drawContent()
+            drawRoundRect(
+                Color.White,
+                cornerRadius = CornerRadius(cornerPx),
+                alpha = studyPressOverlayAlpha(studyPressProgress(ratePulse.quality, quality, ratePulse.press.value))
+            )
+        }
 }
 
 @Composable
@@ -319,51 +378,51 @@ private fun QualityButton(
     style: QualityStyle,
     onRate: (ReviewQuality) -> Unit,
     ratePulse: RatePulseState,
+    ghost: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // Pulso al puntuar (D7): lo dispara el ESTADO COMPARTIDO `ratePulse` (clic y teclas 1-4), no el interactionSource. 0 = reposo,
-    // 1 = pulsado (escala 0.95 + brillo); un pulso nuevo reinicia la animacion, no la acumula. Un boton recien compuesto no repite
-    // un pulso viejo (baseToken). Con "reducir animaciones", nada.
-    val reduced = rememberReducedMotion()
-    val press = remember { Animatable(0f) }
-    val baseToken = remember { ratePulse.token }
-    LaunchedEffect(ratePulse.token) {
-        if (shouldRunStudyPress(reduced, ratePulse.token, baseToken, ratePulse.quality, style.quality)) {
-            press.animateTo(1f, STUDY_PRESS_DOWN_SPEC)
-            press.animateTo(0f, STUDY_PRESS_UP_SPRING)
+    if (ghost) {
+        // Solo `Box` + `background`: nada con entrada de puntero (un `Surface` de Material3 se traga los toques y un `Button`
+        // deshabilitado podria hacerlo), asi los clics atraviesan hasta "Mostrar respuesta".
+        Box(
+            modifier = modifier
+                .heightIn(min = 56.dp)
+                .qualityPressEffect(ratePulse, style.quality)
+                .background(style.container, BUTTON_SHAPE)
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            QualityButtonContent(style)
         }
+        return
     }
-    val cornerPx = with(androidx.compose.ui.platform.LocalDensity.current) { 14.dp.toPx() }
     Button(
         onClick = { onRate(style.quality) },
         modifier = modifier
             .heightIn(min = 56.dp)
-            .graphicsLayer {
-                val scale = studyPressScale(press.value)
-                scaleX = scale
-                scaleY = scale
-            }
-            // Brillo: superposicion blanca SOLO de dibujo (no intercepta foco ni clics), en la fase de dibujo (no recompone).
-            .drawWithContent {
-                drawContent()
-                drawRoundRect(Color.White, cornerRadius = CornerRadius(cornerPx), alpha = studyPressOverlayAlpha(press.value))
-            },
+            .qualityPressEffect(ratePulse, style.quality),
         shape = BUTTON_SHAPE,
         colors = ButtonDefaults.buttonColors(containerColor = style.container, contentColor = style.content),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(style.label, maxLines = 1, fontSize = 14.5.sp, fontWeight = FontWeight.Bold)
-            if (showKeyboardHints) {
-                // El numero es una pista visual (opacidad plena: al 75 % del mockup no llega a 4.5:1 sobre cta/teal en
-                // claro); los lectores de pantalla leen solo la etiqueta.
-                Text(
-                    text = style.number,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.clearAndSetSemantics { }
-                )
-            }
+        QualityButtonContent(style)
+    }
+}
+
+@Composable
+private fun QualityButtonContent(style: QualityStyle) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(style.label, maxLines = 1, fontSize = 14.5.sp, fontWeight = FontWeight.Bold, color = style.content)
+        if (showKeyboardHints) {
+            // El numero es una pista visual (opacidad plena: al 75 % del mockup no llega a 4.5:1 sobre cta/teal en
+            // claro); los lectores de pantalla leen solo la etiqueta.
+            Text(
+                text = style.number,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = style.content,
+                modifier = Modifier.clearAndSetSemantics { }
+            )
         }
     }
 }
