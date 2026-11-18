@@ -41,6 +41,7 @@ import org.braincards.app.presentation.theme.BrainCardsTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.braincards.app.presentation.screens.navigation.THEME_LOAD_TIMEOUT_MS
+import org.braincards.app.presentation.screens.navigation.rememberSplashTimeline
 import org.braincards.app.presentation.screens.navigation.shouldShowEntryPending
 import kotlinx.coroutines.launch
 import org.braincards.app.presentation.theme.resolveDarkTheme
@@ -87,8 +88,11 @@ fun App() {
         // animaciones"). Tras rotar con la ruta ya resuelta, pending = false desde el primer frame: no hay capa ni fundido.
         val pending = shouldShowEntryPending(startRoute, themeLoaded = appTheme != null, themeTimedOut = themeTimedOut)
         val reducedMotion = rememberReducedMotion()
-        // Iconos claros de la barra de estado mientras EntryPending se ve; se bajan al EMPEZAR el fundido (pending = false).
-        EntryPendingSystemBars(visible = pending)
+        // Reloj de la coreografia y permanencia de la capa (contrato D8): con la navegacion lista antes de 450 ms la capa se
+        // queda hasta 450 ms; la navegacion se compone igualmente por debajo (no se retrasa, solo se tapa).
+        val splash = rememberSplashTimeline(pending, reducedMotion)
+        // Iconos claros de la barra de estado mientras EntryPending se ve; se bajan al EMPEZAR el fundido (overlayVisible = false).
+        EntryPendingSystemBars(visible = splash.overlayVisible)
         Box(Modifier.fillMaxSize()) {
             if (!pending) {
                 AppNavigation(
@@ -100,11 +104,11 @@ fun App() {
                 )
             }
             AnimatedVisibility(
-                visible = pending,
+                visible = splash.overlayVisible,
                 enter = EnterTransition.None,
                 exit = if (reducedMotion) ExitTransition.None else fadeOut(tween(SPLASH_FADE_MS))
             ) {
-                EntryPendingScreen()
+                EntryPendingScreen(elapsedMs = splash::elapsedMs)
             }
         }
     }

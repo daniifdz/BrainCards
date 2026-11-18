@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.braincards.app.platform.splashLogoSize
 import org.braincards.app.presentation.components.SPLASH_BACKGROUND
-import org.braincards.app.presentation.components.SplashLogo
+import org.braincards.app.presentation.components.SplashBrain
 
 /** Fundido de salida de EntryPending hacia la pantalla real (handoff 5.8). Con "reducir animaciones" no se usa: el cambio es instantaneo. */
 const val SPLASH_FADE_MS = 250
@@ -27,14 +27,15 @@ fun shouldShowEntryPending(startRoute: EntryRoute, themeLoaded: Boolean, themeTi
  * Mientras no se sabe a donde arrancar (auth sin resolver) o el tema no se ha leido: IDENTICA al splash del sistema (handoff
  * 5.8). Fondo morado FIJO ([SPLASH_BACKGROUND], igual en claro y oscuro: no usa el tema) y el cerebro blanco centrado, sin
  * texto ni spinner. En Android cubre el hueco si el splash del sistema agota su espera maxima. El tamano del logo lo da la
- * plataforma ([splashLogoSize]: 120 dp en Android, 160 en Desktop). Aqui ira la animacion cuando llegue su motion spec.
+ * plataforma ([splashLogoSize]: 120 dp en Android, 160 en Desktop). Los hemisferios entran animados ([splashPose] a los
+ * [elapsedMs] de la coreografia; por defecto el reposo final = el cerebro completo, igual que el splash del sistema).
  */
 @Composable
-fun EntryPendingScreen() {
+fun EntryPendingScreen(elapsedMs: () -> Float = { SPLASH_TOTAL_MS.toFloat() }) {
     Box(
         modifier = Modifier.fillMaxSize().background(SPLASH_BACKGROUND),
         contentAlignment = Alignment.Center
     ) {
-        SplashLogo(size = splashLogoSize())
+        SplashBrain(size = splashLogoSize(), pose = { splashPose(elapsedMs()) })
     }
 }
