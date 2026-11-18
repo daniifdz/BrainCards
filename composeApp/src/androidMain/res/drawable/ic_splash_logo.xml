@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono del splash del sistema: lienzo de 288 dp (el que usa Android 12+ sin fondo de icono; la libreria lo imita en API 24-30,
+     recortado a un circulo de 192 dp) con el cerebro a 120 dp centrado: inset de (288 - 120) / 2 = 84 dp = 29,1667 %. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_logo_brain"
+    android:insetLeft="29.1667%"
+    android:insetTop="29.1667%"
+    android:insetRight="29.1667%"
+    android:insetBottom="29.1667%" />

@@ -2,10 +2,11 @@
 
 <resources>
 <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-    <item name="windowSplashScreenBackground">@color/bc_ground</item>
-    <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-    <!-- Provisional: el cerebro es blanco y el fondo del splash crema; el circulo lo hace visible hasta el paso del splash. -->
-    <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+    <item name="windowSplashScreenBackground">@color/splash_background</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+    <!-- Iconos de la barra de estado claros sobre el morado en el splash del sistema (en claro y oscuro). Solo afecta a la ventana
+         del splash: EntryPending en Compose sigue las barras que fija MainActivity.applySystemBars. -->
+    <item name="android:windowLightStatusBar">false</item>
     <item name="postSplashScreenTheme">@style/Theme.App.Base</item>
 </style>
 <!-- Tema base de la app y de la ventana tras el splash: mismo color que el fondo del tema (claro; oscuro en values-night). -->

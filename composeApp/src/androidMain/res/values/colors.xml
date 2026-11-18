@@ -2,4 +2,6 @@
 <resources>
     <!-- ground del tema (docs/design tokens.css): fondo del splash y de la ventana, claro -->
     <color name="bc_ground">#FBF7F2</color>
+    <!-- Splash: brand del tema CLARO, fijo (no sigue al modo oscuro; handoff 5.8) -->
+    <color name="splash_background">#5B3FBF</color>
 </resources>

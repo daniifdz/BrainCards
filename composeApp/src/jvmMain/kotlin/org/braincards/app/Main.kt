@@ -15,6 +15,9 @@ import org.braincards.app.di.shutdownAutoSync
 import org.braincards.app.platform.DesktopForegroundMonitor
 import org.koin.core.context.stopKoin
 
+/** Mismo morado que SPLASH_BACKGROUND (#5B3FBF), como color AWT para el fondo de la ventana. */
+private val SPLASH_AWT_BACKGROUND = java.awt.Color(0x5B, 0x3F, 0xBF)
+
 fun main() {
     // Primer plano de la sync automatica = ventana visible y no minimizada (la alimenta el estado de la ventana).
     val foregroundMonitor = DesktopForegroundMonitor()
@@ -40,6 +43,9 @@ fun main() {
             title = "BrainCards",
             icon = painterResource("icon.png")
         ) {
+            // Fondo inicial de la ventana = morado del splash (handoff 5.8): evita el flash blanco antes del primer frame de Compose.
+            window.background = SPLASH_AWT_BACKGROUND
+            window.contentPane.background = SPLASH_AWT_BACKGROUND
             App()
         }
     }
