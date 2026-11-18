@@ -12,6 +12,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.AppDatabase
+import org.braincards.app.data.local.RoomTransactionRunner
 import org.braincards.app.data.local.entity.CardSchedulingEntity
 import org.braincards.app.data.local.entity.DeckEntity
 import org.braincards.app.data.local.entity.FlashcardEntity
@@ -52,16 +53,20 @@ class DueCountRoomTest {
         db.close()
     }
 
+    // Las DOS escrituras (tarjeta + scheduling) van en UNA transaccion: si no, un colector en otro hilo puede observar el estado
+    // intermedio (tarjeta sin fila de scheduling = "vencida" / "nueva") y el test fallaria de forma intermitente.
     private suspend fun card(id: String, nextReview: Long?, deleted: Boolean = false) {
-        db.flashcardDao().addFlashcard(
-            FlashcardEntity(id = id, deckId = "d1", question = "Q", answer = "A", cardType = CardType.FLIP,
-                createdAt = ms(1), updatedAt = ms(1), deletedAt = if (deleted) ms(2) else null)
-        )
-        if (nextReview != null) {
-            db.cardSchedulingDao().insert(
-                CardSchedulingEntity(cardId = id, easeFactor = 2.5, interval = 1, repetitions = 1,
-                    nextReview = ms(nextReview), updatedAt = ms(1), userId = null, lastSyncedAt = null)
+        RoomTransactionRunner(db).inTransaction {
+            db.flashcardDao().addFlashcard(
+                FlashcardEntity(id = id, deckId = "d1", question = "Q", answer = "A", cardType = CardType.FLIP,
+                    createdAt = ms(1), updatedAt = ms(1), deletedAt = if (deleted) ms(2) else null)
             )
+            if (nextReview != null) {
+                db.cardSchedulingDao().insert(
+                    CardSchedulingEntity(cardId = id, easeFactor = 2.5, interval = 1, repetitions = 1,
+                        nextReview = ms(nextReview), updatedAt = ms(1), userId = null, lastSyncedAt = null)
+                )
+            }
         }
     }
 

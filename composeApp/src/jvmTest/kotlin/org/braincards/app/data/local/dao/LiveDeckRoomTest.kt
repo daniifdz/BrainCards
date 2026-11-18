@@ -63,7 +63,7 @@ class LiveDeckRoomTest {
     /** [nextReview] null = sin fila de scheduling (nunca repasada: vencida). */
     private suspend fun card(
         id: String, deckId: String, nextReview: Long?, topicId: String? = null, deleted: Boolean = false
-    ) {
+    ) = RoomTransactionRunner(db).inTransaction {
         db.flashcardDao().addFlashcard(
             FlashcardEntity(id = id, deckId = deckId, topicId = topicId, question = "Q$id", answer = "A$id",
                 cardType = CardType.FLIP, createdAt = ms(1), updatedAt = ms(1), deletedAt = if (deleted) ms(2) else null)

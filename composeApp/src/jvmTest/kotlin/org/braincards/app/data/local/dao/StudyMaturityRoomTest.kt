@@ -59,7 +59,8 @@ class StudyMaturityRoomTest {
     /** [interval] null = sin fila de scheduling (nunca repasada). */
     private suspend fun card(
         id: String, deckId: String, interval: Int?, topicId: String? = null, deleted: Boolean = false
-    ) {
+    ) = RoomTransactionRunner(db).inTransaction {
+        // Tarjeta + scheduling en UNA transaccion: un colector no debe ver nunca el estado intermedio (tarjeta "nueva").
         db.flashcardDao().addFlashcard(
             FlashcardEntity(id = id, deckId = deckId, topicId = topicId, question = "Q$id", answer = "A$id",
                 cardType = CardType.FLIP, createdAt = ms(1), updatedAt = ms(1), deletedAt = if (deleted) ms(2) else null)
