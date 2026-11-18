@@ -17,7 +17,10 @@ class FlashcardQueryRuleGuardTest {
 
     private companion object {
         /** Lecturas de estudio, recuento y estadisticas: deben aplicar la regla. */
-        val ENFORCED = setOf("getFlashcardById", "getDueFlashcardsByDeck", "getAllFlashcards", "getAllDueFlashcards", "observeDueCount")
+        val ENFORCED = setOf(
+            "getFlashcardById", "getDueFlashcardsByDeck", "getAllFlashcards", "getAllDueFlashcards", "observeDueCount",
+            "observeMaturityCounts"
+        )
 
         /** Sin la regla A PROPOSITO. */
         val ALLOWED = mapOf(

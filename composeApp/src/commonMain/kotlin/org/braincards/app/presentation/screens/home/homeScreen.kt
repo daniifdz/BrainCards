@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import braincards.composeapp.generated.resources.*
+import org.braincards.app.presentation.components.EmptyActionCard
 import org.braincards.app.presentation.sync.SyncErrorKind
 import org.braincards.app.presentation.sync.SyncIndicator
 import org.braincards.app.presentation.sync.SyncStatusViewModel
@@ -387,55 +388,6 @@ private fun NoCardsCard(compact: Boolean, onGoToDecks: () -> Unit) {
         compact = compact,
         onClick = onGoToDecks
     )
-}
-
-/** Tarjeta con icono, titulo, texto y un boton de accion: primer uso (0 mazos) y mazos sin tarjetas. */
-@Composable
-private fun EmptyActionCard(title: String, text: String, cta: String, compact: Boolean, onClick: () -> Unit) {
-    val extra = BrainCardsTheme.extraColors
-    Surface(
-        shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(if (compact) 24.dp else 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(extra.brandChip, RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Layers, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                )
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp, lineHeight = 21.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.widthIn(max = 480.dp)
-                )
-            }
-            Button(
-                onClick = onClick,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 13.dp)
-            ) {
-                Text(
-                    text = cta,
-                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                )
-            }
-        }
-    }
 }
 
 /** 0 pendientes: "Todo al dia". Sigue llevando a Estudio (que muestra su propio "Estamos al dia"). */

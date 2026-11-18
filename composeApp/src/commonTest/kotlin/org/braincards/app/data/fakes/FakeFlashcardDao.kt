@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.FlashcardDao
+import org.braincards.app.data.local.dao.MaturityCountsRow
 import org.braincards.app.data.local.dao.PendingStampRow
 import org.braincards.app.data.local.entity.FlashcardEntity
 
@@ -100,6 +101,8 @@ class FakeFlashcardDao : FlashcardDao {
 
     // Los tests con fakes no observan el contador de pendientes (se prueba contra Room real: DueCountRoomTest).
     override fun observeDueCount(now: Instant): Flow<Int> = flowOf(0)
+
+    override fun observeMaturityCounts(): Flow<MaturityCountsRow> = flowOf(MaturityCountsRow(0, 0, 0))
 
     // Sync automatica: los tests con fakes no observan pendientes (eso se prueba contra Room real).
     override fun observePendingStamp(userId: String): Flow<PendingStampRow> = flowOf(PendingStampRow(0, 0))

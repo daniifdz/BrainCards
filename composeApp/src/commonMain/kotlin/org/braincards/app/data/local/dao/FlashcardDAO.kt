@@ -89,6 +89,26 @@ interface FlashcardDao {
     )
     fun observeDueCount(now: Instant): Flow<Int>
 
+    // Estadisticas (madurez de las tarjetas), en UNA consulta agregada: sobre las tarjetas ACTIVAS (LIVE_DECK_JOIN) cuenta
+    //   - Nuevas      = sin fila en card_scheduling (nunca repasadas);
+    //   - Aprendiendo = con fila e interval < 21 dias (incluye la recien fallada: interval 0);
+    //   - Maduras     = interval >= 21 dias.
+    // "Tarjetas totales" es la SUMA de las tres (se calcula fuera). La consulta parte de `flashcards`, asi que una fila de
+    // scheduling de una tarjeta borrada o de un mazo en tombstone no cuenta. cardId es la clave de card_scheduling: el
+    // LEFT JOIN no duplica filas. COALESCE: sin tarjetas, SUM da NULL. Una tarjeta con tema borrado bajo un mazo vivo cuenta.
+    @Query(
+        "SELECT " +
+            "COALESCE(SUM(CASE WHEN card_scheduling.cardId IS NULL THEN 1 ELSE 0 END), 0) AS newCards, " +
+            "COALESCE(SUM(CASE WHEN card_scheduling.cardId IS NOT NULL AND card_scheduling.interval < 21 THEN 1 ELSE 0 END), 0) AS learningCards, " +
+            "COALESCE(SUM(CASE WHEN card_scheduling.interval >= 21 THEN 1 ELSE 0 END), 0) AS matureCards " +
+            "FROM flashcards " +
+            "LEFT JOIN card_scheduling ON card_scheduling.cardId = flashcards.id " +
+            LIVE_DECK_JOIN +
+            "WHERE flashcards.deletedAt IS NULL"
+    )
+    fun observeMaturityCounts(): Flow<MaturityCountsRow>
+
+
     @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedFlashcards(userId: String): Int
 

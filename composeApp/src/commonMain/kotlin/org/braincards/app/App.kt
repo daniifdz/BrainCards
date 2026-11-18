@@ -152,7 +152,8 @@ fun App() {
             }
             composable<Screen.Stats>{
                 StudyStatsScreen(
-                    onBackClick = {navController.popBackStackSafely()}
+                    onBackClick = {navController.popBackStackSafely()},
+                    onCreateDeck = { navController.navigate(Screen.DecksList) }
                 )
             }
             composable<Screen.Auth> { backStackEntry ->

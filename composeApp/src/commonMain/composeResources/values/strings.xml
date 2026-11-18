@@ -298,4 +298,25 @@
         <item quantity="other">%1$d repasos</item>
     </plurals>
     <string name="study_results_stat_a11y">%1$s: %2$d</string>
+    <!-- Estadisticas (handoff 5.7) -->
+    <string name="stats_title">Estadísticas</string>
+    <string name="stats_back">Volver a Home</string>
+    <string name="stats_tile_decks">Mazos</string>
+    <string name="stats_tile_cards">Tarjetas totales</string>
+    <string name="stats_tile_due">Pendientes hoy</string>
+    <string name="stats_tile_a11y">%1$s: %2$d</string>
+    <string name="stats_maturity_title">Madurez de las tarjetas</string>
+    <string name="stats_maturity_subtitle">Nuevas: sin repasar nunca · Aprendiendo: intervalo &lt; 21 días · Maduras: intervalo ≥ 21 días</string>
+    <string name="stats_maturity_subtitle_compact">Nuevas · Aprendiendo (&lt;21 días) · Maduras (≥21 días)</string>
+    <string name="stats_donut_center">tarjetas</string>
+    <string name="stats_new">Nuevas</string>
+    <string name="stats_learning">Aprendiendo</string>
+    <string name="stats_mature">Maduras</string>
+    <string name="stats_legend_a11y">%1$s: %2$d, %3$d por ciento</string>
+    <string name="stats_loading">Cargando estadísticas</string>
+    <string name="stats_load_error">No se pudieron cargar las estadísticas.</string>
+    <string name="stats_empty_title">Aún no hay nada que mostrar</string>
+    <string name="stats_empty_text">Crea tu primer mazo para empezar a ver tus estadísticas aquí.</string>
+    <string name="stats_empty_cta">Crear tu primer mazo</string>
+
 </resources>

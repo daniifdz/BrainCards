@@ -28,6 +28,7 @@ import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.LocalDataRepositoryImpl
 import org.braincards.app.data.repository.DeckSummariesObserverImpl
 import org.braincards.app.data.repository.DueCardsObserverImpl
+import org.braincards.app.data.repository.StudyStatsObserverImpl
 import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
@@ -39,6 +40,7 @@ import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
 import org.braincards.app.domain.repository.DeckSummariesObserver
 import org.braincards.app.domain.repository.DueCardsObserver
+import org.braincards.app.domain.repository.StudyStatsObserver
 import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.LocalModePreference
 import org.braincards.app.domain.repository.PendingChangesObserver
@@ -73,7 +75,7 @@ import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
-import org.braincards.app.domain.usecase.Stats.GetStudyStatsUseCase
+import org.braincards.app.domain.usecase.Stats.ObserveStudyStatsUseCase
 import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
 import org.braincards.app.domain.usecase.Topics.DeleteTopicUseCase
 import org.braincards.app.domain.usecase.Topics.GetTopicsUseCase
@@ -357,11 +359,14 @@ fun appModule(
     factory { DeleteTopicUseCase(repository = get()) }
 
     //Stats
-    factory { GetStudyStatsUseCase(repository = get(), cardSchedulingRepository = get()) }
+    single<StudyStatsObserver> { StudyStatsObserverImpl(flashcardDao = get()) }
+    factory { ObserveStudyStatsUseCase(observer = get()) }
 
     viewModel {
         StudyStatsVM(
-            getStudyStatsUseCase = get()
+            observeStudyStats = get(),
+            observeDeckSummaries = get(),
+            observeDueCount = get()
         )
     }
 
