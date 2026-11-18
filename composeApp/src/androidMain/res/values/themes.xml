@@ -3,7 +3,7 @@
 <resources>
 <style name="Theme.App.Starting" parent="Theme.SplashScreen">
     <item name="windowSplashScreenBackground">@color/splash_background</item>
-    <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/splash_system_icon</item>
     <!-- Iconos de la barra de estado claros sobre el morado en el splash del sistema (en claro y oscuro). Solo afecta a la ventana
          del splash: EntryPending en Compose sigue las barras que fija MainActivity.applySystemBars. -->
     <item name="android:windowLightStatusBar">false</item>

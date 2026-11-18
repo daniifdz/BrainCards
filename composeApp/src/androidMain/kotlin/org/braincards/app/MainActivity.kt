@@ -3,6 +3,7 @@ package org.braincards.app
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -16,12 +17,16 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import org.braincards.app.platform.ProcessColdStart
 import org.braincards.app.platform.StatusBarMode
 import org.braincards.app.platform.SystemBarsHost
 import org.braincards.app.platform.statusBarMode
 import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
 import org.braincards.app.presentation.screens.navigation.ENTRY_SPLASH_MAX_WAIT_MS
 import org.braincards.app.presentation.screens.navigation.EntryRoute
+import org.braincards.app.presentation.screens.navigation.SPLASH_ANIMATE_ON_COLD_START
+import org.braincards.app.presentation.screens.navigation.SplashExitSignal
+import org.braincards.app.presentation.screens.navigation.shouldPlayColdStartSplash
 import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -38,6 +43,22 @@ class MainActivity : ComponentActivity(), SystemBarsHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen() // ANTES de super.onCreate()
+        // Arranque en frio de Android >= 12 (13b2): el splash del sistema es solo morado (values-v31) y EntryPending anima el
+        // cerebro cuando el splash sale. Bandera de proceso consumida SIEMPRE (aunque no se use) para que solo valga la primera vez.
+        val coldStartSplash = if (shouldPlayColdStartSplash(
+                enabled = SPLASH_ANIMATE_ON_COLD_START,
+                sdkInt = Build.VERSION.SDK_INT,
+                hasSavedState = savedInstanceState != null,
+                freshProcess = ProcessColdStart.consume()
+            )
+        ) SplashExitSignal() else null
+        if (coldStartSplash != null) {
+            // Salida instantanea (sin animacion del sistema): quita el splash y avisa para arrancar la coreografia.
+            splashScreen.setOnExitAnimationListener { splashView ->
+                splashView.remove()
+                coldStartSplash.fire()
+            }
+        }
         // Hasta leer el tema de la app, las barras siguen al sistema; en cuanto se conoce AppTheme se reajustan.
         applySystemBars(isSystemDark())
         super.onCreate(savedInstanceState)
@@ -62,7 +83,7 @@ class MainActivity : ComponentActivity(), SystemBarsHost {
         }
 
         setContent {
-            App()
+            App(coldStartSplash = coldStartSplash)
         }
     }
 

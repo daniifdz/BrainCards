@@ -24,8 +24,12 @@ const val SPLASH_PULSE_MS = 150
 /** Duracion total de la coreografia (convergencia + pulso). */
 const val SPLASH_TOTAL_MS = SPLASH_CONVERGE_MS + SPLASH_PULSE_MS
 
-/** Los dos hemisferios pasan de opacidad 0 a 1 en los primeros 300 ms (lineal). */
-const val SPLASH_FADE_IN_MS = 300
+/**
+ * Rampa de opacidad de los hemisferios (0 -> 1, lineal, desde el inicio). PROVISIONAL (150 ms): el handoff decia 300 ms, pero
+ * con el easing rapido casi todo el desplazamiento ocurria con opacidad baja y la entrada lateral apenas se veia (13b2).
+ * Se valora a ojo; debe ser <= [SPLASH_CONVERGE_MS].
+ */
+const val SPLASH_ALPHA_RAMP_MS = 150
 
 /** Desplazamiento inicial de cada hemisferio, en unidades del lienzo del vector (230). */
 const val SPLASH_OFFSET_UNITS = 58f
@@ -68,7 +72,7 @@ fun splashPose(elapsedMs: Float): SplashPose {
         leftUnits = 0f - offset, // no `-offset`: en reposo daria -0.0 y SplashPose.Rest (0.0) no seria igual
         rightUnits = offset,
         scale = if (t <= SPLASH_CONVERGE_MS) 1f else splashPulseScale(t - SPLASH_CONVERGE_MS),
-        alpha = (t / SPLASH_FADE_IN_MS).coerceIn(0f, 1f)
+        alpha = (t / SPLASH_ALPHA_RAMP_MS).coerceIn(0f, 1f)
     )
 }
 

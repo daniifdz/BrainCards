@@ -31,11 +31,11 @@ fun shouldShowEntryPending(startRoute: EntryRoute, themeLoaded: Boolean, themeTi
  * [elapsedMs] de la coreografia; por defecto el reposo final = el cerebro completo, igual que el splash del sistema).
  */
 @Composable
-fun EntryPendingScreen(elapsedMs: () -> Float = { SPLASH_TOTAL_MS.toFloat() }) {
+fun EntryPendingScreen(elapsedMs: () -> Float = { SPLASH_TOTAL_MS.toFloat() }, onFirstDraw: (() -> Unit)? = null) {
     Box(
         modifier = Modifier.fillMaxSize().background(SPLASH_BACKGROUND),
         contentAlignment = Alignment.Center
     ) {
-        SplashBrain(size = splashLogoSize(), pose = { splashPose(elapsedMs()) })
+        SplashBrain(size = splashLogoSize(), pose = { splashPose(elapsedMs()) }, onFirstDraw = onFirstDraw)
     }
 }

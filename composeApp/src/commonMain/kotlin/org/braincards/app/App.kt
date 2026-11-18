@@ -41,6 +41,7 @@ import org.braincards.app.presentation.theme.BrainCardsTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.braincards.app.presentation.screens.navigation.THEME_LOAD_TIMEOUT_MS
+import org.braincards.app.presentation.screens.navigation.SplashExitSignal
 import org.braincards.app.presentation.screens.navigation.rememberSplashTimeline
 import org.braincards.app.presentation.screens.navigation.shouldShowEntryPending
 import kotlinx.coroutines.launch
@@ -57,7 +58,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @OptIn(KoinExperimentalAPI::class)
 @Composable
 @Preview
-fun App() {
+fun App(coldStartSplash: SplashExitSignal? = null) {
     val themeViewModel = koinViewModel<ThemeViewModel>()
     val appTheme by themeViewModel.theme.collectAsState()
 
@@ -90,7 +91,7 @@ fun App() {
         val reducedMotion = rememberReducedMotion()
         // Reloj de la coreografia y permanencia de la capa (contrato D8): con la navegacion lista antes de 450 ms la capa se
         // queda hasta 450 ms; la navegacion se compone igualmente por debajo (no se retrasa, solo se tapa).
-        val splash = rememberSplashTimeline(pending, reducedMotion)
+        val splash = rememberSplashTimeline(pending, reducedMotion, coldStartSplash)
         // Iconos claros de la barra de estado mientras EntryPending se ve; se bajan al EMPEZAR el fundido (overlayVisible = false).
         EntryPendingSystemBars(visible = splash.overlayVisible)
         Box(Modifier.fillMaxSize()) {
@@ -108,7 +109,7 @@ fun App() {
                 enter = EnterTransition.None,
                 exit = if (reducedMotion) ExitTransition.None else fadeOut(tween(SPLASH_FADE_MS))
             ) {
-                EntryPendingScreen(elapsedMs = splash::elapsedMs)
+                EntryPendingScreen(elapsedMs = splash::elapsedMs, onFirstDraw = splash::markFirstDraw)
             }
         }
     }

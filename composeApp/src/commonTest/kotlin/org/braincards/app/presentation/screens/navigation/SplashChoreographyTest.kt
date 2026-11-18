@@ -18,7 +18,8 @@ class SplashChoreographyTest {
         assertEquals(450, SPLASH_CONVERGE_MS)
         assertEquals(150, SPLASH_PULSE_MS)
         assertEquals(600, SPLASH_TOTAL_MS)
-        assertEquals(300, SPLASH_FADE_IN_MS)
+        assertEquals(150, SPLASH_ALPHA_RAMP_MS) // PROVISIONAL (13b2), se valora a ojo
+        assertTrue(SPLASH_ALPHA_RAMP_MS in 1..SPLASH_CONVERGE_MS, "la rampa cabe en la convergencia")
         assertEquals(250, SPLASH_FADE_MS)
         assertEquals(450, SPLASH_MIN_HOLD_MS)
     }
@@ -77,9 +78,24 @@ class SplashChoreographyTest {
     }
 
     @Test
-    fun la_opacidad_sube_lineal_en_300_ms() {
-        assertNear(0.5f, splashPose(150f).alpha)
-        assertEquals(1f, splashPose(300f).alpha)
+    fun la_pose_en_los_limites_449_450_599_600() {
+        val p449 = splashPose(449f)
+        assertEquals(1f, p449.scale, "449: aun sin pulso")
+        assertEquals(1f, p449.alpha, "449: opaco")
+        assertTrue(abs(p449.leftUnits) < 0.1f && abs(p449.rightUnits) < 0.1f, "449: hemisferios casi asentados (${p449.leftUnits})")
+        assertEquals(SplashPose.Rest, splashPose(450f), "450: asentado, el pulso aun no ha empezado")
+        val p599 = splashPose(599f)
+        assertTrue(p599.scale >= 1f && p599.scale < 1.002f, "599: final del pulso (${p599.scale})")
+        assertEquals(1f, p599.alpha, "599: opaco")
+        assertEquals(0f, p599.leftUnits, "599: hemisferios en su sitio")
+        assertEquals(SplashPose.Rest, splashPose(600f), "600: reposo")
+    }
+
+    @Test
+    fun la_opacidad_sube_lineal_durante_la_rampa_y_despues_es_1() {
+        assertEquals(0f, splashPose(0f).alpha)
+        assertNear(0.5f, splashPose(SPLASH_ALPHA_RAMP_MS / 2f).alpha)
+        assertEquals(1f, splashPose(SPLASH_ALPHA_RAMP_MS.toFloat()).alpha)
         assertEquals(1f, splashPose(449f).alpha)
         var prev = 0f
         for (t in 0..600 step 10) {

@@ -80,4 +80,15 @@ class SplashBrainRenderTest {
         assertEquals(0, alpha(rest, 19, 119), "reposo")
         assertTrue(alpha(big, 19, 119) > 0, "escalado")
     }
+
+    @Test
+    fun al_cruzarse_con_opacidad_parcial_el_solape_no_se_pinta_doble() {
+        // Mitades desplazadas 10 unidades hacia el centro: se solapan hacia x ~109..121. Si la opacidad se aplicara a cada mitad
+        // por separado, el solape saldria ~75 % opaco (0.5 + 0.5 * 0.5) frente a ~50 % del resto del cuerpo.
+        val bmp = split(SplashPose(leftUnits = 10f, rightUnits = -10f, scale = 1f, alpha = 0.5f))
+        val body = alpha(bmp, 40, 115) // cuerpo del hemisferio izquierdo desplazado, sin solape
+        val overlap = alpha(bmp, 115, 120) // franja donde coinciden las dos mitades
+        assertTrue(body in 120..135, "cuerpo a media opacidad = $body")
+        assertTrue(kotlin.math.abs(overlap - body) <= 3, "solape = $overlap frente a cuerpo = $body (no debe ser mas opaco)")
+    }
 }

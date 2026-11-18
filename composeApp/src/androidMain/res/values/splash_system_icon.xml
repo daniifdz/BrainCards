@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono del splash del sistema: el cerebro estatico (Android < 12 y valor por defecto). values-v31 lo sustituye por el
+     icono transparente (13b2). Para REVERTIR: borrar res/values-v31/splash_system_icon.xml y poner SPLASH_ANIMATE_ON_COLD_START = false. -->
+<resources>
+    <item name="splash_system_icon" type="drawable">@drawable/ic_splash_logo</item>
+</resources>
