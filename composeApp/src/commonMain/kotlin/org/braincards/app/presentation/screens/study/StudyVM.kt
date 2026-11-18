@@ -14,13 +14,16 @@ import kotlinx.datetime.Clock
 import org.braincards.app.domain.models.Flashcard
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.models.StudyCardLabel
+import org.braincards.app.domain.models.StudyMode
 import org.braincards.app.domain.models.StudyQueue
 import org.braincards.app.domain.models.StudyResults
 import org.braincards.app.domain.models.StudyScope
+import org.braincards.app.domain.usecase.Flashcards.FreeRecorder
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardByIdUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFreeReviewCardsUseCase
+import org.braincards.app.domain.usecase.Flashcards.RatingRecorder
 import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
-import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.PauseReason
 import org.braincards.app.util.logError
@@ -44,7 +47,9 @@ sealed class StudyState {
         val label: StudyCardLabel?,
         val isAnswerVisible: Boolean = false,
         val remaining: Int,
-        val total: Int
+        val total: Int,
+        /** Repaso libre (paso 14): la sesion NO guarda nada. La UI lo usa para el chip y el aviso. */
+        val freeReview: Boolean = false
     ) : StudyState() {
         /** (M - N) / M: avanza solo cuando una tarjeta sale de la cola. */
         val progress: Float get() = if (total <= 0) 0f else (total - remaining).toFloat() / total
@@ -54,15 +59,21 @@ sealed class StudyState {
      * Fin de la sesion: pulsaciones por calidad (el total es su suma) y la [label] de Resultados (nombre del mazo o
      * "Estudiar Todo"; null si el nombre del mazo no se pudo resolver).
      */
-    data class Finished(val results: StudyResults, val label: StudyResultsLabel?) : StudyState()
+    data class Finished(val results: StudyResults, val label: StudyResultsLabel?, val freeReview: Boolean = false) : StudyState()
 }
 
 /** Mensajes de fallo general (Snackbar); el texto vive en recursos. */
 enum class StudyMessage { RateFailed }
 
+/**
+ * Sesion de estudio. Dos modos (ver [StudyMode]): la normal (pendientes SM-2, cada repaso se guarda) y el REPASO LIBRE (todas las tarjetas
+ * barajadas, NUNCA se guarda nada). Lo unico que puede persistir una puntuacion es un [RatingRecorder]: [scheduledRecorder] en la
+ * normal y [FreeRecorder] (no hace nada) en el libre; este ViewModel no conoce el caso de uso que guarda el repaso.
+ */
 class StudyViewModel(
     private val getDueFlashcardsUseCase: GetDueFlashcardsUseCase,
-    private val reviewFlashcardUseCase: ReviewFlashcardUseCase,
+    private val getFreeReviewCardsUseCase: GetFreeReviewCardsUseCase,
+    private val scheduledRecorder: RatingRecorder,
     private val getFlashcardByIdUseCase: GetFlashcardByIdUseCase,
     private val resolveStudyLabelUseCase: ResolveStudyLabelUseCase,
     private val syncPauseGate: AutoSyncPauseGate
@@ -75,6 +86,14 @@ class StudyViewModel(
     val messageEvent: Flow<StudyMessage> = messages.receiveAsFlow()
 
     private var studyQueue: StudyQueue? = null
+
+    // Repaso libre sin ninguna tarjeta (al cargar, o todas borradas durante la sesion sin haber puntuado ninguna): la UI vuelve al
+    // origen (popBackStackSafely), sin pantalla ni texto nuevo. En la sesion normal sigue existiendo el estado Empty.
+    private val exits = Channel<Unit>(Channel.CONFLATED)
+    val exitEvent: Flow<Unit> = exits.receiveAsFlow()
+
+    private var currentMode: StudyMode = StudyMode.Scheduled
+    private val isFree: Boolean get() = currentMode is StudyMode.Free
 
     // Alcance de la sesion en curso: initSession es IDEMPOTENTE por alcance (rotar la pantalla vuelve a llamarlo y no
     // debe reiniciar la cola ni cambiar M).
@@ -106,30 +125,42 @@ class StudyViewModel(
      * Empieza la sesion de [scope]. Si ya hay una sesion para ese mismo alcance (p. ej. la pantalla se recompone tras
      * rotar) no hace nada: ni vuelve a leer la cola ni toca los contadores.
      */
-    fun initSession(scope: StudyScope) {
-        val key = when (scope) {
+    fun initSession(scope: StudyScope, mode: StudyMode = StudyMode.Scheduled) {
+        val scopeKey = when (scope) {
             is StudyScope.All -> "all"
             is StudyScope.Deck -> "deck:${scope.deckId}"
         }
+        // La clave incluye modo Y semilla: rotar (misma clave) no reinicia ni reordena; otra semilla u otro modo es OTRA sesion.
+        val modeKey = when (mode) {
+            StudyMode.Scheduled -> "scheduled"
+            is StudyMode.Free -> "free:${mode.seed}"
+        }
+        val key = "$scopeKey|$modeKey"
         if (sessionKey == key) return
         sessionKey = key
         currentScope = scope
-        startSession(scope)
+        currentMode = mode
+        startSession(scope, mode)
     }
 
     /** "Reintentar" tras un error: vuelve a leer la cola (lo ya puntuado no vuelve a salir: se guardo al instante). */
     fun retry() {
         val scope = currentScope ?: return
-        startSession(scope)
+        startSession(scope, currentMode)
     }
 
-    private fun startSession(scope: StudyScope) {
-        pauseAutoSync()
+    private fun startSession(scope: StudyScope, mode: StudyMode) {
+        // Repaso libre: NO se pausa la sync automatica (no se escribe nada y cada tarjeta se relee por id, asi que un pull no deja la
+        // cola desfasada). La sesion normal si la pausa.
+        if (mode is StudyMode.Scheduled) pauseAutoSync()
         viewModelScope.launch {
             _state.value = StudyState.Loading
             try {
-                val dueCards = getDueFlashcardsUseCase(scope, Clock.System.now())
-                studyQueue = StudyQueue(queue = dueCards)
+                val cards = when (mode) {
+                    StudyMode.Scheduled -> getDueFlashcardsUseCase(scope, Clock.System.now())
+                    is StudyMode.Free -> getFreeReviewCardsUseCase(scope, mode.seed)
+                }
+                studyQueue = StudyQueue(queue = cards)
                 advance()
             } catch (e: CancellationException) {
                 throw e
@@ -168,7 +199,8 @@ class StudyViewModel(
                 label = resolveStudyLabelUseCase(card),
                 isAnswerVisible = false,
                 remaining = queue.remaining,
-                total = queue.total
+                total = queue.total,
+                freeReview = isFree
             )
             return
         }
@@ -176,10 +208,13 @@ class StudyViewModel(
 
     private suspend fun finishOrEmpty(queue: StudyQueue) {
         // Cola agotada: con alguna pulsacion es el final de la sesion; si no (todas borradas), no habia nada que estudiar.
-        _state.value = if (queue.totalReviews > 0) {
-            StudyState.Finished(queue.results(), resultsLabelFor(currentScope))
+        if (queue.totalReviews > 0) {
+            _state.value = StudyState.Finished(queue.results(), resultsLabelFor(currentScope), freeReview = isFree)
+        } else if (isFree) {
+            // Repaso libre sin tarjetas: no hay pantalla de "al dia" (no aplica); se vuelve al origen.
+            exits.trySend(Unit)
         } else {
-            StudyState.Empty
+            _state.value = StudyState.Empty
         }
         resumeAutoSync()
     }
@@ -221,13 +256,15 @@ class StudyViewModel(
         // Segunda barrera (la primera es la UI/el teclado): no se puntua una tarjeta cuya respuesta no se ha visto.
         if (!currentState.isAnswerVisible) return
         val card = currentState.currentCard
+        // Lo unico que puede persistir: el recorder del modo (el libre no hace nada).
+        val recorder: RatingRecorder = if (isFree) FreeRecorder else scheduledRecorder
         isSubmitting = true
         pauseLease?.renew()
 
         viewModelScope.launch {
             try {
                 try {
-                    reviewFlashcardUseCase(card, quality)
+                    recorder.record(card, quality)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

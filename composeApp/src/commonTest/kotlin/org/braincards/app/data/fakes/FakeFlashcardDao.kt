@@ -53,6 +53,13 @@ class FakeFlashcardDao : FlashcardDao {
         flashcards[id]?.let { flashcards[id] = it.copy(deletedAt = deletedAt, updatedAt = deletedAt) }
     }
 
+    // Repaso libre: tarjetas no borradas, por id. La regla del mazo vivo (LIVE_DECK_JOIN) la prueba FreeReviewCardsRoomTest con Room real.
+    override suspend fun getFreeReviewCards(): List<FlashcardEntity> =
+        flashcards.values.filter { it.deletedAt == null }.sortedBy { it.id }
+
+    override suspend fun getFreeReviewCardsByDeck(deckId: String): List<FlashcardEntity> =
+        getFreeReviewCards().filter { it.deckId == deckId }
+
     // "due" depende de card_scheduling, que este fake no modela -- sin uso en los
     // tests de LWW (mismo criterio que FakeFlashcardRepository).
     override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<FlashcardEntity> = emptyList()

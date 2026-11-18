@@ -19,7 +19,9 @@ class FlashcardQueryRuleGuardTest {
         /** Lecturas de estudio, recuento y estadisticas: deben aplicar la regla. */
         val ENFORCED = setOf(
             "getFlashcardById", "getDueFlashcardsByDeck", "getAllFlashcards", "getAllDueFlashcards", "observeDueCount",
-            "observeMaturityCounts"
+            "observeMaturityCounts",
+            // Repaso libre (paso 14): todas las tarjetas ACTIVAS, sin filtrar por pendientes; getFlashcardsByDeckId no sirve (no aplica la regla).
+            "getFreeReviewCards", "getFreeReviewCardsByDeck"
         )
 
         /** Sin la regla A PROPOSITO. */

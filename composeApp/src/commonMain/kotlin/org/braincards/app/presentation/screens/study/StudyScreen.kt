@@ -34,6 +34,7 @@ import braincards.composeapp.generated.resources.study_load_error
 import braincards.composeapp.generated.resources.study_loading
 import braincards.composeapp.generated.resources.study_rate_failed
 import org.braincards.app.domain.models.StudyScope
+import org.braincards.app.domain.models.studyModeFor
 import org.braincards.app.presentation.components.form.FormBanner
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -52,16 +53,22 @@ private val STUDY_MAX_WIDTH = 640.dp
 fun StudyScreen(
     deckId: String?,
     onBackClick: () -> Unit,
-    viewModel: StudyViewModel = koinViewModel()
+    viewModel: StudyViewModel = koinViewModel(),
+    /** Repaso libre (paso 14): la semilla del orden aleatorio (viene de la ruta); null = sesion normal. */
+    freeReviewSeed: Long? = null
 ) {
-    // initSession es idempotente por alcance: rotar la pantalla no reinicia la sesion.
+    // initSession es idempotente por alcance y modo: rotar la pantalla no reinicia ni reordena la sesion.
     val scope = remember(deckId) { if (deckId != null) StudyScope.Deck(deckId) else StudyScope.All }
+    val mode = remember(freeReviewSeed) { studyModeFor(freeReview = freeReviewSeed != null, seed = freeReviewSeed ?: 0L) }
     val origin = studyOrigin(scope)
     val state by viewModel.state.collectAsState()
     val reviewing = state as? StudyState.Reviewing
 
     // initSession es idempotente por alcance: rotar la pantalla no reinicia la sesion.
-    LaunchedEffect(scope) { viewModel.initSession(scope) }
+    LaunchedEffect(scope, mode) { viewModel.initSession(scope, mode) }
+
+    // Repaso libre sin tarjetas (al cargar o todas borradas durante la sesion): vuelve al origen, sin pantalla ni texto nuevo.
+    LaunchedEffect(viewModel) { viewModel.exitEvent.collect { onBackClick() } }
 
     // Estado COMPARTIDO del pulso de puntuacion (D7): clic y teclas 1-4 pasan por `rate`; no retrasa la puntuacion.
     val ratePulse = remember { RatePulseState() }

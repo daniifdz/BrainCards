@@ -28,6 +28,7 @@ import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.LocalDataRepositoryImpl
 import org.braincards.app.data.repository.DeckSummariesObserverImpl
 import org.braincards.app.data.repository.DueCardsObserverImpl
+import org.braincards.app.data.repository.FreeReviewCardsSourceImpl
 import org.braincards.app.data.repository.StudyStatsObserverImpl
 import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
@@ -40,6 +41,7 @@ import org.braincards.app.domain.repository.LocalDataRepository
 import org.braincards.app.domain.repository.LocalTableInspector
 import org.braincards.app.domain.repository.DeckSummariesObserver
 import org.braincards.app.domain.repository.DueCardsObserver
+import org.braincards.app.domain.repository.FreeReviewCardsSource
 import org.braincards.app.domain.repository.StudyStatsObserver
 import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.LocalModePreference
@@ -73,7 +75,9 @@ import org.braincards.app.domain.usecase.Flashcards.GetFlashcardByIdUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardUseCase
 import org.braincards.app.domain.usecase.Flashcards.ObserveDueCountUseCase
 import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFreeReviewCardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.ScheduledRecorder
 import org.braincards.app.domain.usecase.Flashcards.UpdateFlashcardUseCase
 import org.braincards.app.domain.usecase.Stats.ObserveStudyStatsUseCase
 import org.braincards.app.domain.usecase.Topics.AddTopicUseCase
@@ -339,13 +343,18 @@ fun appModule(
     //stdy
     factory { GetDueFlashcardsUseCase(repository = get()) }
     factory { ReviewFlashcardUseCase(reviewLogRepository = get(), cardSchedulingRepository = get()) }
+    // Repaso libre (paso 14): fuente de lectura aditiva, barajado con semilla y los dos recorders (el libre no persiste nada).
+    single<FreeReviewCardsSource> { FreeReviewCardsSourceImpl(flashcardDao = get()) }
+    factory { GetFreeReviewCardsUseCase(source = get()) }
+    factory { ScheduledRecorder(reviewFlashcardUseCase = get()) }
     factory { GetFlashcardByIdUseCase(repository = get()) }
     // factory: una instancia por sesion de estudio, y su cache de nombres de mazo/tema vive lo que el VM.
     factory { ResolveStudyLabelUseCase(decksRepository = get(), topicsRepository = get()) }
     viewModel {
         StudyViewModel(
             getDueFlashcardsUseCase = get(),
-            reviewFlashcardUseCase = get(),
+            getFreeReviewCardsUseCase = get(),
+            scheduledRecorder = get<ScheduledRecorder>(),
             getFlashcardByIdUseCase = get(),
             resolveStudyLabelUseCase = get(),
             syncPauseGate = get()

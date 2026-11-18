@@ -89,6 +89,18 @@ interface FlashcardDao {
     )
     fun observeDueCount(now: Instant): Flow<Int>
 
+    // Repaso libre (paso 14): TODAS las tarjetas activas, sin filtrar por pendientes ni mirar card_scheduling. Regla unica de lectura
+    // (LIVE_DECK_JOIN): una tarjeta viva bajo un mazo en tombstone NO entra. getFlashcardsByDeckId NO sirve para esto (no aplica la
+    // regla). ORDER BY id: orden base estable; el barajado (con semilla) se hace en el caso de uso.
+    @Query("SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN + "WHERE flashcards.deletedAt IS NULL ORDER BY flashcards.id ASC")
+    suspend fun getFreeReviewCards(): List<FlashcardEntity>
+
+    @Query(
+        "SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN +
+            "WHERE flashcards.deckId = :deckId AND flashcards.deletedAt IS NULL ORDER BY flashcards.id ASC"
+    )
+    suspend fun getFreeReviewCardsByDeck(deckId: String): List<FlashcardEntity>
+
     // Estadisticas (madurez de las tarjetas), en UNA consulta agregada: sobre las tarjetas ACTIVAS (LIVE_DECK_JOIN) cuenta
     //   - Nuevas      = sin fila en card_scheduling (nunca repasadas);
     //   - Aprendiendo = con fila e interval < 21 dias (incluye la recien fallada: interval 0);

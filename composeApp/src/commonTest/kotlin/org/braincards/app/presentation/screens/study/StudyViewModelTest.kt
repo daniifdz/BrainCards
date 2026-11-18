@@ -14,6 +14,7 @@ import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeCardSchedulingRepository
 import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.fakes.FakeFlashcardRepository
+import org.braincards.app.domain.fakes.FakeFreeReviewCardsSource
 import org.braincards.app.domain.fakes.FakeReviewLogRepository
 import org.braincards.app.domain.fakes.FakeTopicsRepository
 import org.braincards.app.domain.models.CardScheduling
@@ -33,8 +34,10 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Flashcards.GetDueFlashcardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.GetFlashcardByIdUseCase
+import org.braincards.app.domain.usecase.Flashcards.GetFreeReviewCardsUseCase
 import org.braincards.app.domain.usecase.Flashcards.ResolveStudyLabelUseCase
 import org.braincards.app.domain.usecase.Flashcards.ReviewFlashcardUseCase
+import org.braincards.app.domain.usecase.Flashcards.ScheduledRecorder
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
 import org.braincards.app.presentation.sync.PauseReason
 import kotlin.test.AfterTest
@@ -124,7 +127,8 @@ class StudyViewModelTest {
         val gate = AutoSyncPauseGate()
         val vm = StudyViewModel(
             getDueFlashcardsUseCase = GetDueFlashcardsUseCase(repo),
-            reviewFlashcardUseCase = ReviewFlashcardUseCase(FakeReviewLogRepository(), scheduling),
+            getFreeReviewCardsUseCase = GetFreeReviewCardsUseCase(FakeFreeReviewCardsSource()),
+            scheduledRecorder = ScheduledRecorder(ReviewFlashcardUseCase(FakeReviewLogRepository(), scheduling)),
             getFlashcardByIdUseCase = GetFlashcardByIdUseCase(repo),
             resolveStudyLabelUseCase = ResolveStudyLabelUseCase(decks, topics),
             syncPauseGate = gate

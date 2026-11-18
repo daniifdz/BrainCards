@@ -184,6 +184,7 @@ private fun AppNavigation(
             val route = backStackEntry.toRoute<Screen.StudySession>()
             StudyScreen(
                 deckId = route.deckId,
+                freeReviewSeed = if (route.freeReview) route.seed else null,
 
                 onBackClick = {
                     navController.popBackStackSafely()
