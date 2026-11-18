@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import org.braincards.app.platform.StatusBarMode
+import org.braincards.app.platform.SystemBarsHost
+import org.braincards.app.platform.statusBarMode
 import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
 import org.braincards.app.presentation.screens.navigation.ENTRY_SPLASH_MAX_WAIT_MS
 import org.braincards.app.presentation.screens.navigation.EntryRoute
@@ -23,7 +26,10 @@ import org.braincards.app.presentation.screens.settings.ThemeViewModel
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), SystemBarsHost {
+
+    private var lastDark = false
+    private var entryPendingVisible = false
 
     private val themeViewModel: ThemeViewModel by viewModel()
 
@@ -69,11 +75,24 @@ class MainActivity : ComponentActivity() {
      * navegacion con los mismos scrims que usa enableEdgeToEdge() por defecto.
      */
     private fun applySystemBars(dark: Boolean) {
+        lastDark = dark
         val detectDarkMode: (Resources) -> Boolean = { dark }
+        // Con EntryPending visible (morado fijo) los iconos de la barra de estado son claros; si no, siguen al tema efectivo.
+        val statusBarStyle = when (statusBarMode(dark, entryPendingVisible)) {
+            StatusBarMode.LightIcons -> SystemBarStyle.dark(Color.TRANSPARENT)
+            is StatusBarMode.FollowTheme -> SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT, detectDarkMode)
+        }
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT, detectDarkMode),
+            statusBarStyle = statusBarStyle,
             navigationBarStyle = SystemBarStyle.auto(NAV_LIGHT_SCRIM, NAV_DARK_SCRIM, detectDarkMode)
         )
+    }
+
+    /** [SystemBarsHost]: EntryPending se muestra / empieza su fundido. Unico punto que reaplica las barras (nada las pisa). */
+    override fun setEntryPendingVisible(visible: Boolean) {
+        if (visible == entryPendingVisible) return
+        entryPendingVisible = visible
+        applySystemBars(lastDark)
     }
 
     private companion object {

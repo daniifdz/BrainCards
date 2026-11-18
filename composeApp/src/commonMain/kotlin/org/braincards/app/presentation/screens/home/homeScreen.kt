@@ -63,6 +63,7 @@ import org.braincards.app.presentation.components.EmptyActionCard
 import org.braincards.app.presentation.sync.SyncErrorKind
 import org.braincards.app.presentation.sync.SyncIndicator
 import org.braincards.app.presentation.sync.SyncStatusViewModel
+import org.braincards.app.presentation.components.BrandBadge
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -199,7 +200,7 @@ private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick:
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
-            LogoMark(size = if (compact) 32.dp else 40.dp)
+            BrandBadge(size = if (compact) 30.dp else 40.dp)
             Spacer(Modifier.width(if (compact) 10.dp else 14.dp))
             Column {
                 Text(
@@ -222,29 +223,6 @@ private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick:
             Spacer(Modifier.width(12.dp))
             SyncPill(indicator = indicator, compact = compact, onClick = onPillClick)
         }
-    }
-}
-
-@Composable
-internal fun LogoMark(size: Dp) {
-    val extra = BrainCardsTheme.extraColors
-    val side = size * 0.55f
-    Box(Modifier.size(size)) {
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
-                .size(side)
-                .rotate(-8f)
-                .alpha(0.92f)
-                .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(size * 0.18f))
-        )
-        Box(
-            Modifier
-                .align(Alignment.TopEnd)
-                .size(side)
-                .rotate(8f)
-                .background(extra.cta, RoundedCornerShape(size * 0.18f))
-        )
     }
 }
 

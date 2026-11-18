@@ -41,8 +41,8 @@ import org.braincards.app.presentation.components.form.SubmitButton
 import org.braincards.app.presentation.components.form.WelcomeScaffold
 import org.braincards.app.presentation.components.form.formField
 import org.braincards.app.presentation.components.form.rememberFormFocus
-import org.braincards.app.presentation.screens.home.LogoMark
 import org.braincards.app.presentation.screens.navigation.WelcomeNotice
+import org.braincards.app.presentation.components.BrandBadge
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -156,7 +156,7 @@ fun AuthScreen(
         snackbarHostState = snackbarHostState,
         // Tamanos del handoff v4.10 (ver welcomeLogoSpec).
         hero = { logo ->
-            LogoMark(size = logo.iconDp.dp)
+            BrandBadge(size = logo.iconDp.dp)
             Text(
                 text = stringResource(Res.string.app_name),
                 style = BrainCardsTheme.wordmark.copy(fontSize = logo.wordmarkSp.sp),

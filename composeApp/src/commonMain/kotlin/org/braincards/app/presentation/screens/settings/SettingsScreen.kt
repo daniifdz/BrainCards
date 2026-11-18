@@ -24,6 +24,7 @@ import braincards.composeapp.generated.resources.*
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.APP_VERSION
+import org.braincards.app.presentation.components.BrandBadge
 import org.braincards.app.presentation.screens.auth.AuthViewModel
 import org.braincards.app.presentation.screens.auth.DeleteAccountEvent
 import org.braincards.app.presentation.screens.auth.SignOutEvent
@@ -45,6 +46,11 @@ enum class AppTheme(val displayName: String) {
     LIGHT("Claro"),
     DARK("Oscuro")
 }
+
+/** Medidas de los badges del logo en Ajustes (mockups `ajustes*.html`): junto al titulo, su hueco y el bloque «Acerca de». */
+const val SETTINGS_TITLE_BADGE_DP = 30
+const val SETTINGS_TITLE_BADGE_GAP_DP = 12
+const val SETTINGS_ABOUT_BADGE_DP = 40
 
 /** Ancho maximo del contenido en pantallas anchas (mockup `ajustes.html`: 640 px). */
 private val SETTINGS_MAX_WIDTH = 640.dp
@@ -128,7 +134,14 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ajustes") },
+                title = {
+                    // Badge del logo junto al titulo (mockups ajustes*.html: 30 px, hueco de 12 px; igual en normal, movil e invitado).
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BrandBadge(size = SETTINGS_TITLE_BADGE_DP.dp)
+                        Spacer(Modifier.width(SETTINGS_TITLE_BADGE_GAP_DP.dp))
+                        Text("Ajustes")
+                    }
+                },
                 navigationIcon = {
                     // Desactivada a mitad del cierre de sesion o del borrado de cuenta: no se sale de Ajustes.
                     IconButton(onClick = onBackClick, enabled = !isSigningOut && !isDeletingAccount) {
@@ -232,6 +245,13 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Bloque de identidad (mockup ajustes.html): badge 40 + nombre + lema, encima de la version.
+                ListItem(
+                    headlineContent = { Text(stringResource(Res.string.app_name)) },
+                    supportingContent = { Text(stringResource(Res.string.home_tagline)) },
+                    leadingContent = { BrandBadge(size = SETTINGS_ABOUT_BADGE_DP.dp) }
                 )
 
                 ListItem(

@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import org.braincards.app.platform.EntryPendingSystemBars
 import org.braincards.app.platform.rememberReducedMotion
 import org.braincards.app.presentation.screens.navigation.SPLASH_FADE_MS
 import androidx.compose.runtime.*
@@ -86,6 +87,8 @@ fun App() {
         // animaciones"). Tras rotar con la ruta ya resuelta, pending = false desde el primer frame: no hay capa ni fundido.
         val pending = shouldShowEntryPending(startRoute, themeLoaded = appTheme != null, themeTimedOut = themeTimedOut)
         val reducedMotion = rememberReducedMotion()
+        // Iconos claros de la barra de estado mientras EntryPending se ve; se bajan al EMPEZAR el fundido (pending = false).
+        EntryPendingSystemBars(visible = pending)
         Box(Modifier.fillMaxSize()) {
             if (!pending) {
                 AppNavigation(
