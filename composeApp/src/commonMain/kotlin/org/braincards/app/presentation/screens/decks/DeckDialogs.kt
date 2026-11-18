@@ -45,6 +45,7 @@ import org.braincards.app.domain.usecase.Decks.DeckNameError
 import org.braincards.app.presentation.components.form.FormTextField
 import org.braincards.app.presentation.components.form.formField
 import org.braincards.app.presentation.components.form.rememberFormFocus
+import org.braincards.app.presentation.screens.flashcards.shouldShowBlankError
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -57,6 +58,14 @@ import org.jetbrains.compose.resources.stringResource
  * El boton primario se deshabilita SOLO con el nombre en blanco (o mientras se guarda), nunca por [error]: con
  * texto escrito queda habilitado y el error de campo se ve bajo el campo, en rojo y con borde rojo.
  */
+/**
+ * Error de campo que muestra el dialogo de mazo. Manda el error que llega del VM (nombre repetido); si no hay, "Escribe
+ * un nombre para el mazo." solo cuando el campo esta [touched] (el valor cambio desde que se abrio) y en blanco, nunca
+ * en el primer render ([shouldShowBlankError], la misma regla que el dialogo de tema).
+ */
+internal fun shownDeckNameError(error: DeckNameError?, touched: Boolean, name: String): DeckNameError? =
+    error ?: if (shouldShowBlankError(touched, name)) DeckNameError.Blank else null
+
 @Composable
 fun DeckNameDialog(
     title: String,
@@ -70,8 +79,11 @@ fun DeckNameDialog(
     onDismiss: () -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf(initialName) }
+    // "Tocado" = el valor del campo cambio desde que se abrio el dialogo (no el foco): mismo patron que el dialogo de tema.
+    var touched by rememberSaveable { mutableStateOf(false) }
     val focus = rememberFormFocus(1)
     val canSubmit = name.isNotBlank() && !saving
+    val shownError = shownDeckNameError(error, touched, name)
     val submit = { if (canSubmit) onConfirm(name) }
 
     // Foco inicial en el nombre. Se espera un fotograma: dentro de un dialogo el campo aun no esta colocado al componer.
@@ -88,11 +100,12 @@ fun DeckNameDialog(
                 value = name,
                 onValueChange = {
                     name = it
+                    touched = true
                     onNameChange()
                 },
                 label = stringResource(Res.string.decks_name_label),
                 placeholder = if (showPlaceholder) stringResource(Res.string.decks_name_placeholder) else null,
-                error = when (error) {
+                error = when (shownError) {
                     DeckNameError.Duplicate -> stringResource(Res.string.decks_name_duplicate)
                     DeckNameError.Blank -> stringResource(Res.string.decks_name_blank)
                     null -> null

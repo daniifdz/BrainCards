@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -25,7 +27,7 @@ import org.jetbrains.compose.resources.stringResource
 
 /** Progreso modal NO descartable (ni atras ni tocar fuera): comprobacion previa, cierre de sesion y borrado de cuenta. */
 @Composable
-internal fun SettingsProgressDialog(title: String, hint: String?) {
+internal fun SettingsProgressDialog(title: String, hint: String?, indicatorColor: Color = Color.Unspecified) {
     Dialog(
         onDismissRequest = {},
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)
@@ -35,7 +37,12 @@ internal fun SettingsProgressDialog(title: String, hint: String?) {
                 modifier = Modifier.padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp,
+                    // Unspecified = el color por defecto del indicador ("Cerrando sesion" no cambia).
+                    color = if (indicatorColor == Color.Unspecified) ProgressIndicatorDefaults.circularColor else indicatorColor
+                )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(title, style = MaterialTheme.typography.titleMedium)
@@ -63,7 +70,9 @@ internal fun SigningOutDialog() = SettingsProgressDialog(
 @Composable
 internal fun DeletingAccountDialog() = SettingsProgressDialog(
     title = stringResource(Res.string.delete_account_progress),
-    hint = stringResource(Res.string.sign_out_progress_hint)
+    hint = stringResource(Res.string.sign_out_progress_hint),
+    // Accion destructiva: el anillo va en el color de error tambien en el estado de carga (handoff v4.19).
+    indicatorColor = MaterialTheme.colorScheme.error
 )
 
 /** "Tienes N cambios sin sincronizar que se perderan": se cierra sesion borrando esos cambios, o se cancela. */

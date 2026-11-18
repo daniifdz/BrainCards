@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
@@ -44,6 +45,9 @@ enum class AppTheme(val displayName: String) {
     LIGHT("Claro"),
     DARK("Oscuro")
 }
+
+/** Ancho maximo del contenido en pantallas anchas (mockup `ajustes.html`: 640 px). */
+private val SETTINGS_MAX_WIDTH = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
@@ -135,121 +139,132 @@ fun SettingsScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
+        // Columna centrada de ancho maximo ~640 dp en pantallas anchas (mockup ajustes.html). El scroll es de la zona
+        // completa (la rueda del raton funciona tambien fuera de la columna); en Compact (< 640 dp) no cambia nada.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Column(modifier = Modifier.widthIn(max = SETTINGS_MAX_WIDTH).fillMaxWidth().padding(16.dp)) {
 
-            Text(
-                text = stringResource(Res.string.theme_title),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+                Text(
+                    text = stringResource(Res.string.theme_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
 
-            ThemeCards(current = currentTheme, onThemeChange = onThemeChange)
+                Text(
+                    text = stringResource(Res.string.theme_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                ThemeCards(current = currentTheme, onThemeChange = onThemeChange)
 
 
-            when (val state = authState) {
-                is AuthState.Authenticated -> {
-                    SectionDivider()
-                    Text(
-                        text = "Cuenta",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    ListItem(
-                        headlineContent = { Text(state.email ?: "Sesión iniciada") },
-                        leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Cerrar sesión") },
-                        leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-                        modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
-                            authViewModel.requestSignOut()
-                        }
-                    )
-                    ListItem(
-                        headlineContent = {
-                            Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
-                        },
-                        supportingContent = { Text("Borra tu cuenta y todos tus mazos de la nube.") },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.DeleteForever,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        },
-                        modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
-                            showDeleteAccountDialog = true
-                        }
-                    )
-
-                    val syncDetail = syncDetail(indicator, pendingChangesCount)
-                    if (syncDetail != null) {
+                when (val state = authState) {
+                    is AuthState.Authenticated -> {
                         SectionDivider()
-                        SyncSection(
-                            detail = syncDetail,
-                            canSyncNow = isOnline && !isSyncing,
-                            onSyncNow = { authViewModel.syncNow() },
-                            autoSyncEnabled = autoSyncEnabled,
-                            onAutoSyncChange = { autoSyncViewModel.setEnabled(it) }
+                        Text(
+                            text = "Cuenta",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        ListItem(
+                            headlineContent = { Text(state.email ?: "Sesión iniciada") },
+                            leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Cerrar sesión") },
+                            leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
+                            modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
+                                authViewModel.requestSignOut()
+                            }
+                        )
+                        ListItem(
+                            headlineContent = {
+                                Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
+                            },
+                            supportingContent = { Text(stringResource(Res.string.settings_delete_account_subtitle)) },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.DeleteForever,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
+                                showDeleteAccountDialog = true
+                            }
+                        )
+
+                        val syncDetail = syncDetail(indicator, pendingChangesCount)
+                        if (syncDetail != null) {
+                            SectionDivider()
+                            SyncSection(
+                                detail = syncDetail,
+                                canSyncNow = isOnline && !isSyncing,
+                                onSyncNow = { authViewModel.syncNow() },
+                                autoSyncEnabled = autoSyncEnabled,
+                                onAutoSyncChange = { autoSyncViewModel.setEnabled(it) }
+                            )
+                        }
+                    }
+                    // Invitado: sin Cuenta ni Sincronizacion, solo el aviso con el boton hacia Bienvenida.
+                    AuthState.NotAuthenticated -> {
+                        SectionDivider()
+                        GuestNotice(onSignInClick = onNavigateToAuth)
+                    }
+                    // Aun sin estado de sesion: no se dibuja nada (evita parpadeos entre Cuenta y aviso).
+                    AuthState.Loading -> Unit
+                }
+
+                SectionDivider()
+
+                Text(
+                    text = "Acerca de",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                ListItem(
+                    headlineContent = { Text("Versión de BrainCards") },
+                    supportingContent = { Text(APP_VERSION) },
+                    leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
+                )
+
+                ListItem(
+                    headlineContent = { Text("Desarrollado por") },
+                    supportingContent = { Text("Daniel Fernández-Muñiz Arribas") },
+                    leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+                )
+
+                ListItem(
+                    headlineContent = { Text("Enviar comentarios") },
+                    supportingContent = { Text("Ayúdanos a mejorar") },
+                    leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
+                    modifier = Modifier.clickable {
+                        openEmailClient(
+                            recipient = "braincards.soporte@proton.me",
+                            subject = "Feedback para BrainCards v$APP_VERSION",
+                            body = "Hola, tengo una sugerencia/problema:\n\n"
                         )
                     }
-                }
-                // Invitado: sin Cuenta ni Sincronizacion, solo el aviso con el boton hacia Bienvenida.
-                AuthState.NotAuthenticated -> {
-                    SectionDivider()
-                    GuestNotice(onSignInClick = onNavigateToAuth)
-                }
-                // Aun sin estado de sesion: no se dibuja nada (evita parpadeos entre Cuenta y aviso).
-                AuthState.Loading -> Unit
+                )
+
+                ListItem(
+                    headlineContent = { Text("Copyright") },
+                    supportingContent = { Text("© 2026 BrainCards. Todos los derechos reservados.") },
+                    leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
+                )
             }
-
-            SectionDivider()
-
-            Text(
-                text = "Acerca de",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            ListItem(
-                headlineContent = { Text("Versión de BrainCards") },
-                supportingContent = { Text(APP_VERSION) },
-                leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
-            )
-
-            ListItem(
-                headlineContent = { Text("Desarrollado por") },
-                supportingContent = { Text("Daniel Fernández-Muñiz Arribas") },
-                leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
-            )
-
-            ListItem(
-                headlineContent = { Text("Enviar comentarios") },
-                supportingContent = { Text("Ayúdanos a mejorar") },
-                leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
-                modifier = Modifier.clickable {
-                    openEmailClient(
-                        recipient = "braincards.soporte@proton.me",
-                        subject = "Feedback para BrainCards v$APP_VERSION",
-                        body = "Hola, tengo una sugerencia/problema:\n\n"
-                    )
-                }
-            )
-
-            ListItem(
-                headlineContent = { Text("Copyright") },
-                supportingContent = { Text("© 2026 BrainCards. Todos los derechos reservados.") },
-                leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
-            )
         }
     }
 

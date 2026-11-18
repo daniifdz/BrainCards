@@ -13,6 +13,7 @@
     </plurals>
     <string name="sign_out_loss_text">No se pudieron subir a tu cuenta. Si cierras sesión ahora, se borrarán de este dispositivo.</string>
     <string name="sign_out_loss_confirm">Cerrar sesión de todos modos</string>
+    <string name="settings_delete_account_subtitle">Borra tu cuenta y todos tus mazos de la nube.</string>
     <string name="delete_account_dialog_title">Eliminar tu cuenta</string>
     <string name="delete_account_dialog_text">Esta acción borra tu cuenta y todos tus mazos de la nube de forma permanente. Los mazos guardados solo en este dispositivo no se verán afectados.</string>
     <string name="delete_account_dialog_confirm">Eliminar cuenta</string>
@@ -131,6 +132,7 @@
     <string name="theme_system">Sistema</string>
     <string name="theme_light">Claro</string>
     <string name="theme_dark">Oscuro</string>
+    <string name="theme_subtitle">Elige cómo se ve BrainCards. Sistema sigue el ajuste del dispositivo.</string>
 
     <!-- Ajustes: modo invitado -->
     <string name="guest_notice_title">Estás en modo invitado</string>
