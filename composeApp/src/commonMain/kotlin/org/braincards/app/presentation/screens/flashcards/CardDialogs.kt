@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import braincards.composeapp.generated.resources.Res
 import braincards.composeapp.generated.resources.cancel
-import braincards.composeapp.generated.resources.confirm_add
+import braincards.composeapp.generated.resources.create
 import braincards.composeapp.generated.resources.deckcontent_card_answer_blank
 import braincards.composeapp.generated.resources.deckcontent_card_answer_label
 import braincards.composeapp.generated.resources.deckcontent_card_answer_placeholder
@@ -236,7 +236,7 @@ fun CreateCardDialog(
 ) {
     CardDialog(
         title = stringResource(Res.string.deckcontent_card_dialog_new),
-        confirmLabel = stringResource(Res.string.confirm_add),
+        confirmLabel = stringResource(Res.string.create),
         initialQuestion = "",
         initialAnswer = "",
         initialTopicId = initialTopicId,

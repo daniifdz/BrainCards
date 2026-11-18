@@ -177,7 +177,7 @@ fun SettingsScreen(
                         headlineContent = {
                             Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
                         },
-                        supportingContent = { Text("Borra tu cuenta y todos tus datos en la nube") },
+                        supportingContent = { Text("Borra tu cuenta y todos tus mazos de la nube.") },
                         leadingContent = {
                             Icon(
                                 Icons.Default.DeleteForever,
