@@ -19,11 +19,11 @@ import org.braincards.app.data.local.entity.CardSchedulingEntity
 import org.braincards.app.data.local.entity.DeckEntity
 import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
+import org.braincards.app.data.repository.DeckRepositoryImpl
 import org.braincards.app.data.repository.FlashcardRepositoryImpl
 import org.braincards.app.data.repository.FreeReviewCardsSourceImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
-import org.braincards.app.domain.fakes.FakeDecksRepository
-import org.braincards.app.domain.fakes.FakeTopicsRepository
+import org.braincards.app.data.repository.TopicRepositoryImpl
 import org.braincards.app.domain.models.CardType
 import org.braincards.app.domain.models.ReviewQuality
 import org.braincards.app.domain.models.ReviewQuality.AGAIN
@@ -39,6 +39,7 @@ import org.braincards.app.domain.usecase.Flashcards.ScheduledRecorder
 import org.braincards.app.presentation.screens.study.StudyState
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.sync.AutoSyncPauseGate
+import java.security.MessageDigest
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -104,7 +105,11 @@ class FreeReviewNoWritesRoomTest {
         getFreeReviewCardsUseCase = GetFreeReviewCardsUseCase(FreeReviewCardsSourceImpl(db.flashcardDao())),
         scheduledRecorder = ScheduledRecorder(ReviewFlashcardUseCase(ReviewLogRepositoryImpl(db.reviewLogDao()), schedulingRepo)),
         getFlashcardByIdUseCase = GetFlashcardByIdUseCase(flashcardRepo),
-        resolveStudyLabelUseCase = ResolveStudyLabelUseCase(FakeDecksRepository(), FakeTopicsRepository()),
+        // Repositorios REALES de mazos y temas (la etiqueta lee la base de verdad): cualquier escritura en ellos seria visible.
+        resolveStudyLabelUseCase = ResolveStudyLabelUseCase(
+            DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db)),
+            TopicRepositoryImpl(db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
+        ),
         syncPauseGate = AutoSyncPauseGate()
     )
 
@@ -114,15 +119,42 @@ class FreeReviewNoWritesRoomTest {
         val flashcards: List<FlashcardEntity>,
         val reviewLogRows: Long,
         val pendingScheduling: Int,
-        val pendingFlashcards: Int
-    )
+        val pendingFlashcards: Int,
+        /** VOLCADO de TODAS las tablas de la base (nombre -> filas ordenadas): cualquier escritura en cualquier tabla cambia esto. */
+        val allTables: Map<String, List<String>>
+    ) {
+        /** Huella del volcado completo (para el informe y los mensajes). */
+        val hash: String
+            get() = MessageDigest.getInstance("SHA-256").digest(allTables.toSortedMap().toString().toByteArray()).joinToString("") { "%02x".format(it) }.take(12)
+
+        /** Tablas cuyo contenido difiere de [other]. */
+        fun changedTables(other: Snapshot): Set<String> =
+            (allTables.keys + other.allTables.keys).filter { allTables[it] != other.allTables[it] }.toSet()
+    }
+
+    /** Volcado de todas las tablas de usuario (sqlite_*, room_* y android_metadata fuera): cada fila como texto, filas ordenadas. */
+    private suspend fun dumpAllTables(): Map<String, List<String>> = db.useReaderConnection { c ->
+        val tables = c.usePrepared(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'room_%' " +
+                "AND name <> 'android_metadata' ORDER BY name"
+        ) { st -> buildList { while (st.step()) add(st.getText(0)) } }
+        tables.associateWith { table ->
+            c.usePrepared("SELECT * FROM \"$table\"") { st ->
+                val n = st.getColumnCount()
+                buildList {
+                    while (st.step()) add((0 until n).joinToString("|") { i -> if (st.isNull(i)) "NULL" else st.getText(i) })
+                }.sorted()
+            }
+        }
+    }
 
     private suspend fun snapshot() = Snapshot(
         scheduling = db.cardSchedulingDao().getAll().first().sortedBy { it.cardId },
         flashcards = db.flashcardDao().getFreeReviewCards(),
         reviewLogRows = db.useReaderConnection { c -> c.usePrepared("SELECT COUNT(*) FROM reviewlog") { it.step(); it.getLong(0) } },
         pendingScheduling = schedulingRepo.getPendingSync("u").size,
-        pendingFlashcards = flashcardRepo.getPendingSync("u").size
+        pendingFlashcards = flashcardRepo.getPendingSync("u").size,
+        allTables = dumpAllTables()
     )
 
     private suspend fun StudyViewModel.awaitReviewing(): StudyState.Reviewing =
@@ -171,6 +203,11 @@ class FreeReviewNoWritesRoomTest {
         assertEquals(before.flashcards, after.flashcards, "las tarjetas no se tocan (updatedAt incluido)")
         assertEquals(0, after.pendingScheduling, "nada que sincronizar: programacion")
         assertEquals(0, after.pendingFlashcards, "nada que sincronizar: tarjetas")
+        // TODAS las tablas de la base, no solo las tres de arriba: ni una fila cambia en ninguna.
+        assertTrue(after.allTables.keys.containsAll(setOf("decks", "topics", "flashcards", "card_scheduling", "reviewlog")),
+            "el volcado cubre las tablas esperadas: ${after.allTables.keys}")
+        assertEquals(emptySet(), before.changedTables(after), "tablas modificadas por el repaso libre")
+        assertEquals(before.hash, after.hash, "huella de la base completa antes y despues")
     }
 
     @Test
@@ -179,7 +216,9 @@ class FreeReviewNoWritesRoomTest {
         val vm = newViewModel()
         vm.initSession(StudyScope.Deck("D"), StudyMode.Free(seed = 9L))
         runWholeSession(vm, firstFails = false)
-        assertEquals(before, snapshot())
+        val after = snapshot()
+        assertEquals(before, after)
+        assertEquals(before.hash, after.hash)
     }
 
     @Test
@@ -196,5 +235,7 @@ class FreeReviewNoWritesRoomTest {
         assertEquals(2, after.reviewLogRows, "dos puntuaciones = dos filas de historial")
         assertNotEquals(before.scheduling, after.scheduling, "la programacion SI cambia (y a2 gana su fila)")
         assertEquals(3, after.scheduling.size)
+        assertEquals(setOf("card_scheduling", "reviewlog"), before.changedTables(after), "y solo esas dos tablas")
+        assertNotEquals(before.hash, after.hash)
     }
 }
