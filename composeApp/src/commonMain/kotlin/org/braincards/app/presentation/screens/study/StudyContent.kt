@@ -1,6 +1,7 @@
 package org.braincards.app.presentation.screens.study
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -37,11 +38,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -85,14 +91,15 @@ fun StudyReviewing(
     onClose: () -> Unit,
     onReveal: () -> Unit,
     onRate: (ReviewQuality) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    ratePulse: RatePulseState = RatePulseState()
 ) {
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         StudyHeader(onClose = onClose, progress = state.progress, remaining = state.remaining, total = state.total)
         state.label?.let { StudyLabel(it) }
         StudyCard(state = state, onReveal = onReveal, modifier = Modifier.weight(1f))
         if (state.isAnswerVisible) {
-            QualityButtons(onRate = onRate)
+            QualityButtons(onRate = onRate, ratePulse = ratePulse)
         } else {
             RevealControls(onReveal = onReveal)
         }
@@ -131,9 +138,11 @@ private fun StudyHeader(onClose: () -> Unit, progress: Float, remaining: Int, to
 @Composable
 private fun StudyProgressBar(progress: Float) {
     val reduced = rememberReducedMotion()
+    // Muelle al avanzar (rebote). Con "reducir animaciones" salta directo. El valor animado pasa de largo del destino y puede
+    // superar 1.0 (ultimo repaso) o bajar de 0: lo que se DIBUJA va acotado (studyBarVisibleFraction).
     val animated by animateFloatAsState(
-        targetValue = progress.coerceIn(0f, 1f),
-        animationSpec = if (reduced) snap() else tween(300)
+        targetValue = studyBarTarget(progress),
+        animationSpec = if (reduced) snap() else STUDY_PROGRESS_SPRING
     )
     Box(
         modifier = Modifier
@@ -146,7 +155,7 @@ private fun StudyProgressBar(progress: Float) {
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(animated)
+                .fillMaxWidth(studyBarVisibleFraction(animated))
                 .background(MaterialTheme.colorScheme.primary, CircleShape)
         )
     }
@@ -279,7 +288,7 @@ private class QualityStyle(
  * sobre el contenedor con el color del mockup (ground o *Text): contraste >= 4.9:1 en claro y oscuro.
  */
 @Composable
-private fun QualityButtons(onRate: (ReviewQuality) -> Unit) {
+private fun QualityButtons(onRate: (ReviewQuality) -> Unit, ratePulse: RatePulseState) {
     val scheme = MaterialTheme.colorScheme
     val extra = BrainCardsTheme.extraColors
     val styles = listOf(
@@ -293,23 +302,52 @@ private fun QualityButtons(onRate: (ReviewQuality) -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 styles.chunked(2).forEach { pair ->
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        pair.forEach { QualityButton(it, onRate, Modifier.weight(1f)) }
+                        pair.forEach { QualityButton(it, onRate, ratePulse, Modifier.weight(1f)) }
                     }
                 }
             }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                styles.forEach { QualityButton(it, onRate, Modifier.weight(1f)) }
+                styles.forEach { QualityButton(it, onRate, ratePulse, Modifier.weight(1f)) }
             }
         }
     }
 }
 
 @Composable
-private fun QualityButton(style: QualityStyle, onRate: (ReviewQuality) -> Unit, modifier: Modifier = Modifier) {
+private fun QualityButton(
+    style: QualityStyle,
+    onRate: (ReviewQuality) -> Unit,
+    ratePulse: RatePulseState,
+    modifier: Modifier = Modifier
+) {
+    // Pulso al puntuar (D7): lo dispara el ESTADO COMPARTIDO `ratePulse` (clic y teclas 1-4), no el interactionSource. 0 = reposo,
+    // 1 = pulsado (escala 0.95 + brillo); un pulso nuevo reinicia la animacion, no la acumula. Un boton recien compuesto no repite
+    // un pulso viejo (baseToken). Con "reducir animaciones", nada.
+    val reduced = rememberReducedMotion()
+    val press = remember { Animatable(0f) }
+    val baseToken = remember { ratePulse.token }
+    LaunchedEffect(ratePulse.token) {
+        if (shouldRunStudyPress(reduced, ratePulse.token, baseToken, ratePulse.quality, style.quality)) {
+            press.animateTo(1f, STUDY_PRESS_DOWN_SPEC)
+            press.animateTo(0f, STUDY_PRESS_UP_SPRING)
+        }
+    }
+    val cornerPx = with(androidx.compose.ui.platform.LocalDensity.current) { 14.dp.toPx() }
     Button(
         onClick = { onRate(style.quality) },
-        modifier = modifier.heightIn(min = 56.dp),
+        modifier = modifier
+            .heightIn(min = 56.dp)
+            .graphicsLayer {
+                val scale = studyPressScale(press.value)
+                scaleX = scale
+                scaleY = scale
+            }
+            // Brillo: superposicion blanca SOLO de dibujo (no intercepta foco ni clics), en la fase de dibujo (no recompone).
+            .drawWithContent {
+                drawContent()
+                drawRoundRect(Color.White, cornerRadius = CornerRadius(cornerPx), alpha = studyPressOverlayAlpha(press.value))
+            },
         shape = BUTTON_SHAPE,
         colors = ButtonDefaults.buttonColors(containerColor = style.container, contentColor = style.content),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)

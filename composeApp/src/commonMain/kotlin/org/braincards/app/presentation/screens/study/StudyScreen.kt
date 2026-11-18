@@ -63,6 +63,10 @@ fun StudyScreen(
     // initSession es idempotente por alcance: rotar la pantalla no reinicia la sesion.
     LaunchedEffect(scope) { viewModel.initSession(scope) }
 
+    // Estado COMPARTIDO del pulso de puntuacion (D7): clic y teclas 1-4 pasan por `rate`; no retrasa la puntuacion.
+    val ratePulse = remember { RatePulseState() }
+    val rate = remember(viewModel, ratePulse) { ratingHandler(ratePulse, viewModel::rateCard) }
+
     val snackbarHostState = remember { SnackbarHostState() }
     val rateFailed = stringResource(Res.string.study_rate_failed)
     LaunchedEffect(viewModel, rateFailed) {
@@ -97,7 +101,7 @@ fun StudyScreen(
                     cardShown = reviewing != null,
                     answerVisible = reviewing?.isAnswerVisible ?: false,
                     onReveal = viewModel::showAnswer,
-                    onRate = viewModel::rateCard,
+                    onRate = rate,
                     onExit = onBackClick
                 ),
             contentAlignment = Alignment.TopCenter
@@ -126,7 +130,8 @@ fun StudyScreen(
                         state = current,
                         onClose = onBackClick,
                         onReveal = viewModel::showAnswer,
-                        onRate = viewModel::rateCard
+                        onRate = rate,
+                        ratePulse = ratePulse
                     )
 
                     is StudyState.Finished -> StudyFinished(

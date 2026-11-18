@@ -76,13 +76,21 @@ fun Modifier.studyKeys(
         cardShown
     )
     if (action == StudyKeyAction.Ignore) return@onPreviewKeyEvent false
-    if (event.type == KeyEventType.KeyDown) {
-        when (action) {
-            StudyKeyAction.Reveal -> onReveal()
-            is StudyKeyAction.Rate -> onRate(action.quality)
-            StudyKeyAction.Exit -> onExit()
-            StudyKeyAction.Ignore -> Unit
-        }
-    }
+    if (event.type == KeyEventType.KeyDown) dispatchStudyKeyAction(action, onReveal, onRate, onExit)
     true
+}
+
+/** Ejecuta la accion de teclado ya decidida. Separado de [studyKeys] para poder probar que las teclas 1-4 llegan a [onRate]. */
+fun dispatchStudyKeyAction(
+    action: StudyKeyAction,
+    onReveal: () -> Unit,
+    onRate: (ReviewQuality) -> Unit,
+    onExit: () -> Unit
+) {
+    when (action) {
+        StudyKeyAction.Reveal -> onReveal()
+        is StudyKeyAction.Rate -> onRate(action.quality)
+        StudyKeyAction.Exit -> onExit()
+        StudyKeyAction.Ignore -> Unit
+    }
 }
