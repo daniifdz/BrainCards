@@ -38,7 +38,7 @@ fun main() {
             },
             state = windowState,
             title = "BrainCards",
-            icon = painterResource("playstore-icon.png")
+            icon = painterResource("icon.png")
         ) {
             App()
         }

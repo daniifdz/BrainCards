@@ -259,6 +259,10 @@ compose.desktop {
             packageName = "BrainCards"
             packageVersion = appVersionName
 
+            linux {
+                iconFile.set(project.file("src/jvmMain/resources/icon.png"))
+            }
+
             windows {
                 iconFile.set(project.file("src/jvmMain/resources/icon.ico"))
                 menuGroup = "BrainCards"
