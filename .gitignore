@@ -24,3 +24,16 @@ composeApp/keystore/
 *.keystore
 google-services.json
 .env*
+.claude/
+*.p12
+*.pem
+*.key
+keystore.properties
+service-account*.json
+*.apk
+*.aab
+CLAUDE.md
+FINAL_SPRINT.md
+PROGRESS.md
+MIGRATION_SPRINT.md
+docs/design/mockups/screenshot.py
