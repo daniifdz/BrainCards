@@ -130,6 +130,19 @@ class StudyViewModelFreeReviewTest {
         return seen
     }
 
+    /** Historial de TODOS los estados por los que pasa el VM (incluido el inicial). */
+    private fun TestScope.collectStates(vm: StudyViewModel): MutableList<StudyState> {
+        val seen = mutableListOf<StudyState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect { seen += it } }
+        return seen
+    }
+
+    private fun assertNeverShowedASessionScreen(states: List<StudyState>) {
+        assertTrue(states.none { it is StudyState.Finished }, "no se pasa por Resultados: $states")
+        assertTrue(states.none { it is StudyState.Empty }, "ni por la pantalla de «al dia»: $states")
+        assertTrue(states.none { it is StudyState.Reviewing }, "ni se muestra ninguna tarjeta: $states")
+    }
+
     private fun TestScope.collectMessages(vm: StudyViewModel): MutableList<StudyMessage> {
         val seen = mutableListOf<StudyMessage>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.messageEvent.collect { seen += it } }
@@ -317,11 +330,13 @@ class StudyViewModelFreeReviewTest {
     fun sin_ninguna_tarjeta_al_cargar_vuelve_al_origen_sin_pantalla_de_Empty() = runTest {
         val e = Env(emptyList())
         val exits = collectExits(e.vm)
+        val states = collectStates(e.vm)
 
         e.vm.initSession(StudyScope.All, free)
 
         assertEquals(1, exits.size, "pide volver al origen")
         assertNotEquals(StudyState.Empty, e.state, "el repaso libre no tiene pantalla de «al dia»")
+        assertNeverShowedASessionScreen(states)
     }
 
     @Test
@@ -340,11 +355,13 @@ class StudyViewModelFreeReviewTest {
         val e = Env(listOf(card("a"), card("b")))
         e.repo.deleted += setOf("a", "b") // la fuente aun las listaba, pero ya no existen al mostrarlas
         val exits = collectExits(e.vm)
+        val states = collectStates(e.vm)
 
         e.vm.initSession(StudyScope.All, free)
 
         assertEquals(1, exits.size)
         assertNotEquals(StudyState.Empty, e.state)
+        assertNeverShowedASessionScreen(states)
     }
 
     @Test

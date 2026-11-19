@@ -64,6 +64,9 @@ import org.braincards.app.presentation.sync.SyncErrorKind
 import org.braincards.app.presentation.sync.SyncIndicator
 import org.braincards.app.presentation.sync.SyncStatusViewModel
 import org.braincards.app.presentation.components.BrandBadge
+import org.braincards.app.presentation.components.FreeReviewGhostButton
+import org.braincards.app.presentation.components.HOME_FREE_REVIEW_BUTTON
+import org.braincards.app.presentation.components.negativeTopMargin
 import org.braincards.app.presentation.components.Pill
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.pluralStringResource
@@ -79,6 +82,7 @@ private val COMPACT_WIDTH_BREAKPOINT = 600.dp
 fun HomeScreen(
     onNavigateToDecks: () -> Unit,
     onNavigateToStudy: () -> Unit,
+    onNavigateToFreeReview: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToStats: () -> Unit,
     onNavigateToAuth: () -> Unit,
@@ -94,6 +98,7 @@ fun HomeScreen(
         onRetry = homeViewModel::retry,
         onNavigateToDecks = onNavigateToDecks,
         onNavigateToStudy = onNavigateToStudy,
+        onNavigateToFreeReview = onNavigateToFreeReview,
         onNavigateToStats = onNavigateToStats,
         // Con sesion (incluido "sin conexion") la pildora lleva a Ajustes; en modo invitado, a iniciar sesion.
         onPillClick = if (indicator == SyncIndicator.Guest) onNavigateToAuth else onNavigateToSettings,
@@ -108,6 +113,7 @@ internal fun HomeContent(
     onRetry: () -> Unit,
     onNavigateToDecks: () -> Unit,
     onNavigateToStudy: () -> Unit,
+    onNavigateToFreeReview: () -> Unit,
     onNavigateToStats: () -> Unit,
     onPillClick: () -> Unit,
     onNavigateToSettings: () -> Unit
@@ -152,15 +158,32 @@ internal fun HomeContent(
                 }
 
                 else -> {
-                    when (state) {
-                        is HomeUiState.Content -> StudyAllButton(
-                            dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
-                        )
-                        HomeUiState.NoDecks -> FirstUseCard(compact = compact, onCreateDeck = onNavigateToDecks)
-                        // 5.º estado: mazos sin ninguna tarjeta. Sin "Estudiar Todo": no hay nada que estudiar.
-                        HomeUiState.NoCards -> NoCardsCard(compact = compact, onGoToDecks = onNavigateToDecks)
-                        HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
-                        else -> StudyAllOutlineButton(compact = compact, onClick = onNavigateToStudy)
+                    // Repaso libre (paso 14c): SOLO bajo «Todo al dia» (homeShowsFreeReview), con el hueco de 14 del mockup entre el bloque de
+                    // estado, el boton ghost y su linea de ayuda. En el resto de estados la columna solo tiene el bloque de siempre.
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        when (state) {
+                            is HomeUiState.Content -> StudyAllButton(
+                                dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
+                            )
+                            HomeUiState.NoDecks -> FirstUseCard(compact = compact, onCreateDeck = onNavigateToDecks)
+                            // 5.º estado: mazos sin ninguna tarjeta. Sin "Estudiar Todo": no hay nada que estudiar.
+                            HomeUiState.NoCards -> NoCardsCard(compact = compact, onGoToDecks = onNavigateToDecks)
+                            HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
+                            else -> StudyAllOutlineButton(compact = compact, onClick = onNavigateToStudy)
+                        }
+                        if (homeShowsFreeReview(state)) {
+                            FreeReviewGhostButton(
+                                label = stringResource(Res.string.free_review),
+                                onClick = onNavigateToFreeReview,
+                                metrics = HOME_FREE_REVIEW_BUTTON
+                            )
+                            Text(
+                                text = stringResource(Res.string.home_free_review_hint),
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.negativeTopMargin(8.dp)
+                            )
+                        }
                     }
                     val cards = listOf(
                         NavCardData(

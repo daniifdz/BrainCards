@@ -25,14 +25,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import braincards.composeapp.generated.resources.Res
+import braincards.composeapp.generated.resources.free_review
 import braincards.composeapp.generated.resources.study_empty_text
 import braincards.composeapp.generated.resources.study_empty_title
+import org.braincards.app.presentation.components.EMPTY_FREE_REVIEW_BUTTON
+import org.braincards.app.presentation.components.FreeReviewGhostButton
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.stringResource
 
 /** Estado vacio «¡Estamos al día!» (mockup `estudio-vacio.html`): icono en chip, titulo, texto y un unico boton; el boton dice "Volver al inicio" (Home) o "Volver al mazo" (mazo) y vuelve al origen. */
 @Composable
-fun StudyEmpty(origin: StudyOrigin, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun StudyEmpty(origin: StudyOrigin, onBack: () -> Unit, onFreeReview: () -> Unit, modifier: Modifier = Modifier) {
     val extra = BrainCardsTheme.extraColors
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -57,6 +60,14 @@ fun StudyEmpty(origin: StudyOrigin, onBack: () -> Unit, modifier: Modifier = Mod
             )
             OutlinedButton(onClick = onBack, modifier = Modifier.padding(top = 8.dp)) {
                 Text(studyBackLabel(origin), fontSize = 15.sp)
+            }
+            // «Repaso libre» (ghost) bajo el boton de volver: la sesion libre SUSTITUYE a esta pantalla (ver StudyEntry.FreeReviewFromEmpty).
+            if (studyEmptyShowsFreeReview(origin)) {
+                FreeReviewGhostButton(
+                    label = stringResource(Res.string.free_review),
+                    onClick = onFreeReview,
+                    metrics = EMPTY_FREE_REVIEW_BUTTON
+                )
             }
         }
     }

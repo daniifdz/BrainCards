@@ -45,6 +45,14 @@ fun showResultsFreeNotice(freeReview: Boolean): Boolean = freeReview
 fun studyResultsTitleRes(freeReview: Boolean): StringResource =
     if (freeReview) Res.string.study_results_title_free else Res.string.study_results_title
 
+/**
+ * ¿El estado vacio de Estudio («¡Estamos al dia!») ofrece «Repaso libre»? SIEMPRE, con cualquier origen (Home o un mazo): para llegar a ese
+ * estado hace falta que exista al menos una tarjeta en el origen, asi que nunca hay que ocultarlo por falta de contenido (handoff v4.25).
+ */
+fun studyEmptyShowsFreeReview(origin: StudyOrigin): Boolean = when (origin) {
+    StudyOrigin.Home, StudyOrigin.Deck -> true
+}
+
 /** Chip gris neutro (mismo componente que la pildora de sync de Home, `.pill.sm`: no es de exito ni de error, solo informa). */
 @Composable
 fun FreeReviewChip(label: String, modifier: Modifier = Modifier) {

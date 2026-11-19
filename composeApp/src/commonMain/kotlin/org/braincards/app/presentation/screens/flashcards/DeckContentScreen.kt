@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.PlayArrow
@@ -53,6 +54,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -74,6 +78,7 @@ import braincards.composeapp.generated.resources.deckcontent_inside
 import braincards.composeapp.generated.resources.deckcontent_load_error
 import braincards.composeapp.generated.resources.deckcontent_loading
 import braincards.composeapp.generated.resources.deckcontent_new_card
+import braincards.composeapp.generated.resources.free_review
 import braincards.composeapp.generated.resources.deckcontent_new_topic
 import braincards.composeapp.generated.resources.deckcontent_no_results
 import braincards.composeapp.generated.resources.deckcontent_no_results_hint
@@ -120,7 +125,9 @@ fun DeckContentScreen(
     deckId: String,
     onBackClick: () -> Unit,
     onDeckGone: () -> Unit,
-    onStudyClick: (String) -> Unit
+    onStudyClick: (String) -> Unit,
+    /** «Repaso libre» del mazo: App.kt abre la sesion libre con una semilla nueva. */
+    onFreeReviewClick: (String) -> Unit
 ) {
     val viewModel = koinViewModel<DeckContentViewModel>(parameters = { parametersOf(deckId) })
     val state by viewModel.state.collectAsState()
@@ -206,27 +213,31 @@ fun DeckContentScreen(
                         )
                     }
                     is DeckContentUiState.Empty -> DeckHeader(
-                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), showFreeReview = showFreeReviewButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
-                        onStudy = { onStudyClick(deckId) }
+                        onStudy = { onStudyClick(deckId) },
+                        onFreeReview = { onFreeReviewClick(deckId) }
                     )
                     is DeckContentUiState.NoResults -> DeckHeader(
-                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), showFreeReview = showFreeReviewButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
-                        onStudy = { onStudyClick(deckId) }
+                        onStudy = { onStudyClick(deckId) },
+                        onFreeReview = { onFreeReviewClick(deckId) }
                     )
                     is DeckContentUiState.Search -> DeckHeader(
-                        deckName = current.deckName, showStudy = showStudyButton(current), onBack = onBackClick,
+                        deckName = current.deckName, showStudy = showStudyButton(current), showFreeReview = showFreeReviewButton(current), onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
-                        onStudy = { onStudyClick(deckId) }
+                        onStudy = { onStudyClick(deckId) },
+                        onFreeReview = { onFreeReviewClick(deckId) }
                     )
                     is DeckContentUiState.Root -> DeckHeader(
                         deckName = current.deckName,
                         // Solo en el nivel del mazo con tarjetas y sin busqueda activa (ver showStudyButton).
-                        showStudy = showStudyButton(current),
+                        showStudy = showStudyButton(current), showFreeReview = showFreeReviewButton(current),
                         onBack = onBackClick,
                         onNewTopic = ::openCreateTopic, onNewCard = ::openCreateCard,
-                        onStudy = { onStudyClick(deckId) }
+                        onStudy = { onStudyClick(deckId) },
+                        onFreeReview = { onFreeReviewClick(deckId) }
                     )
                     DeckContentUiState.Loading, DeckContentUiState.Error, DeckContentUiState.DeckGone ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -394,45 +405,110 @@ fun DeckContentScreen(
  * "Estudiar" (accion PRIMARIA, rellena; solo con tarjetas y sin busqueda: [showStudy]), "Nuevo tema" y "Nueva tarjeta"
  * (ambos outline). Los botones van en un FlowRow: si no caben en una linea, envuelven (mockup: `flex-wrap`).
  */
-@OptIn(ExperimentalLayoutApi::class)
+/** Partes medibles de la cabecera (solo las usa el test de render: `inspect` es null en produccion). */
+internal enum class DeckHeaderPart { TitleRow, Study, FreeReview, NewTopic, NewCard }
+
+/** Textos de la cabecera ya resueltos (el test de render pasa literales: sin cargar recursos). */
+internal class DeckHeaderLabels(
+    val study: String,
+    val studyDescription: String,
+    val freeReview: String,
+    val newTopic: String,
+    val newCard: String,
+    val back: String
+)
+
+private fun Modifier.inspectPart(part: DeckHeaderPart, inspect: ((DeckHeaderPart, Rect) -> Unit)?): Modifier =
+    if (inspect == null) this else this.onGloballyPositioned { inspect(part, it.boundsInRoot()) }
+
 @Composable
 private fun DeckHeader(
     deckName: String,
     showStudy: Boolean,
+    showFreeReview: Boolean,
     onBack: () -> Unit,
     onNewTopic: () -> Unit,
     onNewCard: () -> Unit,
-    onStudy: () -> Unit
+    onStudy: () -> Unit,
+    onFreeReview: () -> Unit
 ) {
-    val studyLabel = stringResource(Res.string.deckcontent_study_button)
-    val studyDescription = stringResource(Res.string.deckcontent_study)
-    val newTopicLabel = stringResource(Res.string.deckcontent_new_topic)
-    val newCardLabel = stringResource(Res.string.deckcontent_new_card)
-    val backLabel = stringResource(Res.string.deckcontent_back_to_decks)
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    DeckHeaderContent(
+        deckName = deckName,
+        labels = DeckHeaderLabels(
+            study = stringResource(Res.string.deckcontent_study_button),
+            studyDescription = stringResource(Res.string.deckcontent_study),
+            freeReview = stringResource(Res.string.free_review),
+            newTopic = stringResource(Res.string.deckcontent_new_topic),
+            newCard = stringResource(Res.string.deckcontent_new_card),
+            back = stringResource(Res.string.deckcontent_back_to_decks)
+        ),
+        showStudy = showStudy,
+        showFreeReview = showFreeReview,
+        onBack = onBack,
+        onNewTopic = onNewTopic,
+        onNewCard = onNewCard,
+        onStudy = onStudy,
+        onFreeReview = onFreeReview
+    )
+}
+
+/**
+ * Cabecera del mazo: flecha + nombre y las acciones en este orden: «Estudiar» (brand, ÚNICA acción primaria), «Repaso libre» (outline, solo con
+ * las mismas condiciones que «Estudiar»), «Nuevo tema» y «Nueva tarjeta» (outline). Las dos de estudio van antes que las de creacion. Los
+ * botones van en un FlowRow: si no caben en una linea, envuelven (mockup: `flex-wrap`).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun DeckHeaderContent(
+    deckName: String,
+    labels: DeckHeaderLabels,
+    showStudy: Boolean,
+    showFreeReview: Boolean,
+    onBack: () -> Unit,
+    onNewTopic: () -> Unit,
+    onNewCard: () -> Unit,
+    onStudy: () -> Unit,
+    onFreeReview: () -> Unit,
+    modifier: Modifier = Modifier,
+    inspect: ((DeckHeaderPart, Rect) -> Unit)? = null
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val actions: @Composable () -> Unit = {
             if (showStudy) {
                 // La descripcion accesible sustituye a "Estudiar" por "Estudiar mazo".
-                Button(onClick = onStudy, modifier = Modifier.semantics { contentDescription = studyDescription }) {
+                Button(
+                    onClick = onStudy,
+                    modifier = Modifier.semantics { contentDescription = labels.studyDescription }.inspectPart(DeckHeaderPart.Study, inspect)
+                ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.size(8.dp))
-                    Text(studyLabel)
+                    Text(labels.study)
                 }
             }
-            OutlinedButton(onClick = onNewTopic) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.size(8.dp))
-                Text(newTopicLabel)
+            if (showFreeReview) {
+                OutlinedButton(onClick = onFreeReview, modifier = Modifier.inspectPart(DeckHeaderPart.FreeReview, inspect)) {
+                    Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.size(8.dp))
+                    Text(labels.freeReview)
+                }
             }
-            OutlinedButton(onClick = onNewCard) {
+            OutlinedButton(onClick = onNewTopic, modifier = Modifier.inspectPart(DeckHeaderPart.NewTopic, inspect)) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(8.dp))
-                Text(newCardLabel)
+                Text(labels.newTopic)
+            }
+            OutlinedButton(onClick = onNewCard, modifier = Modifier.inspectPart(DeckHeaderPart.NewCard, inspect)) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(8.dp))
+                Text(labels.newCard)
             }
         }
         if (maxWidth < COMPACT_WIDTH) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                BackAndTitle(title = deckName, backLabel = backLabel, onBack = onBack, modifier = Modifier.fillMaxWidth())
+                BackAndTitle(
+                    title = deckName, backLabel = labels.back, onBack = onBack,
+                    modifier = Modifier.fillMaxWidth().inspectPart(DeckHeaderPart.TitleRow, inspect)
+                )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -440,7 +516,10 @@ private fun DeckHeader(
             }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                BackAndTitle(title = deckName, backLabel = backLabel, onBack = onBack, modifier = Modifier.weight(1f))
+                BackAndTitle(
+                    title = deckName, backLabel = labels.back, onBack = onBack,
+                    modifier = Modifier.weight(1f).inspectPart(DeckHeaderPart.TitleRow, inspect)
+                )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)

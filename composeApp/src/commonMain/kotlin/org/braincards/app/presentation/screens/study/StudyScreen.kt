@@ -54,6 +54,8 @@ private val STUDY_MAX_WIDTH = 640.dp
 fun StudyScreen(
     deckId: String?,
     onBackClick: () -> Unit,
+    /** «Repaso libre» del estado vacio: App.kt abre la sesion libre SUSTITUYENDO a esta pantalla (con una semilla nueva). */
+    onFreeReview: () -> Unit,
     viewModel: StudyViewModel = koinViewModel(),
     /** Repaso libre (paso 14): la semilla del orden aleatorio (viene de la ruta); null = sesion normal. */
     freeReviewSeed: Long? = null
@@ -134,7 +136,7 @@ fun StudyScreen(
                         )
                     }
 
-                    StudyState.Empty -> StudyEmpty(origin = origin, onBack = onBackClick)
+                    StudyState.Empty -> StudyEmpty(origin = origin, onBack = onBackClick, onFreeReview = onFreeReview)
 
                     is StudyState.Reviewing -> StudyReviewing(
                         state = current,

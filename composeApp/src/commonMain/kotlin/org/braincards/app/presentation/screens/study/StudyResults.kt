@@ -39,7 +39,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -68,6 +67,7 @@ import org.braincards.app.domain.models.StudyResults
 import org.braincards.app.domain.models.StudyScope
 import org.braincards.app.platform.rememberReducedMotion
 import org.braincards.app.presentation.components.BrandBadge
+import org.braincards.app.presentation.components.negativeTopMargin
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
@@ -297,11 +297,4 @@ private fun CountingTotal(total: Int, progress: () -> Float) {
         textAlign = TextAlign.Center,
         modifier = Modifier.clearAndSetSemantics { }
     )
-}
-
-/** Equivalente al `margin-top` negativo del mockup: el elemento sube [amount] y TAMBIEN deja de reservar ese espacio (lo que va debajo sube con el). */
-private fun Modifier.negativeTopMargin(amount: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    val shift = amount.roundToPx()
-    layout(placeable.width, (placeable.height - shift).coerceAtLeast(0)) { placeable.place(0, -shift) }
 }

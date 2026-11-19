@@ -21,6 +21,7 @@ import org.braincards.app.presentation.screens.decks.DecksScreen
 import org.braincards.app.presentation.screens.flashcards.DeckContentScreen
 import org.braincards.app.presentation.screens.navigation.Screen
 import org.braincards.app.presentation.screens.study.StudyScreen
+import kotlin.random.Random
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.isSystemInDarkTheme
 import org.braincards.app.presentation.screens.home.HomeScreen
@@ -42,11 +43,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import org.braincards.app.presentation.screens.navigation.THEME_LOAD_TIMEOUT_MS
 import org.braincards.app.presentation.screens.navigation.SplashExitSignal
+import org.braincards.app.presentation.screens.navigation.StudyEntry
+import org.braincards.app.presentation.screens.navigation.StudyNavigation
+import org.braincards.app.presentation.screens.navigation.studyNavigation
 import org.braincards.app.presentation.screens.navigation.rememberSplashTimeline
 import org.braincards.app.presentation.screens.navigation.shouldShowEntryPending
 import kotlinx.coroutines.launch
 import org.braincards.app.presentation.theme.resolveDarkTheme
 import org.braincards.app.presentation.screens.studyStats.StudyStatsScreen
+import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -146,8 +151,11 @@ private fun AppNavigation(
             HomeScreen(
                 onNavigateToDecks = { navController.navigate(Screen.DecksList) },
                 onNavigateToStudy = {
-                    val destination = Screen.StudySession(deckId = null)
-                    navController.navigate(destination)
+                    navController.openStudy(studyNavigation(StudyEntry.Study, deckId = null, seed = 0L))
+                },
+                // Repaso libre de todos los mazos («Todo al dia»): la semilla del orden se genera AQUI, en el punto de navegacion.
+                onNavigateToFreeReview = {
+                    navController.openStudy(studyNavigation(StudyEntry.FreeReview, deckId = null, seed = Random.nextLong()))
                 },
                 onNavigateToSettings = { navController.navigate(Screen.Settings) },
                 onNavigateToStats = { navController.navigate(Screen.Stats) },
@@ -174,9 +182,10 @@ private fun AppNavigation(
                 // Si el mazo desaparece (p. ej. borrado en otro dispositivo): salida segura, nunca popBackStack().
                 onDeckGone = { navController.popBackStackSafely() },
                 onStudyClick = { deckId ->
-
-                    val destination = Screen.StudySession(deckId = deckId)
-                    navController.navigate(destination)
+                    navController.openStudy(studyNavigation(StudyEntry.Study, deckId = deckId, seed = 0L))
+                },
+                onFreeReviewClick = { deckId ->
+                    navController.openStudy(studyNavigation(StudyEntry.FreeReview, deckId = deckId, seed = Random.nextLong()))
                 }
             )
         }
@@ -188,6 +197,10 @@ private fun AppNavigation(
 
                 onBackClick = {
                     navController.popBackStackSafely()
+                },
+                // «Repaso libre» del estado vacio: la sesion libre SUSTITUYE a esta (popUpTo inclusive) y ✕ sigue volviendo al origen.
+                onFreeReview = {
+                    navController.openStudy(studyNavigation(StudyEntry.FreeReviewFromEmpty, deckId = route.deckId, seed = Random.nextLong()))
                 }
             )
         }
@@ -264,5 +277,12 @@ private fun AppNavigation(
             )
         }
 
+    }
+}
+
+/** Abre una sesion de estudio (ver [studyNavigation]); si debe sustituir a la actual, la saca de la pila (inclusive) para que no crezca. */
+private fun NavController.openStudy(nav: StudyNavigation) {
+    navigate(nav.destination) {
+        if (nav.replaceCurrentStudy) popUpTo<Screen.StudySession> { inclusive = true }
     }
 }

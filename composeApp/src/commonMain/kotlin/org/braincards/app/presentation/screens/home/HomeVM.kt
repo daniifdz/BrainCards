@@ -61,6 +61,13 @@ fun homeDeckStats(summaries: List<DeckSummary>): HomeDeckStats {
  * [HomeUiState.Content]. "Sin tarjetas" mira el TOTAL de tarjetas, no las pendientes: 0 pendientes con tarjetas es
  * "Todo al dia".
  */
+/**
+ * ¿Se ofrece «Repaso libre» en Home? SOLO en «Todo al dia» ([HomeUiState.Empty]: hay tarjetas pero 0 pendientes, asi que siempre hay algo que
+ * repasar). Con pendientes ([HomeUiState.Content]) no (handoff v4.25: «Estudiar Todo» ya es la accion), ni en primer uso (0 mazos) ni con
+ * mazos sin tarjetas (nada que repasar), ni cargando o con error.
+ */
+fun homeShowsFreeReview(state: HomeUiState): Boolean = state is HomeUiState.Empty
+
 fun selectHomeState(stats: HomeDeckStats, dueCount: Int): HomeUiState = when {
     stats.deckCount == 0 -> HomeUiState.NoDecks
     stats.cardCount == 0 -> HomeUiState.NoCards

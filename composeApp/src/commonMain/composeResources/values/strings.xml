@@ -300,6 +300,7 @@
     <string name="study_results_stat_a11y">%1$s: %2$d</string>
     <!-- Repaso libre (handoff v4.25, paso 14): chip, avisos y titulo de Resultados -->
     <string name="free_review">Repaso libre</string>
+    <string name="home_free_review_hint">Repasa todos tus mazos en orden aleatorio. No afecta a tu programación.</string>
     <string name="study_free_review_notice">No cambia tu programación.</string>
     <string name="study_results_title_free">¡Repaso completado!</string>
     <string name="study_results_free_notice">No afecta a tu programación de repaso.</string>

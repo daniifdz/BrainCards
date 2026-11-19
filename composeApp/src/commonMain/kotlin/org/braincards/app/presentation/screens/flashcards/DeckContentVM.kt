@@ -133,6 +133,9 @@ internal fun resolveTopicSelection(selectedId: String?, options: List<Topic>): S
 internal fun showStudyButton(state: DeckContentUiState): Boolean =
     state is DeckContentUiState.Root && state.hasCards
 
+/** ¿Se dibuja «Repaso libre» en la cabecera? Misma condicion que «Estudiar» (handoff v4.25): oculto con 0 tarjetas, en busqueda y en el subnivel de un tema. */
+internal fun showFreeReviewButton(state: DeckContentUiState): Boolean = showStudyButton(state)
+
 /**
  * Contenido de UN mazo ([deckId]): temas + tarjetas, buscador y subnivel de tema. Sustituye a FlashCardViewModel y
  * TopicVM. El tema abierto vive aqui (no en la ruta): handoff 5.1e.
