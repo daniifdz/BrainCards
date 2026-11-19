@@ -24,8 +24,6 @@ interface CardSchedulingDao {
     @Query("SELECT * FROM card_scheduling")
     fun getAll(): Flow<List<CardSchedulingEntity>>
 
-    // --- sync ---
-
     // Invariante de dueno: scheduling.userId == flashcard.userId (la RLS lo exige). Solo se
     // reclaman filas huerfanas cuya flashcard ya es de este usuario.
     @Query(

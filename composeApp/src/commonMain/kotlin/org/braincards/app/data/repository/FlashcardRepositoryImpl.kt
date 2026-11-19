@@ -58,7 +58,7 @@ class FlashcardRepositoryImpl(
         return flashcardDao.getPendingSyncFlashcards(userId).map { it.toDomain() }
     }
 
-    // LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
+    // LWW por fila: ver DeckRepositoryImpl.applyRemotePull.
     override suspend fun applyRemotePull(flashcards: List<Flashcard>): Int =
         applyRemotePullReporting(flashcards).applied
 

@@ -41,18 +41,16 @@ interface DeckDao {
     @Query("SELECT * FROM decks WHERE id = :id AND deletedAt IS NULL")
     suspend fun getDeckById(id: String): DeckEntity?
 
-    // sync (Bloque E, LWW) -- sin filtro deletedAt IS NULL a proposito: para comparar
-    // updatedAt contra una fila remota del pull, un tombstone local sigue siendo la
-    // fila real (con su updatedAt real), no "no existe". Si usaramos getDeckById aqui,
-    // una fila borrada localmente parecería inexistente y el pull la resucitaria.
+    // Sync (LWW): sin filtro deletedAt IS NULL a propósito. Para comparar updatedAt con una fila remota del pull, un tombstone
+    // local sigue siendo la fila real (con su updatedAt real), no «no existe». Con getDeckById, una fila borrada localmente
+    // parecería inexistente y el pull la resucitaría.
     @Query("SELECT * FROM decks WHERE id = :id")
     suspend fun getDeckByIdIncludingDeleted(id: String): DeckEntity?
 
     @Query("UPDATE decks SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedDecks(userId: String): Int
 
-    // sync (Bloque D) -- sin filtro deletedAt IS NULL a proposito, ver comentario
-    // en DecksRepository.getPendingSync.
+    // Sync: sin filtro deletedAt IS NULL a propósito, ver DecksRepository.getPendingSync.
     @Query("SELECT * FROM decks WHERE userId = :userId AND (lastSyncedAt IS NULL OR updatedAt > lastSyncedAt)")
     suspend fun getPendingSyncDecks(userId: String): List<DeckEntity>
 
@@ -73,8 +71,8 @@ interface DeckDao {
     @Query("UPDATE decks SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
     suspend fun markDecksPushed(ids: List<String>, syncedAt: Instant)
 
-    // Bloque F (borrado de cuenta) -- inverso de claimOrphanedDecks. Sin filtro
-    // deletedAt IS NULL a proposito: un tombstone tambien debe liberarse.
+    // Inverso de claimOrphanedDecks (borrado de cuenta). Sin filtro deletedAt IS NULL a propósito: un tombstone también debe
+    // liberarse.
     @Query("UPDATE decks SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseDecksFromUser(userId: String): Int
 

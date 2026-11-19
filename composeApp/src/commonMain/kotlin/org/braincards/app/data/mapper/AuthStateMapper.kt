@@ -5,18 +5,13 @@ import io.github.jan.supabase.auth.user.UserSession
 import org.braincards.app.domain.models.AuthState
 
 /**
- * Mapeo puro SessionStatus -> AuthState. [savedSession] viene ya resuelto por el
- * caller (AuthRepositoryImpl), que solo lee sessionManager.loadSession() cuando
- * status es RefreshFailure -- aqui no se hace ningun I/O.
+ * Mapeo puro SessionStatus -> AuthState. [savedSession] viene ya resuelto por el caller (AuthRepositoryImpl), que solo lee
+ * sessionManager.loadSession() cuando el estado es RefreshFailure: aquí no se hace I/O.
  *
- * RefreshFailure (NetworkError o InternalServerError, verificado en el codigo
- * fuente real de auth-kt 3.1.4, AuthImpl.kt) nunca borra la sesion guardada --
- * clearSession() solo se llama cuando el refresh token es rechazado de verdad por
- * el servidor (eso ya llega aqui como NotAuthenticated, no como RefreshFailure).
- * Por eso, si hay una sesion guardada, se mapea a Authenticated con
- * sessionConfirmed = false en vez de NotAuthenticated -- de lo contrario, un
- * arranque sin conexion con una sesion valida parecería "nunca inicio sesion".
- * Sin sesion guardada, NotAuthenticated (no hay nada que mostrar como cuenta).
+ * RefreshFailure (NetworkError o InternalServerError, según auth-kt 3.1.4) nunca borra la sesión guardada: clearSession()
+ * solo se llama cuando el servidor rechaza de verdad el refresh token (eso llega aquí como NotAuthenticated). Por eso, si
+ * hay sesión guardada, se mapea a Authenticated con sessionConfirmed = false en lugar de NotAuthenticated; si no, un
+ * arranque sin conexión con una sesión válida parecería «nunca inició sesión». Sin sesión guardada, NotAuthenticated.
  */
 fun SessionStatus.toAuthState(savedSession: UserSession?): AuthState = when (this) {
     is SessionStatus.Authenticated -> buildAuthenticatedState(session, sessionConfirmed = true)

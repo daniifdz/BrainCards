@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 
-//cumplimos la promesa, uso del Context de Android
+// Implementación de Android: usa el Context de la aplicación.
 actual class DatabaseFactory(
     private val context: Context
 ) {

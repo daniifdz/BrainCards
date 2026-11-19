@@ -21,10 +21,8 @@ import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.RemoteDataSource
 
 /**
- * Envoltura fina sobre Postgrest -- no atrapa excepciones a proposito. Un fallo de
- * red aqui se propaga tal cual al SyncEngineUseCase (paso siguiente), que es quien
- * decide como manejarlo (por-fila en el PUSH, todo-o-nada por tabla en el PULL,
- * segun quedo acordado en el plan del Bloque D).
+ * Envoltura fina sobre Postgrest. No atrapa excepciones a propósito: un fallo de red se propaga tal cual a
+ * SyncEngineUseCase, que decide cómo manejarlo (por fila en el push, todo o nada por tabla en el pull).
  */
 class RemoteDataSourceImpl(
     private val client: SupabaseClient,

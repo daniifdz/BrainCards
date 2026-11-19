@@ -8,15 +8,16 @@ import org.braincards.app.domain.models.CardType
 
 class Converters {
 
-    //cada conversion necesita dos funciones, en parejam ambas marcadas con
-    //@TypeConverter
+    // Cada conversión necesita dos funciones, en pareja, ambas marcadas con @TypeConverter.
 
-    @TypeConverter //esta convierte de la BD a kotlin, se usa cuando Room lee una fila
+    // BD -> Kotlin: Room lo usa al leer una fila.
+    @TypeConverter
     fun fromTimestamp(value: Long?): Instant? {
         return value?.let { Instant.fromEpochMilliseconds(it) }
     }
 
-    @TypeConverter //esta de kotlin a BD, se usa cuando room escribe una fila
+    // Kotlin -> BD: Room lo usa al escribir una fila.
+    @TypeConverter
     fun dateToTimestamp(date: Instant?): Long? {
         return date?.toEpochMilliseconds()
     }
@@ -31,13 +32,12 @@ class Converters {
         return options?.let { Json.encodeToString(it) }
     }
 
-    //Recibe lo que viene guardado en la base de datos "String" y devuelve el cardtype.
-    //el nombre da igual solo mira los tipos entrada/salida
+    // Recibe el String guardado en la base de datos y devuelve el CardType. El nombre da igual: Room solo mira los tipos de
+    // entrada y salida.
     @TypeConverter
     fun fromCardTypeString(value: String?): CardType? {
-        // Si el valor es nulo, devuelve null
-        //Busca en el enum CardType el valor cuyo nombre coincide exactamente con el texto (it).
-        //Si guardaste "FLIP", te devuelve CardType.FLIP.
+        // Nulo -> null; si no, busca el valor del enum CardType cuyo nombre coincide exactamente con el texto (p. ej. «FLIP» da
+        // CardType.FLIP).
         return value?.let { CardType.valueOf(it) }
     }
 

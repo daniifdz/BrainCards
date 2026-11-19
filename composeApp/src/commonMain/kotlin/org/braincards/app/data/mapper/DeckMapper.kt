@@ -5,7 +5,6 @@ import org.braincards.app.domain.models.Deck
 import kotlin.time.ExperimentalTime
 
 
-//convertimos del dominio a la base de datos para poder guardar
 @OptIn(ExperimentalTime::class)
 fun Deck.toEntity(): DeckEntity {
     return DeckEntity(
@@ -21,7 +20,6 @@ fun Deck.toEntity(): DeckEntity {
 }
 
 
-//convertimos de la base de datos al dominio
 @OptIn(ExperimentalTime::class)
 fun DeckEntity.toDomain(): Deck {
     return Deck(

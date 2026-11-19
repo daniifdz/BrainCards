@@ -67,7 +67,7 @@ class TopicRepositoryImpl(
         return topicDao.getPendingSyncTopics(userId).map { it.toDomain() }
     }
 
-    // LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
+    // LWW por fila: ver DeckRepositoryImpl.applyRemotePull.
     override suspend fun applyRemotePull(topics: List<Topic>): Int =
         applyRemotePullReporting(topics).applied
 

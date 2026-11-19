@@ -27,18 +27,17 @@ interface TopicDao {
     @Query("SELECT * FROM topics WHERE id = :id AND deletedAt IS NULL")
     suspend fun getTopicById(id: String): TopicEntity?
 
-    // sync (Bloque E, LWW) -- ver comentario en DeckDao.getDeckByIdIncludingDeleted.
+    // Sync (LWW): ver DeckDao.getDeckByIdIncludingDeleted.
     @Query("SELECT * FROM topics WHERE id = :id")
     suspend fun getTopicByIdIncludingDeleted(id: String): TopicEntity?
 
     @Query("UPDATE topics SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedTopics(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DeckDao, mas el invariante de dueno: solo se sube un
-    // topic cuyo deck existe localmente (tambien borrado logicamente) y es del MISMO usuario (el
-    // INSERT del servidor solo comprueba user_id = auth.uid(), no de quien es el deck, y la FK
-    // salta RLS: sin esto se subirian topics colgados del deck de otra cuenta). NO se exige
-    // d.lastSyncedAt: el deck nuevo sube antes en el mismo push (decks -> topics -> flashcards).
+    // Sync: mismo criterio que DeckDao, más el invariante de dueño: solo se sube un tema cuyo mazo existe localmente (también
+    // borrado lógicamente) y es del mismo usuario (el INSERT del servidor solo comprueba user_id = auth.uid(), no de quién es el
+    // mazo, y la FK salta RLS: sin esto se subirían temas colgados del mazo de otra cuenta). No se exige d.lastSyncedAt: el mazo
+    // nuevo sube antes en el mismo push (mazos -> temas -> tarjetas).
     @Query(
         "SELECT t.* FROM topics t " +
             "INNER JOIN decks d ON d.id = t.deckId " +
@@ -69,7 +68,7 @@ interface TopicDao {
     @Query("UPDATE topics SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
     suspend fun markTopicsPushed(ids: List<String>, syncedAt: Instant)
 
-    // Bloque F (borrado de cuenta) -- ver comentario en DeckDao.releaseDecksFromUser.
+    // Borrado de cuenta: ver DeckDao.releaseDecksFromUser.
     @Query("UPDATE topics SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseTopicsFromUser(userId: String): Int
 

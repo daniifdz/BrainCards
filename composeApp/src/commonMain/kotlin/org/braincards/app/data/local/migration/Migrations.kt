@@ -14,9 +14,8 @@ import org.braincards.app.domain.util.IdGenerator
 val MIGRATION_3_4 = object : Migration(3, 4) {
     override fun migrate(connection: SQLiteConnection) {
 
-        //En los pasos 1-3
-        // se recorren las filas viejas y por cada fila genera un UUID nuevo con el idgGenerator,
-        // y lo guarda en un map
+        // En los pasos 1-3 se recorren las filas viejas y, por cada una, se genera un UUID nuevo con el idGenerator y se guarda en un
+        // mapa.
 
         // Paso 1: decks viejos -> UUID nuevo
         val deckIdMap = mutableMapOf<Long, String>()
@@ -83,8 +82,7 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
 
         // Paso 5: insertar filas remapeadas en las _new
 
-        //para cada tabla se abre un read y un insert, y por cada flipa que lee
-        //traduce los IDs usando los mapas de antes
+        // Para cada tabla se abre una lectura y una inserción, y por cada tarjeta leída se traducen los ids con los mapas anteriores.
 
 
         val decksRead = connection.prepare(
@@ -303,12 +301,11 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
 }
 
 /**
- * v5 -> v6: columnas de sync en card_scheduling (Sprint 12), mismas que ya tienen decks,
- * topics y flashcards. A diferencia de la 3->4 y la 4->5, aqui NO hay que reconstruir la
- * tabla ni copiar datos: ADD COLUMN de columnas nullables basta, y las filas existentes
- * quedan con userId = NULL (las adopta el backfill) y lastSyncedAt = NULL (pendientes de
- * subir). SQLite solo admite una columna por ALTER TABLE ... ADD COLUMN, de ahi las dos
- * sentencias. SQL equivalente a composeApp/schemas/.../6.json.
+ * v5 -> v6: columnas de sync en card_scheduling, las mismas que ya tienen decks, topics y flashcards. A diferencia de 3->4 y
+ * 4->5, aquí no hay que reconstruir la tabla ni copiar datos: ADD COLUMN de columnas nullables basta, y las filas
+ * existentes quedan con userId = NULL (las adopta el backfill) y lastSyncedAt = NULL (pendientes de subir). SQLite solo
+ * admite una columna por ALTER TABLE ... ADD COLUMN, de ahí las dos sentencias. SQL equivalente a
+ * composeApp/schemas/.../6.json.
  */
 val MIGRATION_5_6 = object : Migration(5, 6) {
     override fun migrate(connection: SQLiteConnection) {

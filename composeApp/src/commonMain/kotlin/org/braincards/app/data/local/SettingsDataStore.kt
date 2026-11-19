@@ -5,7 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 
 internal const val SETTINGS_DATASTORE_FILE_NAME = "braincards.preferences_pb"
 
-//esperamos que toda plataforma provea el DataStore de preferencias (tema, etc.)
+// Cada plataforma debe proveer el DataStore de preferencias (tema, etc.).
 expect class SettingsDataStoreFactory {
     fun create(): DataStore<Preferences>
 }

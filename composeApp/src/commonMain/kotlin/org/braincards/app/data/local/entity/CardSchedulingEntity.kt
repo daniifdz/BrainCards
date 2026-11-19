@@ -23,8 +23,8 @@ data class CardSchedulingEntity(
     val nextReview: Instant,
     val updatedAt: Instant,
 
-    // sync (Sprint 12) -- mismo criterio que decks/topics/flashcards. Sin valores por
-    // defecto a proposito: el compilador senala cada sitio que construye la entidad.
+    // Campos de sync, mismo criterio que mazos, temas y tarjetas. Sin valores por defecto a propósito: el compilador señala cada
+    // sitio que construye la entidad.
     val userId: String?,
     val lastSyncedAt: Instant?
 )

@@ -84,10 +84,9 @@ class AuthRepositoryImpl(
         client.auth.resendEmail(type = OtpType.Email.SIGNUP, email = email)
     }
 
-    // Bloque F -- solo el borrado remoto (RPC security definer, borra de auth.users;
-    // el ON DELETE CASCADE del esquema se encarga de decks/topics/flashcards/reviewlog
-    // en Supabase). El cierre de sesion local es responsabilidad de signOut(), no de
-    // este metodo -- ver comentario en AuthRepository.deleteAccount().
+    // Solo el borrado remoto (RPC security definer, borra de auth.users; el ON DELETE CASCADE del esquema se encarga de decks,
+    // topics, flashcards y reviewlog en Supabase). El cierre de sesión local es cosa de signOut(), no de este método; ver
+    // AuthRepository.deleteAccount().
     override suspend fun deleteAccount() {
         client.postgrest.rpc("delete_own_account")
     }

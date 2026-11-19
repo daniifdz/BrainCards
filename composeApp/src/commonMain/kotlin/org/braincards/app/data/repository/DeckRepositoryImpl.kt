@@ -31,14 +31,11 @@ class DeckRepositoryImpl(
     override suspend fun deleteDeck(deck: Deck) {
         val now = clock.now()
         transactionRunner.inTransaction {
-            //p1: marcamos deck como borrado
             deckDao.softdeleteDeck(deck.id, now)
-            //p2: todos los topics del deck
             val topics = topicDao.getTopicsByDeckId(deck.id).first()
             for (topic in topics) {
                 topicDao.softdeleteTopic(topic.id, now)
             }
-            //p3: todas las flashcards del deck, con o sin topic
             val flashcards = flashcardDao.getFlashcardsByDeckId(deck.id).first()
             for (flashcard in flashcards) {
                 flashcardDao.softdeleteFlashcardById(flashcard.id, now)
@@ -67,17 +64,13 @@ class DeckRepositoryImpl(
         return deckDao.getPendingSyncDecks(userId).map { it.toDomain() }
     }
 
-    // LWW por fila (Bloque E): compara updatedAt remoto contra el local antes de
-    // aplicar cada fila -- ya no es un upsert masivo sin mirar. Si la fila local es
-    // igual o mas nueva, se ignora esa fila del pull sin tocarla: sigue "sucia"
-    // (lastSyncedAt sin actualizar) y se sube sola en el push de esta misma pasada
-    // de sync(). getDeckByIdIncludingDeleted (no getDeckById) para no confundir un
-    // tombstone local con "no existe" y resucitarlo por error.
+    // LWW por fila: compara updatedAt remoto con el local antes de aplicar cada fila. Si la fila local es igual o más nueva, se
+    // ignora esa fila del pull sin tocarla: sigue «sucia» (lastSyncedAt sin actualizar) y se sube sola en el push de esta misma
+    // pasada de sync(). Se usa getDeckByIdIncludingDeleted (no getDeckById) para no confundir un tombstone local con «no
+    // existe» y resucitarlo por error.
     //
-    // lastSyncedAt del pull se pisa a updatedAt en las filas que SI se aplican: el
-    // valor que traia el DTO es el de OTRO dispositivo, no dice nada sobre si este
-    // dispositivo tiene esta fila pendiente de subir -- justo despues de aplicarla,
-    // no lo esta.
+    // En las filas que sí se aplican, lastSyncedAt se pisa con updatedAt: el valor que traía el DTO es el de otro dispositivo y
+    // no dice nada sobre si este tiene la fila pendiente de subir; justo después de aplicarla, no lo está.
     override suspend fun applyRemotePull(decks: List<Deck>): Int {
         val toApply = decks.filter { remote ->
             val local = deckDao.getDeckByIdIncludingDeleted(remote.id)

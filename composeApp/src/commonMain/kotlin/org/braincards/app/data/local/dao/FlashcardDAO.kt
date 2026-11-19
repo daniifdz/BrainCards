@@ -10,15 +10,15 @@ import kotlinx.datetime.Instant
 import org.braincards.app.data.local.entity.FlashcardEntity
 
 /**
- * REGLA UNICA de "tarjeta activa" para las LECTURAS de estudio, recuento y estadisticas (deuda (e)): ademas de
- * `flashcards.deletedAt IS NULL`, su mazo debe existir y estar vivo. Una tarjeta viva bajo un mazo en tombstone (llegada
- * por sync: otro dispositivo la anadio o edito despues del borrado) NO cuenta en Home, ni entra en una sesion de estudio,
- * ni en las estadisticas. Es solo lectura: no escribe ni cambia el protocolo de sync, y si el mazo vuelve a estar vivo
- * (pull con `deletedAt = null`) sus tarjetas reaparecen solas.
+ * Regla única de «tarjeta activa» para las lecturas de estudio, recuento y estadísticas: además de
+ * `flashcards.deletedAt IS NULL`, su mazo debe existir y estar vivo. Una tarjeta viva bajo un mazo en tombstone (llegada por
+ * sync: otro dispositivo la añadió o editó después del borrado) no cuenta en Home, ni entra en una sesión de estudio, ni
+ * en las estadísticas. Es solo lectura: no escribe ni cambia el protocolo de sync, y si el mazo vuelve a estar vivo (pull
+ * con `deletedAt = null`) sus tarjetas reaparecen solas.
  *
- * Se usa con `FROM flashcards` + esta cadena + el WHERE. NO aplicar a `getFlashcardsByDeckId` (`deleteDeck` marca el mazo
- * ANTES de leer sus tarjetas para borrarlas) ni a las consultas de sync (deben ver tombstones y huerfanas para subirlas).
- * `FlashcardQueryRuleGuardTest` comprueba que cada consulta de lectura la usa o esta en su lista de permitidas.
+ * Se usa con `FROM flashcards` + esta cadena + el WHERE. No aplicar a `getFlashcardsByDeckId` (`deleteDeck` marca el mazo
+ * antes de leer sus tarjetas para borrarlas) ni a las consultas de sync (deben ver tombstones y huérfanas para subirlas).
+ * `FlashcardQueryRuleGuardTest` comprueba que cada consulta de lectura la usa o está en su lista de permitidas.
  */
 internal const val LIVE_DECK_JOIN = "INNER JOIN decks ON decks.id = flashcards.deckId AND decks.deletedAt IS NULL "
 
@@ -35,7 +35,7 @@ interface FlashcardDao {
     @Query("SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN + "WHERE flashcards.id = :id AND flashcards.deletedAt IS NULL")
     suspend fun getFlashcardById(id: String): FlashcardEntity?
 
-    // sync (Bloque E, LWW) -- ver comentario en DeckDao.getDeckByIdIncludingDeleted.
+    // Sync (LWW): ver DeckDao.getDeckByIdIncludingDeleted.
     @Query("SELECT * FROM flashcards WHERE id = :id")
     suspend fun getFlashcardByIdIncludingDeleted(id: String): FlashcardEntity?
 
@@ -88,9 +88,9 @@ interface FlashcardDao {
     )
     fun observeDueCount(now: Instant): Flow<Int>
 
-    // Repaso libre (paso 14): TODAS las tarjetas activas, sin filtrar por pendientes ni mirar card_scheduling. Regla unica de lectura
-    // (LIVE_DECK_JOIN): una tarjeta viva bajo un mazo en tombstone NO entra. getFlashcardsByDeckId NO sirve para esto (no aplica la
-    // regla). ORDER BY id: orden base estable; el barajado (con semilla) se hace en el caso de uso.
+    // Repaso libre: todas las tarjetas activas, sin filtrar por pendientes ni mirar card_scheduling. Aplica la regla única de
+    // lectura (LIVE_DECK_JOIN): una tarjeta viva bajo un mazo en tombstone no entra. getFlashcardsByDeckId no sirve para esto
+    // (no aplica la regla). ORDER BY id da un orden base estable; el barajado con semilla se hace en el caso de uso.
     @Query("SELECT flashcards.* FROM flashcards " + LIVE_DECK_JOIN + "WHERE flashcards.deletedAt IS NULL ORDER BY flashcards.id ASC")
     suspend fun getFreeReviewCards(): List<FlashcardEntity>
 
@@ -123,13 +123,11 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET userId = :userId WHERE userId IS NULL")
     suspend fun claimOrphanedFlashcards(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DeckDao/TopicDao, mas el invariante de dueno: solo se
-    // sube una flashcard cuyo deck (y su topic, si tiene) existen localmente (tambien borrados
-    // logicamente) y son del MISMO usuario. El INSERT del servidor solo comprueba
-    // user_id = auth.uid() y la FK salta RLS: sin esto se subirian flashcards colgadas del
-    // deck/topic de otra cuenta, y luego el pull no podria guardarlas. El topic va con LEFT JOIN
-    // porque es opcional. NO se exige lastSyncedAt del padre: el deck nuevo sube antes en el mismo
-    // push (decks -> topics -> flashcards).
+    // Sync: mismo criterio que DeckDao y TopicDao, más el invariante de dueño: solo se sube una tarjeta cuyo mazo (y su tema, si
+    // tiene) existen localmente (también borrados lógicamente) y son del mismo usuario. El INSERT del servidor solo comprueba
+    // user_id = auth.uid() y la FK salta RLS: sin esto se subirían tarjetas colgadas del mazo o tema de otra cuenta, y luego el
+    // pull no podría guardarlas. El tema va con LEFT JOIN porque es opcional. No se exige lastSyncedAt del padre: el mazo nuevo
+    // sube antes en el mismo push (mazos -> temas -> tarjetas).
     @Query(
         "SELECT f.* FROM flashcards f " +
             "INNER JOIN decks d ON d.id = f.deckId " +
@@ -164,7 +162,7 @@ interface FlashcardDao {
     @Query("UPDATE flashcards SET lastSyncedAt = :syncedAt WHERE id IN (:ids)")
     suspend fun markFlashcardsPushed(ids: List<String>, syncedAt: Instant)
 
-    // Bloque F (borrado de cuenta) -- ver comentario en DeckDao.releaseDecksFromUser.
+    // Borrado de cuenta: ver DeckDao.releaseDecksFromUser.
     @Query("UPDATE flashcards SET userId = NULL, lastSyncedAt = NULL WHERE userId = :userId")
     suspend fun releaseFlashcardsFromUser(userId: String): Int
 
