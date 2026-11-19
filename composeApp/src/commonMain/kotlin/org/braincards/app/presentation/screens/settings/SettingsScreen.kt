@@ -39,12 +39,7 @@ import org.braincards.app.presentation.sync.SyncStatusViewModel
 import org.braincards.app.presentation.sync.syncDetail
 import org.koin.core.annotation.KoinExperimentalAPI
 
-// Enum para representar las opciones de tema de forma clara y segura.
-enum class AppTheme(val displayName: String) {
-    SYSTEM("Por defecto del sistema"),
-    LIGHT("Claro"),
-    DARK("Oscuro")
-}
+enum class AppTheme { SYSTEM, LIGHT, DARK }
 
 /** Medidas de los badges del logo en Ajustes (mockups `ajustes*.html`): junto al titulo, su hueco y el bloque «Acerca de». */
 const val SETTINGS_TITLE_BADGE_DP = 30

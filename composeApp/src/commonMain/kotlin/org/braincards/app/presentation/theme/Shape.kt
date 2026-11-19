@@ -1,10 +1,7 @@
 package org.braincards.app.presentation.theme
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -38,8 +35,4 @@ object BrainCardsDefaults {
     val borderWidth: Dp = 1.dp
     val elevation: Dp = 0.dp
     val tonalElevation: Dp = 0.dp
-
-    /** Borde decorativo de 1 dp (outlineVariant). */
-    @Composable
-    fun borderStroke(): BorderStroke = BorderStroke(borderWidth, MaterialTheme.colorScheme.outlineVariant)
 }

@@ -29,7 +29,7 @@ const val BADGE_BRAIN_FRACTION = 0.287f * 230f / 100f
 
 /**
  * Logo de marca fuera del splash: cuadrado redondeado morado de marca ([SPLASH_BACKGROUND], FIJO en claro y oscuro, igual que el
- * splash) con el cerebro blanco. Reutiliza el vector del splash ([SplashLogo]) como unica fuente: no hay copia del trazado.
+ * splash) con el cerebro blanco. Reutiliza el vector `splash_logo` del splash como unica fuente: no hay copia del trazado.
  * Decorativo (el nombre de la app va en el texto que lo acompana). [cornerPercent]: la tarjeta de Resultados usa esquinas mas
  * redondas (~31 %, mockup `resultados.html`).
  */

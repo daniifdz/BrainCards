@@ -8,6 +8,4 @@ package org.braincards.app.domain.models
 data class PendingStamp(
     val count: Int,
     val newestUpdatedAtMillis: Long
-) {
-    val hasPending: Boolean get() = count > 0
-}
+)
