@@ -3,13 +3,12 @@ package org.braincards.app.domain.models
 import kotlinx.datetime.Instant
 
 /**
- * Posicion de una fila en el orden del pull incremental: `(server_updated_at, clave)`. La marca la
- * escribe el SERVIDOR (trigger de sql/server_updated_at.sql), no el reloj del cliente. [id] es la
- * clave de desempate (`id`; `card_id` en card_scheduling) para que dos filas con la misma marca
- * tengan un orden total y estable.
+ * Posición de una fila en el orden del pull incremental: `(server_updated_at, clave)`. La marca la escribe el servidor
+ * (trigger de sql/server_updated_at.sql), no el reloj del cliente. [id] desempata (`id`, o `card_id` en card_scheduling)
+ * para que dos filas con la misma marca tengan un orden total y estable.
  *
- * Se guarda como [Instant] (precision de nanosegundos, suficiente para los microsegundos de
- * Postgres): al volver a escribirlo en UTC con sufijo Z representa EXACTAMENTE el mismo instante.
+ * Se guarda como [Instant] (nanosegundos, suficiente para los microsegundos de Postgres): al reescribirlo en UTC con
+ * sufijo Z representa exactamente el mismo instante.
  */
 data class PullCursor(val serverUpdatedAt: Instant, val id: String)
 

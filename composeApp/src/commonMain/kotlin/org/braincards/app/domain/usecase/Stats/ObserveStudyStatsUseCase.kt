@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import org.braincards.app.domain.models.StudyStats
 import org.braincards.app.domain.repository.StudyStatsObserver
 
-/** Madurez de las tarjetas activas (Nuevas / Aprendiendo / Maduras). Sustituye al antiguo GetStudyStatsUseCase. */
+/** Madurez de las tarjetas activas (nuevas, aprendiendo, maduras). */
 class ObserveStudyStatsUseCase(private val observer: StudyStatsObserver) {
     operator fun invoke(): Flow<StudyStats> = observer.observeStudyStats()
 }

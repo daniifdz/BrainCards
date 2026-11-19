@@ -25,10 +25,9 @@ interface AuthRepository {
     suspend fun verifySignUpCode(email: String, code: String)
     suspend fun resendSignUpCode(email: String)
 
-    // Bloque F (borrado de cuenta) -- solo el borrado remoto (RPC delete_own_account).
-    // El cierre de sesion local es responsabilidad de signOut(), ya existente; no se
-    // llama desde aqui para que el caller (DeleteAccountUseCase) pueda decidir que
-    // hacer si signOut() falla despues de un borrado remoto ya consumado.
+    // Borrado de cuenta: solo la parte remota (RPC delete_own_account). El cierre de sesión local es cosa de signOut(); no se
+    // llama desde aquí para que el caller (DeleteAccountUseCase) decida qué hacer si signOut() falla tras un borrado remoto
+    // ya consumado.
     suspend fun deleteAccount()
 
     // Cierra la sesion SOLO en local (borra la sesion guardada y pasa a NotAuthenticated), sin

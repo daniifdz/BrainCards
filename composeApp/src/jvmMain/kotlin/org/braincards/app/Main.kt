@@ -36,14 +36,14 @@ fun main() {
         }
         Window(
             onCloseRequest = {
-                shutdownAutoSync() // para el controlador y cierra los monitores
+                shutdownAutoSync()
                 exitApplication()
             },
             state = windowState,
             title = "BrainCards",
             icon = painterResource("icon.png")
         ) {
-            // Fondo inicial de la ventana = morado del splash (handoff 5.8): evita el flash blanco antes del primer frame de Compose.
+            // Fondo inicial de la ventana = morado del splash: evita el flash blanco antes del primer fotograma de Compose.
             window.background = SPLASH_AWT_BACKGROUND
             window.contentPane.background = SPLASH_AWT_BACKGROUND
             App()

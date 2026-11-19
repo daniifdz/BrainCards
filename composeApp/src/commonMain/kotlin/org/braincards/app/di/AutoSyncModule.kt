@@ -12,13 +12,12 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 
 /**
- * Sincronizacion automatica: UNA instancia del [AutoSyncController] para todo el proceso (single, creada al arrancar
- * Koin y arrancada en el acto). Vive en el contenedor de Koin, no en la Activity ni en un ViewModel, asi que ni
- * rotar la pantalla ni recrear la Activity la reinician. Scope propio a nivel de proceso; se para al cerrar Koin.
+ * Sincronización automática: una única instancia de [AutoSyncController] para todo el proceso (single, creada al arrancar
+ * Koin). Vive en el contenedor de Koin, no en la Activity ni en un ViewModel, así que rotar o recrear la Activity no la
+ * reinicia. Se para al cerrar Koin.
  *
- * Necesita, de otros modulos: SyncCoordinator, AuthRepository, PendingChangesObserver, AutoSyncPauseGate y los
- * monitores de PLATAFORMA (ForegroundMonitor y ConnectivityMonitor: androidSyncModule / desktopSyncModule, que
- * entran por initKoin(appDeclaration)).
+ * Necesita de otros módulos: SyncCoordinator, AuthRepository, PendingChangesObserver, AutoSyncPauseGate y los monitores de
+ * plataforma (ForegroundMonitor y ConnectivityMonitor, que entran por initKoin(appDeclaration)).
  */
 fun autoSyncModule() = module {
     single(createdAtStart = true) {

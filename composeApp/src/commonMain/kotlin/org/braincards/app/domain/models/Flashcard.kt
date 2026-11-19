@@ -14,12 +14,11 @@ data class Flashcard(
     // topic opcional: una tarjeta puede no pertenecer a ningún topic
     val topicId: String? = null,
 
-    // sync
     val deletedAt: Instant? = null,
     val lastSyncedAt: Instant? = null,
     val userId: String? = null,
 
-    // tipo test
+    // Reservado para tarjetas de tipo test (sin uso por ahora).
     val options: List<String>? = null,
     val correctOptionIndex: Int? = null
 )

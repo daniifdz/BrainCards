@@ -54,9 +54,8 @@ class ReviewFlashcardUseCase(
             )
         )
 
-        // Flashcard no se toca aqui: su contenido (question/answer) no cambio, y su
-        // updatedAt se reserva para ediciones de contenido reales (LWW de sync en v1.1) --
-        // tocarlo en cada repaso lo confundiria con una edicion.
+        // La tarjeta no se toca aquí: su contenido no cambió y su updatedAt se reserva para ediciones reales de contenido (LWW del
+        // sync); tocarlo en cada repaso lo confundiría con una edición.
         reviewLogRepository.addReviewLog(
             ReviewLog(
                 id = IdGenerator.newId(),

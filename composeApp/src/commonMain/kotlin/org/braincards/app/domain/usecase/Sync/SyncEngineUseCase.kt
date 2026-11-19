@@ -37,10 +37,8 @@ sealed interface SyncResult {
     data class Completed(val pull: PullResult, val push: PushResult) : SyncResult
 }
 
-// Bloque D (sin conexion y reintentos) -- usado por SyncCoordinator para decidir
-// si persistir "ultima sincronizacion correcta". No reemplaza la logica mas fina
-// de AuthViewModel.toUserMessage() (esa necesita los conteos por separado para
-// distinguir pull parcial de push parcial en el mensaje al usuario).
+// Lo usa SyncCoordinator para decidir si persiste la «última sincronización correcta». No reemplaza la lógica más fina de
+// AuthViewModel.toUserMessage(), que necesita los conteos por separado para distinguir pull parcial de push parcial.
 fun SyncResult.Completed.isFullySuccessful(): Boolean =
     pull.abortedTableCount() == 0 && push.failedRowCount() == 0
 
@@ -88,17 +86,16 @@ enum class PullFailure {
 }
 
 /**
- * [applied] son las filas remotas que se aplicaron localmente. Si [aborted] es true,
- * [applied] siempre es 0 -- la tabla es todo o nada (ver comentario en pullTable).
+ * [applied] son las filas remotas que se aplicaron localmente. Si [aborted] es true, [applied] es siempre 0: la tabla es todo
+ * o nada (ver pullTable).
  *
- * [failure] es la causa cuando [aborted] es true (null = sin clasificar). [discarded] son las
- * filas descargadas que se DESCARTARON sin abortar la tabla porque su padre (deck/topic) no
- * existe en la BD local; un pull con descartes sigue contando como correcto. Ambos con valor
- * por defecto para no tocar a quien construye PullTableResult(applied, aborted).
+ * [failure] es la causa cuando [aborted] es true (null = sin clasificar). [discarded] son las filas descargadas que se
+ * descartaron sin abortar la tabla porque su padre (mazo o tema) no existe en la BD local; un pull con descartes sigue
+ * contando como correcto.
  *
- * [downloaded] son las filas que bajo el servidor en esta tabla (0 si se aborto); [fullPull] es true si
- * la tabla se bajo ENTERA (sin cursor) y sin abortar; [fellBackToFullPull] es true si el servidor no
- * tiene server_updated_at y se hizo el pull completo clasico (no se avanza ninguna marca).
+ * [downloaded] son las filas que bajó el servidor en esta tabla (0 si se abortó); [fullPull] es true si la tabla se bajó
+ * entera (sin cursor) y sin abortar; [fellBackToFullPull] es true si el servidor no tiene server_updated_at y se hizo el
+ * pull completo clásico (no se avanza ninguna marca).
  */
 data class PullTableResult(
     val applied: Int,
@@ -118,18 +115,11 @@ data class PullTableResult(
 data class PushTableResult(val succeeded: Int, val failed: Int)
 
 /**
- * Orquesta RemoteDataSource + los metodos aditivos de sync (getPendingSync /
- * applyRemotePull / markPushed) de cada repositorio. No toca el CRUD local de los
- * RepositoryImpl ni las interfaces de dominio -- ver regla de oro en CLAUDE.md.
+ * Orquesta RemoteDataSource y los métodos aditivos de sync (getPendingSync, applyRemotePull y markPushed) de cada
+ * repositorio. No toca el CRUD local de los RepositoryImpl ni las interfaces de dominio.
  *
- * pull() va siempre antes que push(): si se hiciera al reves, un pull posterior
- * (REPLACE) podria pisar con una version remota mas vieja lo que acabamos de subir.
- *
- * RIESGO ABIERTO A PROPOSITO (ver FINAL_SPRINT.md, Sprint 12 Bloque D): el pull
- * aplica con REPLACE sin comparar -- una edicion local pendiente de subir se pierde
- * en silencio si llega un pull de esa misma fila desde otro dispositivo antes del
- * siguiente push. Aceptado con cero usuarios reales; lo cierra la resolucion de
- * conflictos (Bloque E).
+ * pull() va siempre antes que push(): al revés, un pull posterior podría pisar con una versión remota más vieja lo que
+ * acabamos de subir.
  */
 class SyncEngineUseCase(
     private val authRepository: AuthRepository,
@@ -309,17 +299,13 @@ class SyncEngineUseCase(
     }
 
     /**
-     * Todo o nada por tabla: [apply] inserta la tabla entera dentro de una unica
-     * llamada a un DAO @Insert con lista, que Room ya envuelve en su propia
-     * transaccion (confirmado en el codigo generado por KSP, DBUtil.performSuspending
-     * con inTransaction = true) -- si falla a mitad, esa tabla se aborta entera y no
-     * se sigue con la siguiente tabla de pull.
+     * Todo o nada por tabla: [apply] inserta la tabla entera dentro de una única llamada a un DAO @Insert con lista, que Room ya
+     * envuelve en su propia transacción. Si falla a mitad, esa tabla se aborta entera y no se sigue con la siguiente.
      *
-     * [storedCursor] es el cursor guardado de la tabla (null = pull completo). Con cursor pero tabla
-     * local vacia (BD borrada o restaurada) esa tabla va completa. El cursor nuevo se guarda SOLO si
-     * la tabla se bajo y aplico entera, y es siempre el de una fila que DEVOLVIO el servidor:
-     * la ultima si no hubo descartes, o la inmediatamente anterior a la primera descartada (en el
-     * orden del servidor) si los hubo.
+     * [storedCursor] es el cursor guardado de la tabla (null = pull completo). Con cursor pero tabla local vacía (BD borrada o
+     * restaurada) esa tabla va completa. El cursor nuevo se guarda solo si la tabla se bajó y aplicó entera, y es siempre el de
+     * una fila que devolvió el servidor: la última si no hubo descartes, o la inmediatamente anterior a la primera descartada
+     * (en el orden del servidor) si los hubo.
      */
     private suspend fun <T> pullTable(
         userId: String,
@@ -403,20 +389,18 @@ class SyncEngineUseCase(
     }
 
     /**
-     * Resiliente por fila (o por lote): una fila que falla no bloquea las siguientes y
-     * simplemente no se marca pushed (se reintenta sola en el siguiente sync()).
+     * Resiliente por fila (o por lote): una fila que falla no bloquea las siguientes y simplemente no se marca pushed (se
+     * reintenta sola en el siguiente sync()).
      *
-     * - [batchSize] = 1 (decks/topics/flashcards): una peticion por fila. Corta el bucle
-     *   tras [networkFailureLimit] (3) fallos CONSECUTIVOS de tipo red/timeout/5xx -- un
-     *   fallo de validacion (4xx) resetea ese contador sin cortar, porque no indica que
-     *   estemos sin conexion.
-     * - [batchSize] > 1 (card_scheduling, 100): una peticion por lote (upsert atomico).
-     *   Si el lote falla por error NO de red (4xx, o una fila invalida), se reintenta
-     *   fila a fila SOLO ese lote para que las filas buenas no se pierdan por una mala.
-     *   Si falla por red/timeout/5xx NO hay reintento fila a fila: con limite 1 se aborta
-     *   la tabla; lo no subido queda pendiente (cuenta como failed).
+     * - [batchSize] = 1 (mazos, temas, tarjetas): una petición por fila. Corta el bucle tras [networkFailureLimit] (3) fallos
+     *   consecutivos de red, timeout o 5xx; un fallo de validación (4xx) resetea ese contador sin cortar, porque no indica que
+     *   estemos sin conexión.
+     * - [batchSize] > 1 (card_scheduling, 100): una petición por lote (upsert atómico). Si el lote falla por un error que no es
+     *   de red (4xx o una fila inválida), se reintenta fila a fila solo ese lote para que las filas buenas no se pierdan por
+     *   una mala. Si falla por red, timeout o 5xx no hay reintento fila a fila: con límite 1 se aborta la tabla y lo no subido
+     *   queda pendiente (cuenta como failed).
      *
-     * [markPushed] se llama una sola vez, al final, SOLO con los ids que se subieron.
+     * [markPushed] se llama una sola vez, al final, solo con los ids que se subieron.
      */
     private suspend fun <T> pushTable(
         pending: List<T>,
@@ -465,15 +449,12 @@ class SyncEngineUseCase(
     private enum class PushAttempt { UPLOADED, REJECTED, NETWORK_FAILURE }
 
     /**
-     * Clasificacion verificada contra el codigo fuente real de supabase-kt 3.1.4 y
-     * ktor-client-core 3.1.2 (no asumida):
-     * - HttpRequestTimeoutException / HttpRequestException: no hubo respuesta HTTP
-     *   (timeout o fallo de transporte -- DNS, conexion rechazada, TLS...).
-     * - PostgrestRestException con statusCode >= 500: hubo respuesta, pero el fallo
-     *   es del lado de Supabase, no un dato invalido que enviamos nosotros -- mismo
-     *   trato que un timeout.
-     * - PostgrestRestException con statusCode < 500 (400/401/404/409...): rechazo
-     *   real del cliente -- no cuenta como red.
+     * Clasificación según el código fuente de supabase-kt 3.1.4 y ktor-client-core 3.1.2:
+     * - HttpRequestTimeoutException / HttpRequestException: no hubo respuesta HTTP (timeout o fallo de transporte: DNS,
+     *   conexión rechazada, TLS...).
+     * - PostgrestRestException con statusCode >= 500: hubo respuesta, pero el fallo es del lado de Supabase, no un dato
+     *   inválido nuestro; mismo trato que un timeout.
+     * - PostgrestRestException con statusCode < 500 (400/401/404/409...): rechazo real del cliente; no cuenta como red.
      */
     private fun Exception.isNetworkOrServerFailure(): Boolean = when (this) {
         is HttpRequestTimeoutException -> true
@@ -486,11 +467,7 @@ class SyncEngineUseCase(
         const val CONSECUTIVE_NETWORK_FAILURE_LIMIT = 3
         const val CARD_SCHEDULING_PUSH_BATCH_SIZE = 100
 
-        // "Desde siempre": evita Instant.DISTANT_PAST, cuyo año está fuera del rango
-        // que Postgres acepta para timestamptz. TODO (no bloqueante, no v1.1): sin un
-        // watermark persistido por tabla, cada sync() vuelve a pedir la tabla remota
-        // entera -- correcto pero no escala; revisar si hace falta antes de tener
-        // datasets grandes de verdad.
+        // «Desde siempre»: evita Instant.DISTANT_PAST, cuyo año queda fuera del rango que Postgres acepta para timestamptz.
         val PULL_SINCE_EPOCH: Instant = Instant.fromEpochMilliseconds(0)
     }
 }

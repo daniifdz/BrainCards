@@ -18,21 +18,16 @@ enum class DeleteAccountResult {
 }
 
 /**
- * Borra la cuenta del usuario (Bloque F). Orden deliberado:
- * 1. RPC remoto (authRepository.deleteAccount()) -- si lanza, se propaga sin tocar
- *    nada mas: ni las filas locales ni la sesion.
- * 2. Liberar las filas locales en los cuatro repositorios (userId/lastSyncedAt a null),
- *    solo alcanzable si el paso 1 tuvo exito. card_scheduling va PRIMERO (hijos antes
- *    que padres): si una liberacion fallara a medias, un scheduling en NULL siempre se
- *    puede volver a reclamar, mientras que un scheduling con el dueno viejo cuya
- *    flashcard ya fue liberada y reclamada por otra cuenta quedaria huerfano para
- *    siempre (ni pendiente ni reclamable). No hay transaccion unica entre repositorios.
- * 3. signOut() el ultimo paso, envuelto aparte: el borrado remoto y la liberacion
- *    local ya ocurrieron, asi que un fallo aqui (sesion que no se puede cerrar del
- *    todo) no debe aparentar que el borrado de cuenta fallo. Si signOut() falla (p. ej.
- *    sin red) se intenta clearLocalSession(): limpia SOLO la sesion local, sin red y SIN
- *    tocar los datos locales (nunca wipeAll: el usuario conserva sus mazos). Solo si
- *    tambien falla se devuelve [DeleteAccountResult.DeletedSessionNotClosed].
+ * Borra la cuenta del usuario. Orden deliberado:
+ * 1. RPC remoto (authRepository.deleteAccount()). Si lanza, se propaga sin tocar nada más: ni las filas locales ni la sesión.
+ * 2. Libera las filas locales en los cuatro repositorios (userId y lastSyncedAt a null); solo se llega aquí si el paso 1
+ *    tuvo éxito. card_scheduling va primero (hijos antes que padres): si una liberación fallara a medias, un scheduling en
+ *    NULL siempre se puede volver a reclamar, mientras que uno con el dueño viejo cuya tarjeta ya fue liberada y reclamada
+ *    por otra cuenta quedaría huérfano para siempre. No hay transacción única entre repositorios.
+ * 3. signOut() el último, envuelto aparte: el borrado remoto y la liberación local ya ocurrieron, así que un fallo aquí no
+ *    debe aparentar que el borrado falló. Si signOut() falla (p. ej. sin red) se intenta clearLocalSession(), que limpia
+ *    solo la sesión local, sin red y sin tocar los datos locales (nunca wipeAll: el usuario conserva sus mazos). Solo si
+ *    también falla se devuelve [DeleteAccountResult.DeletedSessionNotClosed].
  */
 class DeleteAccountUseCase(
     private val authRepository: AuthRepository,

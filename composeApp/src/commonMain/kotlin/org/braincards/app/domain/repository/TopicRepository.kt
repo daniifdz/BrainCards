@@ -13,11 +13,11 @@ interface TopicsRepository {
     suspend fun getTopicById(id: String): Topic?
     suspend fun claimOrphanedTopics(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DecksRepository: getPendingSync incluye
-    // tombstones (deletedAt != null), applyRemotePull sincroniza lastSyncedAt localmente.
+    // Sync: mismo criterio que DecksRepository. getPendingSync incluye tombstones (deletedAt != null) y applyRemotePull
+    // sincroniza lastSyncedAt en local.
     suspend fun getPendingSync(userId: String): List<Topic>
 
-    // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
+    // LWW: ver DecksRepository.applyRemotePull.
     suspend fun applyRemotePull(topics: List<Topic>): Int
 
     // Igual que applyRemotePull, pero informa tambien de las filas descartadas por no tener
@@ -28,6 +28,6 @@ interface TopicsRepository {
 
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
-    // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.
+    // Ver DecksRepository.releaseFromUser.
     suspend fun releaseFromUser(userId: String): Int
 }

@@ -19,10 +19,10 @@ interface FlashcardRepository {
 
     suspend fun claimOrphanedFlashcards(userId: String): Int
 
-    // sync (Bloque D) -- mismo criterio que DecksRepository/TopicsRepository.
+    // Sync: mismo criterio que en DecksRepository y TopicsRepository.
     suspend fun getPendingSync(userId: String): List<Flashcard>
 
-    // Bloque E (LWW) -- ver comentario en DecksRepository.applyRemotePull.
+    // LWW: ver DecksRepository.applyRemotePull.
     suspend fun applyRemotePull(flashcards: List<Flashcard>): Int
 
     // Igual que applyRemotePull, pero informa tambien de las filas descartadas por no tener
@@ -33,7 +33,7 @@ interface FlashcardRepository {
 
     suspend fun markPushed(ids: List<String>, syncedAt: Instant)
 
-    // Bloque F (borrado de cuenta) -- ver comentario en DecksRepository.releaseFromUser.
+    // Ver DecksRepository.releaseFromUser.
     suspend fun releaseFromUser(userId: String): Int
 
 }

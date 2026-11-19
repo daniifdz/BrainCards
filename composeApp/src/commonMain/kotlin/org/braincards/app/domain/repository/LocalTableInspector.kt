@@ -3,14 +3,12 @@ package org.braincards.app.domain.repository
 import org.braincards.app.domain.models.SyncTable
 
 /**
- * Pregunta minima sobre la BD local para el pull incremental: ¿esta tabla esta VACIA? Una tabla con
- * una marca de agua guardada pero vacia en local significa que la BD se perdio o se vacio sin pasar
- * por el cierre de sesion (p. ej. borrar solo braincards.db): la marca ya no vale y esa tabla debe
- * bajarse entera.
+ * Pregunta mínima sobre la BD local para el pull incremental: ¿está la tabla vacía? Una tabla con marca de agua guardada
+ * pero vacía en local significa que la BD se perdió o se vació sin pasar por el cierre de sesión (p. ej. borrar solo
+ * braincards.db): la marca ya no vale y esa tabla se baja entera.
  *
- * "Vacia" cuenta TODAS las filas, tombstones (borrado logico) incluidos: una tabla con solo
- * tombstones NO esta vacia (el pull ya la poblo). Interfaz aparte, no un metodo de
- * LocalDataRepository, para no ensanchar esa interfaz.
+ * «Vacía» cuenta todas las filas, tombstones incluidos: una tabla solo con tombstones no está vacía. Interfaz aparte para
+ * no ensanchar LocalDataRepository.
  */
 interface LocalTableInspector {
     suspend fun isEmpty(table: SyncTable): Boolean

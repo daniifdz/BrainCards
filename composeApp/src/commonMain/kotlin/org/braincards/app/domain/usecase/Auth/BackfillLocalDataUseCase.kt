@@ -6,16 +6,14 @@ import org.braincards.app.domain.repository.FlashcardRepository
 import org.braincards.app.domain.repository.TopicsRepository
 
 /**
- * Adopta como propios (userId = null -> uid real) los datos locales creados antes de
- * tener cuenta. Idempotente por diseno: el WHERE userId IS NULL de cada DAO hace que,
- * si ya se adoptaron en un login anterior, la siguiente llamada no encuentre ninguna
- * fila que tocar -- no hace falta detectar "es la primera vez" por separado.
+ * Adopta como propios (userId = null -> uid real) los datos locales creados antes de tener cuenta. Es idempotente: el
+ * WHERE userId IS NULL de cada DAO hace que, si ya se adoptaron en un login anterior, la siguiente llamada no encuentre
+ * filas que tocar.
  *
- * ORDEN: card_scheduling va el ULTIMO. Su reclamo solo adopta filas cuya flashcard ya
- * pertenece a [userId] (el scheduling debe tener el mismo dueno que su flashcard, lo
- * exige la RLS de Supabase), asi que las flashcards tienen que reclamarse antes.
+ * Orden: card_scheduling va el último. Su reclamo solo adopta filas cuya tarjeta ya pertenece a [userId] (el scheduling
+ * debe tener el mismo dueño que su tarjeta; lo exige la RLS de Supabase), así que las tarjetas se reclaman antes.
  *
- * Solo local, no toca Supabase -- eso es el Bloque D (RemoteDataSource/motor de sync).
+ * Solo local: no toca Supabase.
  */
 class BackfillLocalDataUseCase(
     private val decksRepository: DecksRepository,

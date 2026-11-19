@@ -80,7 +80,8 @@ class AndroidConnectivityMonitor(context: Context) : ConnectivityMonitor, AutoCl
             connectivityManager.registerDefaultNetworkCallback(callback)
             registered = true
         } catch (e: SecurityException) {
-            initialTracker = null // falta ACCESS_NETWORK_STATE
+            // Sin el permiso ACCESS_NETWORK_STATE.
+            initialTracker = null
         } catch (e: RuntimeException) {
             initialTracker = null // p. ej. TooManyRequestsException: no se puede vigilar la red
         }

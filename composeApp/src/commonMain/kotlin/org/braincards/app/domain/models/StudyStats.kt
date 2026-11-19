@@ -1,11 +1,11 @@
 package org.braincards.app.domain.models
 
 /**
- * Madurez de las tarjetas ACTIVAS (Estadisticas, handoff v4.15):
- *  - [newCards]: sin fila en card_scheduling (nunca repasadas);
- *  - [learningCards]: con fila e `interval < 21` dias (incluye la recien fallada, intervalo 0);
- *  - [matureCards]: `interval >= 21` dias.
- * "Tarjetas totales" es la SUMA de las tres, asi la casilla y el donut siempre coinciden.
+ * Madurez de las tarjetas activas:
+ * - [newCards]: sin fila en card_scheduling (nunca repasadas).
+ * - [learningCards]: con fila e `interval < 21` días (incluye la recién fallada, intervalo 0).
+ * - [matureCards]: `interval >= 21` días.
+ * «Tarjetas totales» es la suma de las tres, así la casilla y el donut siempre coinciden.
  */
 data class StudyStats(
     val newCards: Int,

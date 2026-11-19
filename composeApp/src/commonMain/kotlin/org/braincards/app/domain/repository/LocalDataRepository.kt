@@ -1,10 +1,9 @@
 package org.braincards.app.domain.repository
 
 /**
- * Operaciones sobre la base de datos local COMPLETA, no sobre una entidad concreta. Existe
- * aparte de DecksRepository & co. a proposito: esas interfaces no se tocan (regla de oro de
- * CLAUDE.md) y esto no es CRUD de un tipo, sino la limpieza al cerrar sesion (aislamiento
- * de datos entre cuentas en un mismo dispositivo).
+ * Operaciones sobre la base de datos local completa, no sobre una entidad concreta: la limpieza al cerrar sesión
+ * (aislamiento de datos entre cuentas en un mismo dispositivo). Va aparte de DecksRepository y compañía porque esas
+ * interfaces no se tocan.
  */
 interface LocalDataRepository {
 

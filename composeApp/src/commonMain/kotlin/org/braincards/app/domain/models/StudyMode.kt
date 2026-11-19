@@ -1,10 +1,12 @@
 package org.braincards.app.domain.models
 
 /**
- * Como se estudia (paso 14, Repaso libre).
- *  - [Scheduled]: la sesion normal: solo las tarjetas pendientes segun SM-2, y cada repaso SE GUARDA (`card_scheduling` y `reviewlog`).
- *  - [Free]: repaso libre: TODAS las tarjetas del origen en orden aleatorio ([seed] lo fija: la misma semilla da el mismo orden) y
- *    NUNCA se guarda nada. La semilla viaja en la ruta de navegacion, asi un reinicio del proceso reproduce el mismo orden.
+ * Cómo se estudia.
+ * - [Scheduled]: sesión normal. Solo las tarjetas pendientes según SM-2, y cada repaso se guarda (`card_scheduling` y
+ *   `reviewlog`).
+ * - [Free]: repaso libre. Todas las tarjetas del origen en orden aleatorio ([seed] lo fija: la misma semilla da el mismo
+ *   orden) y nunca se guarda nada. La semilla viaja en la ruta de navegación, así que un reinicio del proceso reproduce el
+ *   mismo orden.
  */
 sealed interface StudyMode {
     data object Scheduled : StudyMode

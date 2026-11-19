@@ -13,7 +13,7 @@ enum class TopicNameError { Blank, Duplicate }
  */
 class TopicNameException(val reason: TopicNameError) : IllegalArgumentException(reason.name)
 
-// Las reglas de comparacion son LAS MISMAS que las de los mazos (handoff 5.1d / 6a): se delega para que no se desvien.
+// Mismas reglas de comparación que las de los mazos: se delega para que no diverjan.
 
 /** Clave de DUPLICADOS: trim, espacios internos colapsados y minusculas. Los acentos SI distinguen. */
 fun normalizeTopicName(name: String): String = normalizeDeckName(name)

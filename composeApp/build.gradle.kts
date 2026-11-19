@@ -24,7 +24,6 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    //---------------------------------------
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.serialization)
@@ -118,7 +117,6 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             // Sync automatica: ProcessLifecycleOwner (primer/segundo plano del PROCESO, no de la Activity).
             implementation(libs.androidx.lifecycle.process)
-            //---------------------------------------------------------
             implementation(libs.koin.android)
             implementation(libs.ktor.client.android)
         }
@@ -135,7 +133,6 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
-            //---------------------------------------------------------
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.sqlite.bundled)

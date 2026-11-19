@@ -115,8 +115,8 @@ fun appModule(
     viewModel { ThemeViewModel(dataStore = get()) }
     viewModel { AutoSyncSettingViewModel(preference = get()) }
 
-    // Cliente de Supabase (Singleton) -- URL/clave via SupabaseConfig.kt generado en build/
-    // a partir de local.properties/env vars, nunca hardcodeadas (ver Sprint 12 Bloque B).
+    // Cliente de Supabase (singleton). URL y clave vienen de `SupabaseConfig.kt`, generado en build/ a partir de local.properties
+    // o variables de entorno: nunca van hardcodeadas.
     single<SupabaseClient> {
         createSupabaseClient(
             supabaseUrl = SUPABASE_URL,
@@ -129,17 +129,16 @@ fun appModule(
             // Sin logs del cliente (el valor por defecto es INFO): una RestException o una traza de
             // peticion arrastra la URL y las cabeceras, Authorization incluido.
             defaultLogLevel = LogLevel.NONE
-            // NO cambiar enableLifecycleCallbacks ni alwaysAutoRefresh sin leer antes la nota «Limitación conocida
-            // (Android): el último intento en segundo plano NO sincroniza» de FINAL_SPRINT.md (sección de sincronización
-            // automática): con los valores por defecto supabase-kt resetea la sesión a Initializing en el onStop, pero
-            // desactivar los callbacks quita el refresco al volver tras un sueño largo (riesgo de 401).
+            // No cambiar enableLifecycleCallbacks ni alwaysAutoRefresh a la ligera. Con los valores por defecto supabase-kt resetea la
+            // sesión a Initializing en onStop, pero desactivar los callbacks quita el refresco al volver tras un sueño largo (riesgo
+            // de 401). Limitación conocida en Android: el último intento de sync en segundo plano no llega a sincronizar.
             install(Auth)
             install(Postgrest)
         }
     }
     single<AuthRepository> { AuthRepositoryImpl(client = get()) }
 
-    // Envoltura fina sobre Postgrest (Bloque D) -- ver comentario en RemoteDataSourceImpl.
+    // Envoltura fina sobre Postgrest; ver RemoteDataSourceImpl.
     single<RemoteDataSource> { RemoteDataSourceImpl(client = get()) }
 
     factory { SignUpUseCase(repository = get()) }
@@ -237,20 +236,19 @@ fun appModule(
     // Proveer la Base de Datos (Singleton)
     single<AppDatabase> {
         databaseBuilder
-            .setDriver(BundledSQLiteDriver()) //necesario para el funcionamineto con KMP
+            // Necesario para que Room funcione con KMP.
+            .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(kotlinx.coroutines.Dispatchers.IO)
             .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
             .build()
     }
 
-    // Proveer el DAO
     single { get<AppDatabase>().deckDao() }
     single { get<AppDatabase>().flashcardDao() }
     single {get<AppDatabase>().topicDao()}
     single {get<AppDatabase>().reviewLogDao()}
     single { get<AppDatabase>().cardSchedulingDao() }
 
-    // Proveer el Repositorio
     single<DecksRepository> { DeckRepositoryImpl(deckDao = get(), topicDao = get(), flashcardDao = get(), transactionRunner = get()) }
     single<FlashcardRepository> { FlashcardRepositoryImpl(flashcardDao = get()) }
     single<TopicsRepository> { TopicRepositoryImpl(topicDao = get(), flashcardDao = get(), transactionRunner = get()) }
@@ -273,7 +271,6 @@ fun appModule(
     factory { SignOutAndWipeUseCase(authRepository = get(), localDataRepository = get()) }
 
 
-    //usecasess deck
     factory { AddDeckUseCase(repository = get()) }
     factory { GetDeckUseCase(repository = get()) }
     factory { UpdateDeckUseCase(repository = get()) }
@@ -291,7 +288,6 @@ fun appModule(
         )
     }
 
-    //usecases flashcard
     factory { AddFlashcardUseCase(repository = get()) }
     factory { GetFlashcardUseCase(repository = get()) }
     factory { UpdateFlashcardUseCase(repository = get()) }
@@ -340,10 +336,9 @@ fun appModule(
         )
     }
 
-    //stdy
     factory { GetDueFlashcardsUseCase(repository = get()) }
     factory { ReviewFlashcardUseCase(reviewLogRepository = get(), cardSchedulingRepository = get()) }
-    // Repaso libre (paso 14): fuente de lectura aditiva, barajado con semilla y los dos recorders (el libre no persiste nada).
+    // Repaso libre: fuente de lectura aditiva, barajado con semilla y los dos recorders (el libre no persiste nada).
     single<FreeReviewCardsSource> { FreeReviewCardsSourceImpl(flashcardDao = get()) }
     factory { GetFreeReviewCardsUseCase(source = get()) }
     factory { ScheduledRecorder(reviewFlashcardUseCase = get()) }
@@ -361,13 +356,11 @@ fun appModule(
         )
     }
 
-    //topics uc
     factory { AddTopicUseCase(repository = get()) }
     factory { GetTopicsUseCase(repository = get()) }
     factory { UpdateTopicUseCase(repository = get()) }
     factory { DeleteTopicUseCase(repository = get()) }
 
-    //Stats
     single<StudyStatsObserver> { StudyStatsObserverImpl(flashcardDao = get()) }
     factory { ObserveStudyStatsUseCase(observer = get()) }
 

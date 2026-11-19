@@ -43,8 +43,8 @@ class MainActivity : ComponentActivity(), SystemBarsHost {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen() // ANTES de super.onCreate()
-        // Arranque en frio de Android >= 12 (13b2): el splash del sistema es solo morado (values-v31) y EntryPending anima el
-        // cerebro cuando el splash sale. Bandera de proceso consumida SIEMPRE (aunque no se use) para que solo valga la primera vez.
+        // Arranque en frío en Android >= 12: el splash del sistema es solo morado (values-v31) y EntryPending anima el cerebro
+        // cuando el splash sale. La bandera de proceso se consume siempre (aunque no se use) para que solo valga la primera vez.
         val coldStartSplash = if (shouldPlayColdStartSplash(
                 enabled = SPLASH_ANIMATE_ON_COLD_START,
                 sdkInt = Build.VERSION.SDK_INT,

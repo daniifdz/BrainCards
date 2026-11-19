@@ -10,8 +10,6 @@ interface CardSchedulingRepository {
     suspend fun upsert(scheduling: CardScheduling)
     fun getAll(): Flow<List<CardScheduling>>
 
-    // --- sync (aditivo): mismo patron que Decks/Topics/Flashcards ---
-
     /**
      * Adopta las filas sin dueno (userId NULL) cuya FLASHCARD ya pertenece a [userId]. El
      * scheduling debe tener siempre el mismo userId que su flashcard (lo exige la RLS de

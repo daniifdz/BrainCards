@@ -6,19 +6,17 @@ import org.braincards.app.domain.models.PullWatermarks
 import org.braincards.app.domain.models.SyncTable
 
 /**
- * Donde se guarda la marca de agua del pull incremental, POR USUARIO y por tabla.
+ * Dónde se guarda la marca de agua del pull incremental, por usuario y por tabla.
  *
- * Contrato (el sync NUNCA debe romperse por esto):
- *  - [load] devuelve null = "sin marca" (se hace pull completo) cuando no hay nada guardado, cuando lo
- *    guardado es de OTRO usuario (se ignora y no se reutiliza), cuando esta corrupto o ilegible, o
- *    cuando el almacenamiento falla. Nunca lanza.
- *  - [saveCursor] / [saveFullPullAt] escriben de forma atomica: actualizar una tabla no pisa el
- *    cursor de otra. Si lo guardado era de otro usuario o estaba corrupto, se empieza de cero para
- *    [userId]. Un fallo de escritura NO lanza (el resultado es "sin marca" en la siguiente lectura).
- *  - Borrarla es cosa de SyncCoordinator.resetSyncState() (cierre de sesion y borrado de cuenta).
+ * Contrato (el sync nunca debe romperse por esto):
+ * - [load] devuelve null («sin marca», se hace pull completo) cuando no hay nada guardado, lo guardado es de otro usuario,
+ *   está corrupto o ilegible, o el almacenamiento falla. Nunca lanza.
+ * - [saveCursor] y [saveFullPullAt] escriben de forma atómica: actualizar una tabla no pisa el cursor de otra. Si lo
+ *   guardado era de otro usuario o estaba corrupto, se empieza de cero para [userId]. Un fallo de escritura no lanza (la
+ *   siguiente lectura devuelve «sin marca»).
+ * - Borrarla es cosa de SyncCoordinator.resetSyncState() (cierre de sesión y borrado de cuenta).
  *
- * Quien guarde un cursor debe usar el de la ULTIMA fila que devolvio el servidor (ver
- * RemoteDataSource.pull...Since), nunca un maximo calculado en el cliente.
+ * Quien guarde un cursor debe usar el de la última fila que devolvió el servidor, nunca un máximo calculado en el cliente.
  */
 interface PullWatermarkStore {
     suspend fun load(userId: String): PullWatermarks?

@@ -10,13 +10,13 @@ data class StudyResults(val counts: Map<ReviewQuality, Int>) {
 }
 
 /**
- * Cola de una sesion de estudio: una FOTO de las tarjetas pendientes al empezar, en memoria.
+ * Cola de una sesión de estudio: una foto en memoria de las tarjetas pendientes al empezar.
  *
- *  - [total] (M): tarjetas distintas de la sesion; fijo al empezar y solo baja con [skipCurrent].
- *  - [remaining] (N): tarjetas por revisar, la actual incluida (= tamano de la cola). Una fallada ("Otra vez") se mueve
- *    al FINAL, no se duplica, asi que N <= M siempre.
- *  - [progress] = (M - N) / M: solo avanza cuando una tarjeta SALE de la cola (una fallada no avanza).
- *  - [counts]: pulsaciones por calidad.
+ * - [total] (M): tarjetas distintas de la sesión; fijo al empezar, solo baja con [skipCurrent].
+ * - [remaining] (N): tarjetas por revisar, la actual incluida. Una fallada («Otra vez») pasa al final sin duplicarse, así que
+ *   N <= M.
+ * - [progress] = (M - N) / M: solo avanza cuando una tarjeta sale de la cola.
+ * - [counts]: pulsaciones por calidad.
  */
 data class StudyQueue(
     //val para no romper la inmutabilidad
@@ -32,9 +32,8 @@ data class StudyQueue(
 
     fun results(): StudyResults = StudyResults(counts)
 
-    /** Registra la pulsacion; una fallada pasa al final de la cola (opcion A), el resto sale. */
+    /** Registra la pulsación: una fallada pasa al final de la cola y el resto sale. */
     fun submitResult(card: Flashcard, quality: ReviewQuality): StudyQueue {
-        //valor nuevo para la cola sin tarjeta actual
         val remainingCards = queue.drop(1)
         val newCounts = counts + (quality to (counts[quality] ?: 0) + 1)
 

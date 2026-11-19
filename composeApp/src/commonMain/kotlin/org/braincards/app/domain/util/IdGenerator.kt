@@ -5,7 +5,7 @@ import kotlin.uuid.Uuid
 
 
 @OptIn(ExperimentalUuidApi::class)
-object IdGenerator{ //singleton
+object IdGenerator{
     fun newId() : String = Uuid.random().toString()
 
 }

@@ -14,12 +14,12 @@ data class DeckSearchResult(val topics: List<TopicWithCount>, val cards: List<Ca
 }
 
 /**
- * Contenido vivo de un mazo, ya ordenado: temas por nombre ([topicComparator]) y tarjetas por antiguedad (luego id).
- * Solo cuentan temas y tarjetas con `deletedAt == null`. El recuento por tema sale de las MISMAS tarjetas que se
- * muestran (una sola pasada, sin consultas extra), asi que no puede divergir de la lista ni del aviso de eliminar.
+ * Contenido vivo de un mazo, ya ordenado: temas por nombre ([topicComparator]) y tarjetas por antigüedad (luego id). Solo
+ * cuentan temas y tarjetas con `deletedAt == null`. El recuento por tema sale de las mismas tarjetas que se muestran (una
+ * sola pasada, sin consultas extra), así que no puede divergir de la lista ni del aviso de eliminar.
  *
- * Una tarjeta cuyo `topicId` no corresponde a ningun tema vivo (p. ej. su tema llego borrado por sincronizacion) cuenta
- * como SIN TEMA: se ve en "Tarjetas sin tema" y el selector del dialogo de edicion mostrara "Sin tema".
+ * Una tarjeta cuyo `topicId` no corresponde a ningún tema vivo (p. ej. su tema llegó borrado por sincronización) cuenta
+ * como sin tema: se ve en «Tarjetas sin tema» y el selector del diálogo de edición mostrará «Sin tema».
  */
 class DeckContent private constructor(
     val topics: List<TopicWithCount>,

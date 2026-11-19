@@ -9,12 +9,12 @@ import org.koin.dsl.module
 import org.koin.dsl.onClose
 
 /**
- * Monitores de la sync automatica en Android. Entra por initKoin(appDeclaration) desde BrainCardsApp.
+ * Monitores de la sync automática en Android. Entra por initKoin(appDeclaration) desde BrainCardsApp.
  *
- * HILO PRINCIPAL: AndroidForegroundMonitor registra su observador en ProcessLifecycleOwner, que solo admite
- * addObserver en el hilo principal (si no, lanza IllegalStateException al instante, no en silencio). Koin crea los
- * singles con createdAtStart dentro de startKoin, y startKoin se llama desde Application.onCreate, que se ejecuta
- * en el hilo principal: por eso es correcto crearlo aqui. No mover estas definiciones a un hilo de fondo.
+ * Hilo principal: AndroidForegroundMonitor registra su observador en ProcessLifecycleOwner, que solo admite addObserver en
+ * el hilo principal (si no, lanza IllegalStateException al instante). Koin crea los singles con createdAtStart dentro de
+ * startKoin, que se llama desde Application.onCreate (hilo principal): por eso es correcto crearlo aquí. No mover estas
+ * definiciones a un hilo de fondo.
  */
 fun androidSyncModule() = module {
     single<ForegroundMonitor> { AndroidForegroundMonitor() } onClose { (it as? AutoCloseable)?.close() }
