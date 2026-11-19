@@ -7,19 +7,16 @@ import kotlin.math.exp
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
-/*
- * Celebracion de Resultados (handoff v4.22, 5.5b; mockup `resultados.html`), como FUNCIONES PURAS: ninguna lee un reloj ni
- * lanza una animacion, asi que se prueban sin temporizadores. El dibujo y los Animatable viven en `StudyResults.kt`.
- *
- * D2: en Resultados y Estudio mandan los PARAMETROS DEL MUELLE (dampingRatio / stiffness), no las duraciones del handoff. Aqui el
- * muelle spring(0.45, 500) se asienta (|x - 1| < 0,5 %) en ~400 ms, asi que la duracion que cita el handoff (400 ms) coincide
- * con la fisica real; no hay discrepancia, pero si algun dia se ajustan los parametros, las duraciones se mueven con ellos.
- */
+// Celebración de Resultados como funciones puras: ninguna lee un reloj ni lanza una animación, así que se prueban sin
+// temporizadores. El dibujo y los Animatable viven en `StudyResults.kt`.
+//
+// Mandan los parámetros del muelle (dampingRatio / stiffness) y no las duraciones: el muelle spring(0.45, 500) se asienta
+// (|x - 1| < 0,5 %) en ~400 ms. Si algún día se ajustan los parámetros, las duraciones se mueven con ellos.
 
 /** Duracion del conteo de los 5 numeros (total + 4 casillas), en paralelo. */
 const val RESULTS_COUNT_MS = 500
 
-/** La celebracion completa (conteo + pulso, solapados) no pasa de esto (handoff: <= 600 ms). */
+/** La celebración completa (conteo + pulso, solapados) no pasa de esto. */
 const val RESULTS_CELEBRATION_MAX_MS = 600
 
 /** Pulso del badge: muelle y pico de escala (1.0 -> pico -> 1.0). */
@@ -30,10 +27,10 @@ const val RESULTS_PULSE_PEAK = 1.08f
 val RESULTS_PULSE_SPRING = spring<Float>(dampingRatio = RESULTS_PULSE_DAMPING, stiffness = RESULTS_PULSE_STIFFNESS)
 
 /**
- * Un muelle que parte del reposo en 1.0 con destino 1.0 no se mueve. El "pasando por 1.08" del handoff se consigue con una
- * velocidad inicial: para un muelle subamortiguado (masa 1, como en Compose) el pico desde x = 0 con velocidad v es
- * `v / wd * exp(-z * wn * tp) * sqrt(1 - z^2)`, con `wn = sqrt(k)`, `wd = wn * sqrt(1 - z^2)` y `tp = atan(sqrt(1 - z^2) / z) / wd`.
- * Despejando v para que el pico sea [peak] - 1.
+ * Un muelle que parte del reposo en 1.0 con destino 1.0 no se mueve. Para que pase por 1.08 hace falta una velocidad inicial:
+ * para un muelle subamortiguado (masa 1, como en Compose) el pico desde x = 0 con velocidad v es
+ * `v / wd * exp(-z * wn * tp) * sqrt(1 - z^2)`, con `wn = sqrt(k)`, `wd = wn * sqrt(1 - z^2)` y
+ * `tp = atan(sqrt(1 - z^2) / z) / wd`. Despejando v para que el pico sea [peak] - 1.
  */
 fun pulseKickVelocity(damping: Float, stiffness: Float, peak: Float): Float {
     val z = damping.toDouble()
@@ -63,10 +60,10 @@ fun countUpValue(target: Int, fraction: Float): Int {
  */
 fun shouldPlayResultsCelebration(alreadySeen: Boolean, reducedMotion: Boolean): Boolean = !alreadySeen && !reducedMotion
 
-/** Medidas del badge de la tarjeta de Resultados (mockups `resultados.html` 64 px / 20 px y `resultados-mobile.html` 56 px / 18 px). */
+/** Medidas del badge de la tarjeta de Resultados (64 dp normal y 56 dp compacto; esquinas en porcentaje del lado). */
 data class ResultsBadgeSpec(val sizeDp: Int, val cornerPercent: Int)
 
-/** Ancho disponible por debajo del cual se usa el badge pequeño: punto medio entre las tarjetas del mockup (360 movil, 480 normal). */
+/** Ancho disponible por debajo del cual se usa el badge pequeño (punto medio entre tarjetas de 360 y 480 dp). */
 const val RESULTS_COMPACT_WIDTH_DP = 420f
 
 fun resultsBadgeSpec(availableWidthDp: Float): ResultsBadgeSpec =

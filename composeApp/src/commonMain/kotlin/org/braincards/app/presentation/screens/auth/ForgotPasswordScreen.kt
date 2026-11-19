@@ -33,8 +33,8 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
 /**
- * Recuperar contraseña (v4.4): correo (precargado con el escrito en Bienvenida), error de campo «Escribe tu correo
- * electronico», banner de red unificado y «Volver a iniciar sesion». El correo se guarda con rememberSaveable.
+ * Recuperar contraseña: correo (precargado con el escrito en Bienvenida), error de campo «Escribe tu correo electrónico»,
+ * banner de red unificado y «Volver a iniciar sesión». El correo se guarda con rememberSaveable.
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable

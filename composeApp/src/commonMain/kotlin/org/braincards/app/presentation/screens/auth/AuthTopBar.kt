@@ -14,8 +14,8 @@ import braincards.composeapp.generated.resources.auth_back
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Cabecera comun de las cuatro pantallas de auth (v4.4): solo la flecha de vuelta, sin titulo. Se deshabilita
- * mientras hay un envio en curso ([enabled] = false), como dibujan los mockups.
+ * Cabecera común de las cuatro pantallas de auth: solo la flecha de vuelta, sin título. Se deshabilita mientras hay un envío en
+ * curso ([enabled] = false).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

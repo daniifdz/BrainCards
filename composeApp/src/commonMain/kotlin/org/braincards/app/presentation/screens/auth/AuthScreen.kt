@@ -52,12 +52,15 @@ import org.koin.core.annotation.KoinExperimentalAPI
 private val FIELD_ORDER = listOf(AuthField.EMAIL, AuthField.PASSWORD)
 
 /**
- * Bienvenida: inicio de sesion y registro en una sola pantalla. [asEntry] = es la ENTRADA de la app (sin flecha de
- * vuelta); si no, esta apilada desde Home o Ajustes (con flecha). Estado: correo y modo con rememberSaveable (sobreviven a rotar); la CONTRASENA solo con remember (no
- * se guarda en el estado de la instancia). [notice] = aviso de salida de sesion (ver [WelcomeNotice]): Snackbar de un
- * solo uso (SignedOut / AccountDeleted, se pide con [onNoticeConsumed]) o nota persistente (SessionExpired) que se
- * descarta con [onNoticeDismissed] en cuanto el usuario interactua con el formulario. Errores: de campo (cliente: correo / contraseña; servidor: contraseña
- * debil) bajo el input, y banner para el resto.
+ * Bienvenida: inicio de sesión y registro en una sola pantalla. [asEntry] = es la entrada de la app (sin flecha de vuelta); si
+ * no, está apilada desde Home o Ajustes (con flecha).
+ *
+ * Estado: correo y modo con rememberSaveable (sobreviven a rotar); la contraseña solo con remember (no se guarda en el estado
+ * de la instancia). [notice] = aviso de salida de sesión (ver [WelcomeNotice]): Snackbar de un solo uso (SignedOut /
+ * AccountDeleted, se pide con [onNoticeConsumed]) o nota persistente (SessionExpired) que se descarta con [onNoticeDismissed]
+ * en cuanto el usuario interactúa con el formulario.
+ *
+ * Errores: de campo (cliente: correo y contraseña; servidor: contraseña débil) bajo el input, y banner para el resto.
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable
@@ -82,7 +85,8 @@ fun AuthScreen(
     var isRegisterMode by rememberSaveable { mutableStateOf(false) }
     // Sesion caducada: el correo llega precargado (solo el correo; la contrasena nunca).
     var email by rememberSaveable { mutableStateOf((notice as? WelcomeNotice.SessionExpired)?.email.orEmpty()) }
-    var password by remember { mutableStateOf("") } // NO rememberSaveable
+    // Sin rememberSaveable a propósito.
+    var password by remember { mutableStateOf("") }
     var clientErrors by remember { mutableStateOf(FieldErrors.None) }
     val focus = rememberFormFocus(FIELD_ORDER.size)
 
@@ -154,7 +158,7 @@ fun AuthScreen(
     WelcomeScaffold(
         topBar = { if (!asEntry) AuthTopBar(onBack = onBackClick, enabled = !isSubmitting) },
         snackbarHostState = snackbarHostState,
-        // Tamanos del handoff v4.10 (ver welcomeLogoSpec).
+        // Tamaños según welcomeLogoSpec.
         hero = { logo ->
             BrandBadge(size = logo.iconDp.dp)
             Text(

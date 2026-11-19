@@ -2,7 +2,7 @@ package org.braincards.app.presentation.screens.studyStats
 
 import org.braincards.app.domain.models.StudyStats
 
-/** Lo que muestra Estadisticas (handoff 5.7). Loading y Error dependen de la carga; Empty y Content los decide [selectStatsState]. */
+/** Lo que muestra Estadísticas. Loading y Error dependen de la carga; Empty y Content los decide [selectStatsState]. */
 sealed interface StatsUiState {
     /** Esqueleto: aun no han llegado los tres datos. */
     data object Loading : StatsUiState
@@ -14,8 +14,8 @@ sealed interface StatsUiState {
     data object Empty : StatsUiState
 
     /**
-     * Hay al menos un mazo. Con mazos pero SIN tarjetas las tres casillas muestran 0/0/0 y el donut no se dibuja
-     * ([hasCards] = false): no hace falta un estado propio (handoff v4.14).
+     * Hay al menos un mazo. Con mazos pero sin tarjetas las tres casillas muestran 0/0/0 y el donut no se dibuja ([hasCards] =
+     * false): no hace falta un estado propio.
      */
     data class Content(val deckCount: Int, val stats: StudyStats, val dueCount: Int) : StatsUiState {
         val hasCards: Boolean get() = stats.totalCards > 0

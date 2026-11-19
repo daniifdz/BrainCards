@@ -48,7 +48,7 @@ sealed class StudyState {
         val isAnswerVisible: Boolean = false,
         val remaining: Int,
         val total: Int,
-        /** Repaso libre (paso 14): la sesion NO guarda nada. La UI lo usa para el chip y el aviso. */
+        /** Repaso libre: la sesión no guarda nada. La UI lo usa para el chip y el aviso. */
         val freeReview: Boolean = false
     ) : StudyState() {
         /** (M - N) / M: avanza solo cuando una tarjeta sale de la cola. */
@@ -249,7 +249,6 @@ class StudyViewModel(
      * [StudyMessage.RateFailed] (se puede volver a puntuar).
      */
     fun rateCard(quality: ReviewQuality) {
-        //usamos el valor de la variable antes de la llamada
         if (isSubmitting) return //puntuación en curso, ignora pulsación
 
         val currentState = _state.value as? StudyState.Reviewing ?: return

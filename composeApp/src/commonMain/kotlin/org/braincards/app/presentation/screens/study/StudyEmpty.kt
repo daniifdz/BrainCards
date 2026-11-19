@@ -33,7 +33,10 @@ import org.braincards.app.presentation.components.FreeReviewGhostButton
 import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.stringResource
 
-/** Estado vacio «¡Estamos al día!» (mockup `estudio-vacio.html`): icono en chip, titulo, texto y un unico boton; el boton dice "Volver al inicio" (Home) o "Volver al mazo" (mazo) y vuelve al origen. */
+/**
+ * Estado vacío «¡Estamos al día!»: icono en chip, título, texto y un único botón; dice «Volver al inicio» (Home) o «Volver al
+ * mazo» (mazo) y vuelve al origen.
+ */
 @Composable
 fun StudyEmpty(origin: StudyOrigin, onBack: () -> Unit, onFreeReview: () -> Unit, modifier: Modifier = Modifier) {
     val extra = BrainCardsTheme.extraColors

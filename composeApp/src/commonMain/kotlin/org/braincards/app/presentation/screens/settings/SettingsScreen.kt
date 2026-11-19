@@ -41,12 +41,12 @@ import org.koin.core.annotation.KoinExperimentalAPI
 
 enum class AppTheme { SYSTEM, LIGHT, DARK }
 
-/** Medidas de los badges del logo en Ajustes (mockups `ajustes*.html`): junto al titulo, su hueco y el bloque «Acerca de». */
+/** Medidas de los badges del logo en Ajustes: junto al título, su hueco y el bloque «Acerca de». */
 const val SETTINGS_TITLE_BADGE_DP = 30
 const val SETTINGS_TITLE_BADGE_GAP_DP = 12
 const val SETTINGS_ABOUT_BADGE_DP = 40
 
-/** Ancho maximo del contenido en pantallas anchas (mockup `ajustes.html`: 640 px). */
+/** Ancho máximo del contenido en pantallas anchas (640 dp). */
 private val SETTINGS_MAX_WIDTH = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
@@ -129,7 +129,7 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // Badge del logo junto al titulo (mockups ajustes*.html: 30 px, hueco de 12 px; igual en normal, movil e invitado).
+                    // Badge del logo junto al título (30 dp, hueco de 12 dp; igual en normal, móvil e invitado).
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BrandBadge(size = SETTINGS_TITLE_BADGE_DP.dp)
                         Spacer(Modifier.width(SETTINGS_TITLE_BADGE_GAP_DP.dp))
@@ -146,8 +146,8 @@ fun SettingsScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        // Columna centrada de ancho maximo ~640 dp en pantallas anchas (mockup ajustes.html). El scroll es de la zona
-        // completa (la rueda del raton funciona tambien fuera de la columna); en Compact (< 640 dp) no cambia nada.
+        // Columna centrada de ancho máximo ~640 dp en pantallas anchas. El scroll es de la zona completa (la rueda del ratón funciona
+        // también fuera de la columna); en Compact (< 640 dp) no cambia nada.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -241,7 +241,7 @@ fun SettingsScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Bloque de identidad (mockup ajustes.html): badge 40 + nombre + lema, encima de la version.
+                // Bloque de identidad: badge 40 + nombre + lema, encima de la versión.
                 ListItem(
                     headlineContent = { Text(stringResource(Res.string.app_name)) },
                     supportingContent = { Text(stringResource(Res.string.home_tagline)) },

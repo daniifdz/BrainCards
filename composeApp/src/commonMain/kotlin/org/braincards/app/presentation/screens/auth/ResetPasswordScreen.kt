@@ -33,14 +33,14 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
-/** Orden de foco de Restablecer (v4.4): codigo (0) -> contraseña nueva (1) -> confirmacion (2). */
+/** Orden de foco de Restablecer: código (0) -> contraseña nueva (1) -> confirmación (2). */
 private val FIELD_ORDER = listOf(AuthField.CODE, AuthField.PASSWORD, AuthField.CONFIRM_PASSWORD)
 
 /**
- * Restablecer contraseña (v4.4): codigo (6 casillas) + contraseña nueva + confirmacion, en una sola pantalla.
- * El codigo se guarda con rememberSaveable; las DOS contraseñas solo con remember (no se conservan al rotar).
- * Errores de campo (codigo incompleto, contraseña corta, no coinciden) y del servidor (codigo incorrecto o
- * caducado bajo el codigo; contraseña debil bajo la contraseña).
+ * Restablecer contraseña: código (6 casillas) + contraseña nueva + confirmación, en una sola pantalla. El código se guarda con
+ * rememberSaveable; las dos contraseñas solo con remember (no se conservan al rotar). Errores de campo (código incompleto,
+ * contraseña corta, no coinciden) y del servidor (código incorrecto o caducado bajo el código; contraseña débil bajo la
+ * contraseña).
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable
@@ -56,8 +56,9 @@ fun ResetPasswordScreen(
     val uiError by viewModel.uiError.collectAsState()
 
     var code by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }      // NO rememberSaveable
-    var confirmation by remember { mutableStateOf("") }  // NO rememberSaveable
+    // Sin rememberSaveable a propósito: las contraseñas no se conservan al rotar.
+    var password by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
     var clientErrors by remember { mutableStateOf(FieldErrors.None) }
     val focus = rememberFormFocus(FIELD_ORDER.size)
 

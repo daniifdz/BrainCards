@@ -31,8 +31,8 @@ sealed interface HomeUiState {
     data object NoDecks : HomeUiState
 
     /**
-     * 5.º estado (handoff v4.12): hay uno o mas mazos vivos pero NINGUNA tarjeta viva en total. No es "Todo al dia" (no
-     * se ha repasado nada: no hay nada que repasar): invita a entrar en un mazo a crear la primera. Sin "Estudiar Todo".
+     * Hay uno o más mazos vivos pero ninguna tarjeta viva en total. No es «Todo al día» (no hay nada que repasar): invita a entrar
+     * en un mazo a crear la primera. Sin «Estudiar Todo».
      */
     data object NoCards : HomeUiState
 
@@ -62,9 +62,9 @@ fun homeDeckStats(summaries: List<DeckSummary>): HomeDeckStats {
  * "Todo al dia".
  */
 /**
- * ¿Se ofrece «Repaso libre» en Home? SOLO en «Todo al dia» ([HomeUiState.Empty]: hay tarjetas pero 0 pendientes, asi que siempre hay algo que
- * repasar). Con pendientes ([HomeUiState.Content]) no (handoff v4.25: «Estudiar Todo» ya es la accion), ni en primer uso (0 mazos) ni con
- * mazos sin tarjetas (nada que repasar), ni cargando o con error.
+ * ¿Se ofrece «Repaso libre» en Home? Solo en «Todo al día» ([HomeUiState.Empty]: hay tarjetas pero 0 pendientes, así que
+ * siempre hay algo que repasar). Con pendientes ([HomeUiState.Content]) no («Estudiar Todo» ya es la acción), ni en primer
+ * uso (0 mazos), ni con mazos sin tarjetas (nada que repasar), ni cargando o con error.
  */
 fun homeShowsFreeReview(state: HomeUiState): Boolean = state is HomeUiState.Empty
 

@@ -205,8 +205,10 @@ class AuthViewModel(
     val lastSuccessfulSyncAt: StateFlow<Instant?> = syncCoordinator.lastSuccessfulSyncAt
     val pendingChangesCount: StateFlow<Int> = syncCoordinator.pendingChangesCount
 
-    /** Disparador manual del boton "Sincronizar ahora" de Ajustes -- este si informa
-     * del resultado, a diferencia del sync automatico de login/arranque. */
+    /**
+     * Disparador manual del botón «Sincronizar ahora» de Ajustes: a diferencia del sync automático de login y arranque, este sí
+     * informa del resultado.
+     */
     fun syncNow() {
         viewModelScope.launch {
             val result = syncCoordinator.syncNow()
@@ -376,9 +378,10 @@ class AuthViewModel(
         is SignOutAndWipeResult.SessionCloseFailed -> SignOutEvent.SessionCloseFailed
     }
 
-    /** Borrado de cuenta (Bloque F) -- bloquea doble tap con el mismo criterio que
-     * isSubmitting/isSyncing, y toma el Mutex del coordinador para no correr a la
-     * vez que un sync. */
+    /**
+     * Borrado de cuenta: bloquea el doble toque con el mismo criterio que isSubmitting/isSyncing, y toma el Mutex del coordinador
+     * para no correr a la vez que un sync.
+     */
     fun deleteAccount() {
         if (_isDeletingAccount.value) return
         val userId = (authState.value as? AuthState.Authenticated)?.userId ?: return
@@ -504,9 +507,10 @@ class AuthViewModel(
         }
     }
 
-    /** Verifica el código que se envió por email y fija la contraseña nueva. Mismo
-     * isSubmitting que el resto (no un flag aparte) -- bloquea doble tap igual
-     * que signUp/signIn/sendPasswordReset. */
+    /**
+     * Verifica el código enviado por email y fija la contraseña nueva. Usa el mismo isSubmitting que el resto (no un flag aparte):
+     * bloquea el doble toque igual que signUp, signIn y sendPasswordReset.
+     */
     fun confirmPasswordReset(email: String, code: String, newPassword: String) {
         if (_isSubmitting.value) return
         viewModelScope.launch {

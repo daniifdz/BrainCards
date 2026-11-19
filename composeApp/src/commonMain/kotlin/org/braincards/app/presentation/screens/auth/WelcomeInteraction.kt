@@ -1,9 +1,9 @@
 package org.braincards.app.presentation.screens.auth
 
 /**
- * Eventos de la Bienvenida que pueden (o no) descartar el aviso persistente de sesion caducada. Solo los de la lista
- * de [isDismissingInteraction] se cablean en AuthScreen; los demas existen para dejar escrito, y probado, que NO lo
- * descartan (v4.9: "persiste hasta que el usuario interactua con el formulario").
+ * Eventos de la Bienvenida que pueden (o no) descartar el aviso persistente de sesión caducada. Solo los de la lista de
+ * [isDismissingInteraction] se cablean en AuthScreen; los demás existen para dejar escrito, y probado, que no lo descartan (el
+ * aviso persiste hasta que el usuario interactúa con el formulario).
  */
 enum class WelcomeInteraction {
     // Interacciones con el formulario: descartan el aviso.

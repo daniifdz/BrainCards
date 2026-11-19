@@ -39,15 +39,15 @@ import org.braincards.app.presentation.components.form.FormBanner
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-/** Ancho maximo del contenido en pantallas anchas (Desktop/tablet), como el mockup (640 dp). */
+/** Ancho máximo del contenido en pantallas anchas (Desktop o tablet): 640 dp. */
 private val STUDY_MAX_WIDTH = 640.dp
 
 /**
- * Sesion de estudio (handoff 5.5, v4.18). Anfitrion: elige que se dibuja segun el estado, recoge el teclado en el
- * CONTENEDOR (no en ningun boton: sin foco inicial en los botones de puntuacion, ver [studyKeys]) y muestra los errores.
+ * Sesión de estudio. Anfitrión: elige qué se dibuja según el estado, recoge el teclado en el contenedor (no en ningún botón: sin
+ * foco inicial en los botones de puntuación, ver [studyKeys]) y muestra los errores.
  *
- * [onBackClick] vuelve al ORIGEN de la sesion (✕, Esc, boton de los estados sin tarjeta): App.kt lo conecta a
- * popBackStackSafely. El atras del sistema en Android hace pop por si solo.
+ * [onBackClick] vuelve al origen de la sesión (✕, Esc, botón de los estados sin tarjeta): App.kt lo conecta a
+ * popBackStackSafely. El atrás del sistema en Android hace pop por sí solo.
  */
 @Composable
 fun StudyScreen(
@@ -56,7 +56,7 @@ fun StudyScreen(
     /** «Repaso libre» del estado vacio: App.kt abre la sesion libre SUSTITUYENDO a esta pantalla (con una semilla nueva). */
     onFreeReview: () -> Unit,
     viewModel: StudyViewModel = koinViewModel(),
-    /** Repaso libre (paso 14): la semilla del orden aleatorio (viene de la ruta); null = sesion normal. */
+    /** Repaso libre: la semilla del orden aleatorio (viene de la ruta); null = sesión normal. */
     freeReviewSeed: Long? = null
 ) {
     // initSession es idempotente por alcance y modo: rotar la pantalla no reinicia ni reordena la sesion.
@@ -72,7 +72,7 @@ fun StudyScreen(
     // Repaso libre sin tarjetas (al cargar o todas borradas durante la sesion): vuelve al origen, sin pantalla ni texto nuevo.
     LaunchedEffect(viewModel) { viewModel.exitEvent.collect { onBackClick() } }
 
-    // Estado COMPARTIDO del pulso de puntuacion (D7): clic y teclas 1-4 pasan por `rate`; no retrasa la puntuacion.
+    // Estado compartido del pulso de puntuación: clic y teclas 1-4 pasan por `rate`; no retrasa la puntuación.
     val ratePulse = remember { RatePulseState() }
     val rate = remember(viewModel, ratePulse) { ratingHandler(ratePulse, viewModel::rateCard) }
 
@@ -90,7 +90,7 @@ fun StudyScreen(
     // al revelar desaparece el boton "Mostrar respuesta" y el foco no debe perderse.
     val containerFocus = remember { FocusRequester() }
     LaunchedEffect(state) {
-        // En Resultados el foco inicial es del boton unico [PROPUESTO]: no se le quita.
+        // En Resultados el foco inicial es del botón único: no se le quita.
         if (state is StudyState.Finished) return@LaunchedEffect
         withFrameNanos { }
         runCatching { containerFocus.requestFocus() }
@@ -100,7 +100,7 @@ fun StudyScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
-        // BoxWithConstraints: el ancho disponible decide si el chip del repaso libre lleva su aviso (>= 600 dp, D5).
+        // BoxWithConstraints: el ancho disponible decide si el chip del repaso libre lleva su aviso (>= 600 dp).
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()

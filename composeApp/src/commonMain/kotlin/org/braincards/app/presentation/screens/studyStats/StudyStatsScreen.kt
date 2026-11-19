@@ -40,7 +40,7 @@ import org.koin.compose.viewmodel.koinViewModel
 private val STATS_MAX_WIDTH = 780.dp
 private val COMPACT_WIDTH = 600.dp
 
-/** Estadisticas (handoff 5.7): casillas + madurez de las tarjetas. Estados: Loading, Error, Empty y Content. */
+/** Estadísticas: casillas + madurez de las tarjetas. Estados: Loading, Error, Empty y Content. */
 @Composable
 fun StudyStatsScreen(
     onBackClick: () -> Unit,

@@ -14,23 +14,20 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.braincards.app.domain.models.ReviewQuality
 
-/*
- * Feedback de interaccion de la sesion de estudio (handoff v4.22, 5.5b; mockup `estudio.html`), como FUNCIONES PURAS y
- * constantes: nada aqui lee un reloj. El dibujo y los Animatable viven en `StudyContent.kt`.
- *
- * D2: mandan los PARAMETROS DEL MUELLE. Barra: spring(0.6, 380) (el handoff dice ~380 ms; el muelle real se asienta en ese orden).
- * Boton: bajada tween(60, FastOutLinearIn) y subida spring(0.5, 600); el handoff cita 180 ms para la subida, pero ese muelle tarda
- * ~300 ms en apagarse del todo: mandan los parametros.
- *
- * NOTA sobre el mockup: el fotograma de la barra dibuja un pico exagerado (25 % -> 36 % -> 33 %). Un spring(0.6) real solo pasa de
- * largo ~9,5 % del tramo recorrido (ver el test), asi que con un tramo de 1/12 el rebote real es de ~0,8 puntos: es sutil por diseno.
- */
+// Feedback de interacción de la sesión de estudio como funciones puras y constantes: nada aquí lee un reloj. El dibujo y los
+// Animatable viven en `StudyContent.kt`.
+//
+// Mandan los parámetros del muelle. Barra: spring(0.6, 380). Botón: bajada tween(60, FastOutLinearIn) y subida
+// spring(0.5, 600); ese muelle tarda ~300 ms en apagarse del todo.
+//
+// Un spring(0.6) real solo pasa de largo ~9,5 % del tramo recorrido (ver el test), así que con un tramo de 1/12 el rebote
+// real es de ~0,8 puntos: es sutil por diseño.
 
 /**
- * Botones "fantasma" (13d2): tras puntuar, los botones de dificultad siguen DIBUJADOS este tiempo (ms) encima de la zona de
- * "Mostrar respuesta" para que el pulso se vea entero, aunque la tarjeta ya haya avanzado (el guardado es rapido y los botones
- * reales salen de composicion antes de que acabe el pulso). El fantasma es solo dibujo: no recibe toques ni foco ni semantica, y no
- * retrasa nada. INTERRUPTOR DE REVERSION: con 0 no hay fantasma y todo se comporta como en 13d.
+ * Botones «fantasma»: tras puntuar, los botones de dificultad siguen dibujados este tiempo (ms) encima de la zona de «Mostrar
+ * respuesta» para que el pulso se vea entero, aunque la tarjeta ya haya avanzado (el guardado es rápido y los botones reales
+ * salen de composición antes de que acabe el pulso). El fantasma es solo dibujo: no recibe toques, ni foco, ni semántica, y no
+ * retrasa nada. Con 0 no hay fantasma.
  */
 const val STUDY_PULSE_GHOST_MS = 240
 
@@ -85,9 +82,9 @@ fun studyShowGhost(enabled: Boolean, fading: Boolean, answerVisible: Boolean): B
 fun studyGhostAlpha(fade: Float): Float = (1f - fade).coerceIn(0f, 1f)
 
 /**
- * Estado COMPARTIDO del pulso de puntuacion (D7): lo disparan igual el clic/toque en un boton y las teclas 1-4 de Desktop, porque
- * ambos pasan por `fire(...)` antes de llamar al ViewModel (el pulso no depende de `interactionSource`). No retrasa nada: solo marca.
- * Pulsar muchas veces seguido solo incrementa [token]: el boton reinicia su animacion, no la acumula.
+ * Estado compartido del pulso de puntuación: lo disparan igual el clic o toque en un botón y las teclas 1-4 de Desktop, porque
+ * ambos pasan por `fire(...)` antes de llamar al ViewModel (el pulso no depende de `interactionSource`). No retrasa nada:
+ * solo marca. Pulsar muchas veces seguidas solo incrementa [token]: el botón reinicia su animación, no la acumula.
  */
 @Stable
 class RatePulseState {

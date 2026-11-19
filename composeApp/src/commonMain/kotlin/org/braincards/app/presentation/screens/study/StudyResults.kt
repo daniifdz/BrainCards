@@ -74,9 +74,9 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * De donde se entro a la sesion de estudio (handoff v4.18): Home ("Estudiar Todo", [StudyScope.All]) o un mazo concreto
- * (Contenido de un mazo, [StudyScope.Deck]). El ✕, Esc, el atras del sistema y el boton de Resultados / del estado vacio
- * vuelven SIEMPRE al origen (popBackStackSafely); lo unico que cambia es la etiqueta del boton.
+ * De dónde se entró a la sesión de estudio: Home («Estudiar Todo», [StudyScope.All]) o un mazo concreto (Contenido de un mazo,
+ * [StudyScope.Deck]). El ✕, Esc, el atrás del sistema y el botón de Resultados o del estado vacío vuelven siempre al origen
+ * (popBackStackSafely); lo único que cambia es la etiqueta del botón.
  */
 enum class StudyOrigin { Home, Deck }
 
@@ -111,16 +111,17 @@ fun studyBackLabel(origin: StudyOrigin): String = when (origin) {
 private class ResultStat(val label: String, val count: Int, val color: Color)
 
 /**
- * Resultados de la sesion (mockup `resultados.html`): badge del logo (64 dp, 56 dp en ancho compacto; sustituye al check), etiqueta, «¡Sesión completada!», «N repasos» (pulsaciones,
- * suma de las 4 casillas), desglose por calidad con los colores de Estudio y un UNICO boton hacia el origen.
+ * Resultados de la sesión: badge del logo (64 dp, 56 dp en ancho compacto), etiqueta, «¡Sesión completada!», «N repasos»
+ * (pulsaciones, suma de las 4 casillas), desglose por calidad con los colores de Estudio y un único botón hacia el origen.
  *
- * Foco inicial en ese boton [PROPUESTO]: es el unico control y Enter/Espacio lo activan (el teclado de la sesion solo
- * trata Esc aqui). Esc y el atras del sistema vuelven al mismo sitio. El titulo es un encabezado y live region educada.
+ * Foco inicial en ese botón: es el único control y Enter/Espacio lo activan (el teclado de la sesión solo trata Esc aquí). Esc
+ * y el atrás del sistema vuelven al mismo sitio. El título es un encabezado y live region educada.
  *
- * Celebracion al entrar (13c, `ResultsMotion.kt`): el badge da UN pulso (muelle 0.45 / 500, pico 1.08) y los 5 numeros cuentan de 0
- * a su valor en 500 ms, solapados. Accesibilidad: los textos que cuentan llevan `clearAndSetSemantics {}` (TalkBack nunca anuncia
- * un numero intermedio) y el valor final vive en un nodo estatico (el total, con live region) o en la descripcion de cada casilla.
- * Rotacion: la bandera `rememberSaveable` de «ya vista» hace que, tras rotar, salgan los valores finales sin pulso.
+ * Celebración al entrar (ver `ResultsMotion.kt`): el badge da un pulso (muelle 0.45 / 500, pico 1.08) y los 5 números cuentan
+ * de 0 a su valor en 500 ms, solapados. Accesibilidad: los textos que cuentan llevan `clearAndSetSemantics {}` (TalkBack nunca
+ * anuncia un número intermedio) y el valor final vive en un nodo estático (el total, con live region) o en la descripción de
+ * cada casilla. Rotación: la bandera `rememberSaveable` de «ya vista» hace que, tras rotar, salgan los valores finales sin
+ * pulso.
  */
 @Composable
 fun StudyFinished(
@@ -129,7 +130,10 @@ fun StudyFinished(
     origin: StudyOrigin,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    /** Repaso libre (paso 14): titulo «¡Repaso completado!», chip «Repaso libre» bajo el badge y el aviso «No afecta a tu programacion de repaso.». */
+    /**
+     * Repaso libre: título «¡Repaso completado!», chip «Repaso libre» bajo el badge y el aviso «No afecta a tu programación de
+     * repaso.».
+     */
     freeReview: Boolean = false
 ) {
     val scheme = MaterialTheme.colorScheme

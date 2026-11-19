@@ -23,11 +23,9 @@ import org.braincards.app.presentation.theme.BrainCardsTheme
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-/*
- * Repaso libre en Estudio y Resultados (handoff v4.25; mockups `estudio.html`, `resultados.html` y sus espejos): un chip gris informativo
- * «Repaso libre» durante TODA la sesion, el aviso «No cambia tu programacion.» a su lado solo en ancho >= 600 dp, y en Resultados el
- * titulo propio «¡Repaso completado!» con el aviso «No afecta a tu programacion de repaso.». Las decisiones son funciones puras.
- */
+// Repaso libre en Estudio y Resultados: un chip gris informativo «Repaso libre» durante toda la sesión, el aviso «No cambia tu
+// programación.» a su lado solo en ancho >= 600 dp, y en Resultados el título propio «¡Repaso completado!» con el aviso «No
+// afecta a tu programación de repaso.». Las decisiones son funciones puras.
 
 /** Ancho a partir del cual (Desktop/tablet) el chip lleva al lado el aviso «No cambia tu programacion.». En Android estrecho, solo el chip. */
 const val FREE_REVIEW_NOTICE_MIN_WIDTH_DP = 600f
@@ -46,8 +44,9 @@ fun studyResultsTitleRes(freeReview: Boolean): StringResource =
     if (freeReview) Res.string.study_results_title_free else Res.string.study_results_title
 
 /**
- * ¿El estado vacio de Estudio («¡Estamos al dia!») ofrece «Repaso libre»? SIEMPRE, con cualquier origen (Home o un mazo): para llegar a ese
- * estado hace falta que exista al menos una tarjeta en el origen, asi que nunca hay que ocultarlo por falta de contenido (handoff v4.25).
+ * ¿El estado vacío de Estudio («¡Estamos al día!») ofrece «Repaso libre»? Siempre, con cualquier origen (Home o un mazo): para
+ * llegar a ese estado hace falta que exista al menos una tarjeta en el origen, así que nunca hay que ocultarlo por falta de
+ * contenido.
  */
 fun studyEmptyShowsFreeReview(origin: StudyOrigin): Boolean = when (origin) {
     StudyOrigin.Home, StudyOrigin.Deck -> true
@@ -69,8 +68,8 @@ fun FreeReviewChip(label: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Fila de Estudio bajo la cabecera: chip centrado y, si [notice] no es null, el aviso a su lado (mockup `estudio.html`: hueco de 10,
- * aviso con el estilo `.hint`). Textos como parametros para poder probar el layout sin recursos.
+ * Fila de Estudio bajo la cabecera: chip centrado y, si [notice] no es null, el aviso a su lado (hueco de 10 dp). Textos como
+ * parámetros para poder probar el layout sin recursos.
  */
 @Composable
 internal fun FreeReviewBanner(chipLabel: String, notice: String?, modifier: Modifier = Modifier) {

@@ -49,8 +49,8 @@ sealed interface AuthFormTarget {
 private val GENERIC_BANNER = AuthFormTarget.Banner(AuthMessage.GenericError)
 
 /**
- * Reparto de los fallos de auth (handoff v4.3, seccion 2): campo / banner / ir a confirmar. Un tipo que no puede
- * darse en un contexto (p. ej. credenciales invalidas fuera del login) cae en el banner generico.
+ * Reparto de los fallos de auth: campo / banner / ir a confirmar. Un tipo que no puede darse en un contexto (p. ej. credenciales
+ * inválidas fuera del login) cae en el banner genérico.
  */
 fun AuthErrorKind.targetFor(context: AuthContext): AuthFormTarget = when (this) {
     AuthErrorKind.OtpExpired -> when (context) {

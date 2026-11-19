@@ -13,7 +13,6 @@ import org.braincards.app.domain.models.ReviewQuality
 
 /** Que hace la sesion de estudio ante una tecla (Desktop). Ver [studyKeyAction]. */
 sealed interface StudyKeyAction {
-    /** Mostrar la respuesta. */
     data object Reveal : StudyKeyAction
 
     /** Puntuar la tarjeta con [quality]. */
@@ -27,13 +26,13 @@ sealed interface StudyKeyAction {
 }
 
 /**
- * Decision pura de teclado de la sesion de estudio (handoff 5.5, confirmado):
- *  - Pregunta en pantalla ([answerVisible] = false): Espacio o Enter (tambien el del teclado numerico) -> [StudyKeyAction.Reveal].
- *  - Respuesta visible: 1 · 2 · 3 · 4 (tambien NumPad) -> Rate(Otra vez / Dificil / Bien / Facil). Espacio y Enter se
- *    IGNORAN (y el llamador NO los consume): un boton con foco por Tab debe seguir activandose, y un Espacio por reflejo no
- *    debe puntuar nada.
- *  - Esc -> [StudyKeyAction.Exit] en cualquier estado.
- *  - Cualquier combinacion con Ctrl, Alt o Meta se ignora (tambien Esc): son atajos del sistema o de la ventana.
+ * Decisión pura de teclado de la sesión de estudio:
+ * - Pregunta en pantalla ([answerVisible] = false): Espacio o Enter (también el del teclado numérico) -> [StudyKeyAction.Reveal].
+ * - Respuesta visible: 1 · 2 · 3 · 4 (también NumPad) -> Rate(Otra vez / Difícil / Bien / Fácil). Espacio y Enter se ignoran
+ *   (y el llamador no los consume): un botón con foco por Tab debe seguir activándose, y un Espacio por reflejo no debe
+ *   puntuar nada.
+ * - Esc -> [StudyKeyAction.Exit] en cualquier estado.
+ * - Cualquier combinación con Ctrl, Alt o Meta se ignora (también Esc): son atajos del sistema o de la ventana.
  */
 fun studyKeyAction(key: Key, ctrl: Boolean, alt: Boolean, meta: Boolean, answerVisible: Boolean): StudyKeyAction {
     if (ctrl || alt || meta) return StudyKeyAction.Ignore

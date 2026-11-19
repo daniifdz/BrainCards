@@ -62,7 +62,7 @@ private val CARD_BORDER_WIDTH = 1.dp
 private val DONUT_SIZE = 160.dp
 private val DONUT_STROKE = 20.dp
 
-/** Las tres casillas (Mazos, Tarjetas totales, Pendientes hoy) y la tarjeta de madurez (mockup `estadisticas.html`). */
+/** Las tres casillas (Mazos, Tarjetas totales, Pendientes hoy) y la tarjeta de madurez. */
 @Composable
 fun StatsContent(content: StatsUiState.Content, compact: Boolean) {
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 18.dp else 24.dp)) {
@@ -153,9 +153,9 @@ private fun MaturityCard(content: StatsUiState.Content, compact: Boolean) {
 }
 
 /**
- * Donut (sin libreria): un arco de [DONUT_STROKE] por categoria desde -90°, en el orden Nuevas / Aprendiendo / Maduras, con
- * los colores del tema. Es decorativo para los lectores de pantalla: los numeros estan en la leyenda y en las casillas.
- * Estatico (como el mockup), asi que no hay animacion que reducir. Solo se dibuja si hay tarjetas.
+ * Donut (sin librería): un arco de [DONUT_STROKE] por categoría desde -90°, en el orden Nuevas / Aprendiendo / Maduras, con los
+ * colores del tema. Es decorativo para los lectores de pantalla: los números están en la leyenda y en las casillas. Estático,
+ * así que no hay animación que reducir. Solo se dibuja si hay tarjetas.
  */
 @Composable
 private fun MaturityDonut(slices: List<Slice>, total: Int) {
@@ -227,7 +227,7 @@ private fun LegendRow(slice: Slice) {
     }
 }
 
-/** Esqueleto de carga: tres casillas y la tarjeta (mockup `estadisticas-estados.html`). Sin pulso si se piden menos animaciones. */
+/** Esqueleto de carga: tres casillas y la tarjeta. Sin pulso si se piden menos animaciones. */
 @Composable
 fun StatsSkeleton() {
     val reduced = rememberReducedMotion()

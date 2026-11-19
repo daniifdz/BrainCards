@@ -71,7 +71,7 @@ internal fun SigningOutDialog() = SettingsProgressDialog(
 internal fun DeletingAccountDialog() = SettingsProgressDialog(
     title = stringResource(Res.string.delete_account_progress),
     hint = stringResource(Res.string.sign_out_progress_hint),
-    // Accion destructiva: el anillo va en el color de error tambien en el estado de carga (handoff v4.19).
+    // Acción destructiva: el anillo va en el color de error también en el estado de carga.
     indicatorColor = MaterialTheme.colorScheme.error
 )
 

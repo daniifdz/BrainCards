@@ -154,8 +154,8 @@ internal fun HomeContent(
                 }
 
                 else -> {
-                    // Repaso libre (paso 14c): SOLO bajo «Todo al dia» (homeShowsFreeReview), con el hueco de 14 del mockup entre el bloque de
-                    // estado, el boton ghost y su linea de ayuda. En el resto de estados la columna solo tiene el bloque de siempre.
+                    // Repaso libre: solo bajo «Todo al día» (homeShowsFreeReview), con un hueco de 14 dp entre el bloque de estado, el botón ghost
+                    // y su línea de ayuda. En el resto de estados la columna solo tiene el bloque de siempre.
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         when (state) {
                             is HomeUiState.Content -> StudyAllButton(
@@ -209,8 +209,6 @@ internal fun HomeContent(
         }
     }
 }
-
-// --- Cabecera: marca + wordmark + pildora de sync -----------------------------------------------------------------
 
 @Composable
 private fun HomeHeader(indicator: SyncIndicator?, compact: Boolean, onPillClick: () -> Unit) {
@@ -278,7 +276,7 @@ internal fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () ->
             SyncIndicator.Unknown -> Res.string.sync_pill_synced // inalcanzable (return arriba)
         }
     )
-    // El aspecto lo da el Pill compartido (mismas medidas que antes: ver pillMetrics y PillMetricsTest).
+    // El aspecto lo da el Pill compartido (ver pillMetrics y PillMetricsTest).
     Pill(
         label = label,
         icon = style.icon,
@@ -289,8 +287,6 @@ internal fun SyncPill(indicator: SyncIndicator, compact: Boolean, onClick: () ->
         onClick = onClick
     )
 }
-
-// --- Estudiar Todo (segun estado) ---------------------------------------------------------------------------------
 
 @Composable
 private fun StudyAllButton(dueCount: Int, compact: Boolean, onClick: () -> Unit) {
@@ -436,8 +432,6 @@ private fun OutlineRowButton(
     }
 }
 
-// --- Tarjetas de navegacion ---------------------------------------------------------------------------------------
-
 private data class NavCardData(
     val title: String,
     val icon: ImageVector,
@@ -492,8 +486,6 @@ private fun NavCard(data: NavCardData, compact: Boolean, modifier: Modifier = Mo
         }
     }
 }
-
-// --- Cargando y error ---------------------------------------------------------------------------------------------
 
 @Composable
 private fun SkeletonBlock(height: Dp, radius: Dp, modifier: Modifier = Modifier) {

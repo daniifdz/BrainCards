@@ -22,8 +22,8 @@ import org.braincards.app.presentation.screens.home.homeDeckStats
 import org.braincards.app.util.logError
 
 /**
- * Estadisticas (handoff 5.7): numero de mazos vivos, tarjetas pendientes (el MISMO contador que Home) y madurez de las
- * tarjetas activas. Patron de Home: funcion pura ([selectStatsState]) + este ViewModel.
+ * Estadísticas: número de mazos vivos, tarjetas pendientes (el mismo contador que Home) y madurez de las tarjetas activas. Mismo
+ * patrón que Home: función pura ([selectStatsState]) + este ViewModel.
  *
  * Prioridad: Loading (hasta que llegan los tres datos) -> Error (falla cualquiera) -> Empty (0 mazos) -> Content.
  */

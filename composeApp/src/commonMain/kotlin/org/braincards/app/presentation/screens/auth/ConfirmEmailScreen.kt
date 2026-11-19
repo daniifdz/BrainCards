@@ -38,11 +38,11 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
 /**
- * Pantalla del codigo de confirmacion de registro (v4.4): 6 casillas, texto NEUTRO (nunca confirma que la cuenta
- * exista: «Si X es una cuenta valida…», igual vengas de registrarte o de un login sin confirmar), cooldown de
- * reenvio «(0:38)», error de campo «Escribe los 6 digitos» y del servidor «El codigo no es correcto o ha caducado.»
- * con «Pedir codigo nuevo». Abrir la pantalla NUNCA envia un codigo: solo lo hace una accion del usuario.
- * El codigo se guarda con rememberSaveable; no hay contraseñas aqui.
+ * Pantalla del código de confirmación de registro: 6 casillas, texto neutro (nunca confirma que la cuenta exista: «Si X es una
+ * cuenta válida…», igual vengas de registrarte o de un login sin confirmar), cooldown de reenvío «(0:38)», error de campo
+ * «Escribe los 6 dígitos» y del servidor «El código no es correcto o ha caducado.» con «Pedir código nuevo». Abrir la pantalla
+ * nunca envía un código: solo lo hace una acción del usuario. El código se guarda con rememberSaveable; no hay contraseñas
+ * aquí.
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable

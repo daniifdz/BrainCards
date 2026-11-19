@@ -7,11 +7,11 @@ const val MIN_PASSWORD_LENGTH = 8
 const val CODE_LENGTH = 6
 
 /**
- * Correo: se recorta (trim) y se comprueba lo MINIMO; el servidor decide si es valido de verdad. Criterio:
- *  - vacio -> [AuthMessage.EmailEmpty]
- *  - invalido -> [AuthMessage.EmailInvalid] si tiene espacios por dentro, no tiene exactamente una '@', la parte
- *    local o el dominio estan vacios, o el dominio no tiene un punto con texto a ambos lados ("usuario@ejemplo" es
- *    invalido: es el caso del mockup). Nada de RFC: no se rechazan '+', guiones, subdominios ni TLD largos.
+ * Correo: se recorta (trim) y se comprueba lo mínimo; el servidor decide si es válido de verdad. Criterio:
+ * - vacío -> [AuthMessage.EmailEmpty]
+ * - inválido -> [AuthMessage.EmailInvalid] si tiene espacios por dentro, no tiene exactamente una '@', la parte local o el
+ *   dominio están vacíos, o el dominio no tiene un punto con texto a ambos lados («usuario@ejemplo» es inválido). Nada de
+ *   RFC: no se rechazan '+', guiones, subdominios ni TLD largos.
  * Devuelve null si pasa.
  */
 fun validateEmail(raw: String): AuthMessage? {
@@ -72,7 +72,7 @@ fun validateRegisterForm(email: String, password: String) = errorsOf(
     AuthField.PASSWORD to validateNewPassword(password)
 )
 
-/** Formulario de restablecer contraseña: codigo + contraseña nueva + confirmacion (los tres a la vez, como el mockup). */
+/** Formulario de restablecer contraseña: código + contraseña nueva + confirmación (los tres a la vez). */
 fun validateResetForm(code: String, password: String, confirmation: String) = errorsOf(
     AuthField.CODE to validateCode(code),
     AuthField.PASSWORD to validateNewPassword(password),

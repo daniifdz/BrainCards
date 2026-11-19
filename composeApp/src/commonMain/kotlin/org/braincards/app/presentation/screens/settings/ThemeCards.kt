@@ -61,7 +61,7 @@ import org.braincards.app.presentation.theme.DarkPalette
 import org.braincards.app.presentation.theme.LightPalette
 import org.jetbrains.compose.resources.stringResource
 
-// Duraciones del handoff (v4.8): progreso de seleccion 250 ms, rebote 320 ms, fundido del check 180 ms.
+// Duraciones: progreso de selección 250 ms, rebote 320 ms, fundido del check 180 ms.
 internal const val THEME_SELECT_MS = 250
 internal const val THEME_BOUNCE_MS = 320
 internal const val THEME_CHECK_MS = 180
@@ -225,7 +225,7 @@ private fun ThemePreview(theme: AppTheme, modifier: Modifier = Modifier) {
     }
 }
 
-// Mini-vista previa de la app (mockup ajustes-apariencia.html): barra superior, pildora, dos lineas y boton.
+// Mini-vista previa de la app: barra superior, píldora, dos líneas y botón.
 private fun DrawScope.drawAppMiniature(p: BrainCardsPalette) {
     val w = size.width
     val h = size.height

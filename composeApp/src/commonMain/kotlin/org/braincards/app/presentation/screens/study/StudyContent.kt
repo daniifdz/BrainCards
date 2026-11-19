@@ -82,7 +82,7 @@ private val BUTTON_SHAPE = RoundedCornerShape(14.dp)
 /** Por debajo de este ancho los 4 botones de puntuacion pasan a una cuadricula de 2x2 (si no, el texto no cabe). */
 private val QUALITY_GRID_WIDTH = 360.dp
 
-/** Tarjeta en pantalla: cabecera (✕ + progreso), etiqueta "Mazo · Tema", tarjeta y controles (mockup `estudio.html`). */
+/** Tarjeta en pantalla: cabecera (✕ + progreso), etiqueta «Mazo · Tema», tarjeta y controles. */
 @Composable
 fun StudyReviewing(
     state: StudyState.Reviewing,
@@ -100,8 +100,8 @@ fun StudyReviewing(
         if (showFreeReviewChip(state.freeReview)) FreeReviewHeader(showNotice = showFreeNotice)
         state.label?.let { StudyLabel(it) }
         StudyCard(state = state, onReveal = onReveal, modifier = Modifier.weight(1f))
-        // Zona de controles. Tras puntuar la tarjeta avanza y los botones reales salen; el FANTASMA (13d2) los mantiene dibujados
-        // ~240 ms encima de "Mostrar respuesta" para que el pulso se vea entero. Es solo dibujo: no recibe toques ni foco.
+        // Zona de controles. Tras puntuar la tarjeta avanza y los botones reales salen; el fantasma los mantiene dibujados ~240 ms
+        // encima de «Mostrar respuesta» para que el pulso se vea entero. Es solo dibujo: no recibe toques ni foco.
         val reduced = rememberReducedMotion()
         val ghostEnabled = studyGhostEnabled(STUDY_PULSE_GHOST_MS, reduced)
         val baseToken = remember { ratePulse.token }
@@ -310,8 +310,8 @@ private class QualityStyle(
 )
 
 /**
- * Los 4 botones de "peor" a "mejor" con los colores del tema (nada fijo): error, cta, chipTeal y brand. El texto va
- * sobre el contenedor con el color del mockup (ground o *Text): contraste >= 4.9:1 en claro y oscuro.
+ * Los 4 botones de «peor» a «mejor» con los colores del tema (nada fijo): error, cta, chipTeal y brand. El texto va sobre el
+ * contenedor (ground o *Text): contraste >= 4.9:1 en claro y oscuro.
  */
 @Composable
 private fun qualityStyles(): List<QualityStyle> {
@@ -325,7 +325,7 @@ private fun qualityStyles(): List<QualityStyle> {
     )
 }
 
-/** [ghost] = copia SOLO de dibujo (13d2): sin `Button`, sin clic, sin foco; el llamador le quita la semantica. */
+/** [ghost] = copia solo de dibujo: sin `Button`, sin clic, sin foco; el llamador le quita la semántica. */
 @Composable
 private fun QualityButtons(
     onRate: (ReviewQuality) -> Unit,
@@ -352,8 +352,8 @@ private fun QualityButtons(
 }
 
 /**
- * Pulso al puntuar (D7): escala 0.95 + brillo (superposicion BLANCA al 12 %, solo dibujo). El progreso (0..1) sale del estado
- * COMPARTIDO `ratePulse` (clic y teclas 1-4), se lee en la fase de dibujo y solo lo ve el boton de la calidad pulsada.
+ * Pulso al puntuar: escala 0.95 + brillo (superposición blanca al 12 %, solo dibujo). El progreso (0..1) sale del estado
+ * compartido `ratePulse` (clic y teclas 1-4), se lee en la fase de dibujo y solo lo ve el botón de la calidad pulsada.
  */
 @Composable
 private fun Modifier.qualityPressEffect(ratePulse: RatePulseState, quality: ReviewQuality): Modifier {
@@ -415,8 +415,8 @@ private fun QualityButtonContent(style: QualityStyle) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(style.label, maxLines = 1, fontSize = 14.5.sp, fontWeight = FontWeight.Bold, color = style.content)
         if (showKeyboardHints) {
-            // El numero es una pista visual (opacidad plena: al 75 % del mockup no llega a 4.5:1 sobre cta/teal en
-            // claro); los lectores de pantalla leen solo la etiqueta.
+            // El número es una pista visual (opacidad plena: al 75 % no llega a 4.5:1 sobre cta/teal en claro); los lectores de pantalla
+            // leen solo la etiqueta.
             Text(
                 text = style.number,
                 fontSize = 11.sp,
