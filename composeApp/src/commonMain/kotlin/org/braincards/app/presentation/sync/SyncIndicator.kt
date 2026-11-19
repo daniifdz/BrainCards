@@ -7,8 +7,8 @@ import org.braincards.app.presentation.screens.auth.SyncUserMessage
 import org.braincards.app.presentation.screens.auth.toSyncUserMessage
 
 /**
- * Indicador de sync de la UI (la pildora de Home y, mas adelante, la fila de Ajustes): los 9 estados del handoff
- * (Error cuenta por 4) mas [Unknown], que no se dibuja. Silencioso: nunca lleva textos.
+ * Indicador de sync de la UI (la píldora de Home y la fila de Ajustes): 9 estados (Error cuenta por 4) más [Unknown], que no
+ * se dibuja. Silencioso: nunca lleva textos.
  */
 sealed interface SyncIndicator {
     data object Syncing : SyncIndicator

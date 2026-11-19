@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Medidas de la pastilla (`.pill` / `.pill.sm` de los mockups): relleno horizontal y vertical, hueco icono-texto y cuerpo de la fuente. */
+/** Medidas de la pastilla: relleno horizontal y vertical, hueco icono-texto y cuerpo de la fuente. */
 data class PillMetrics(val horizontalDp: Int, val verticalDp: Int, val gapDp: Int, val fontSp: Int)
 
 /** `.pill.sm` (compacta: 6 / 10 px, hueco 6, fuente 12) y `.pill` (normal: 8 / 14 px, hueco 8, fuente 13). */
@@ -36,7 +36,7 @@ fun pillMetrics(compact: Boolean): PillMetrics =
     if (compact) PillMetrics(horizontalDp = 10, verticalDp = 6, gapDp = 6, fontSp = 12)
     else PillMetrics(horizontalDp = 14, verticalDp = 8, gapDp = 8, fontSp = 13)
 
-/** Tamano del icono de la pastilla de sincronizacion de Home (16 dp); el chip informativo usa 13 dp (mockup `estudio.html`). */
+/** Tamaño del icono de la pastilla de sincronización de Home (16 dp); el chip informativo usa 13 dp. */
 val PILL_SYNC_ICON_SIZE: Dp = 16.dp
 val PILL_CHIP_ICON_SIZE: Dp = 13.dp
 

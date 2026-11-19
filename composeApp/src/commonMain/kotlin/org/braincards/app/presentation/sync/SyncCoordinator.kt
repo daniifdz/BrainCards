@@ -73,19 +73,15 @@ sealed interface FinishSignOutResult {
 }
 
 /**
- * Coordinador unico de sync para toda la app (Bloque D: "sin conexion y
- * reintentos" + sincronizacion al arrancar). Registrado en Koin como
- * single(createdAtStart = true) -- NO como ViewModel, a proposito: si fuera un
- * ViewModel de Koin, AuthViewModel (que si es per-pantalla, ver Navigation Compose)
- * tendria que recibirlo inyectado para compartir el Mutex, y seguiriamos sin un
- * Mutex realmente unico. Como `single`, Koin devuelve siempre la misma instancia
- * sin importar desde que pantalla se pida, y createdAtStart fuerza la instanciacion
- * al arrancar la app, no en la primera visita a Ajustes.
+ * Coordinador único de sync para toda la app (reintentos, comportamiento sin conexión y sincronización al arrancar).
+ * Registrado en Koin como single(createdAtStart = true), no como ViewModel, a propósito: si fuera un ViewModel de Koin,
+ * AuthViewModel (que sí es por pantalla) tendría que recibirlo inyectado para compartir el Mutex, y seguiríamos sin un Mutex
+ * realmente único. Como `single`, Koin devuelve siempre la misma instancia sin importar desde qué pantalla se pida, y
+ * createdAtStart fuerza la instanciación al arrancar la app, no en la primera visita a Ajustes.
  *
- * [coroutineScope] es inyectable para poder sustituirlo por un scope con
- * Dispatchers.Unconfined en tests (ejecucion deterministica sin
- * kotlinx-coroutines-test); en produccion usa su propio scope de vida igual a la
- * del proceso (no hay un "onCleared" real para un single de Koin).
+ * [coroutineScope] es inyectable para poder sustituirlo por un scope con Dispatchers.Unconfined en tests (ejecución
+ * determinista sin kotlinx-coroutines-test); en producción usa su propio scope, de vida igual a la del proceso (no hay un
+ * «onCleared» real para un single de Koin).
  */
 class SyncCoordinator(
     private val authRepository: AuthRepository,
@@ -191,7 +187,7 @@ class SyncCoordinator(
                         // (sesion confirmada + primer plano + red), que respeta el intervalo minimo y el backoff.
                     }
                     is AuthState.NotAuthenticated -> _pendingChangesCount.value = 0
-                    else -> Unit // Loading
+                    else -> Unit
                 }
             }
         }
@@ -250,12 +246,12 @@ class SyncCoordinator(
     suspend fun <T> withSyncLock(block: suspend () -> T): T = syncMutex.withLock { block() }
 
     /**
-     * Cierre de sesion, paso 1: sincroniza (con tiempo limite) y cuenta lo que se perderia.
-     * Toma el Mutex SOLO durante el sync previo y el conteo, y lo suelta al devolver: nunca se
-     * mantiene mientras la UI muestra el dialogo de confirmacion. NO borra nada.
+     * Cierre de sesión, fase 1: sincroniza (con tiempo límite) y cuenta lo que se perdería. Toma el Mutex solo durante el sync
+     * previo y el conteo, y lo suelta al devolver: nunca se mantiene mientras la UI muestra el diálogo de confirmación. No borra
+     * nada.
      *
-     * Sin sesion confirmada (arranque en frio sin red) o sin sesion no se intenta el sync: solo
-     * conteo local. Si el sync falla o se agota, tambien se sigue con el conteo local.
+     * Sin sesión confirmada (arranque en frío sin red) o sin sesión no se intenta el sync: solo conteo local. Si el sync falla o
+     * se agota, también se sigue con el conteo local.
      */
     suspend fun prepareSignOut(): SignOutPrompt {
         // La puerta se cierra ANTES de esperar el Mutex: un sync automatico encolado detras ya vera el cierre en curso.
@@ -285,11 +281,10 @@ class SyncCoordinator(
     }
 
     /**
-     * Cierre de sesion, paso 2 (tras confirmar, o directamente si prepareSignOut dio
-     * ReadyToSignOut). Toma el Mutex, recuenta y, si entraron mas cambios que
-     * [confirmedCount], devuelve NeedsReconfirmation SIN borrar. Si no, ejecuta
-     * SignOutAndWipeUseCase manteniendo el Mutex hasta que termina (clearSession incluido):
-     * un sync lanzado entre el borrado y el cierre de sesion esperaria y no repoblaria la BD.
+     * Cierre de sesión, fase 2 (tras confirmar, o directamente si prepareSignOut dio ReadyToSignOut). Toma el Mutex, recuenta y, si
+     * entraron más cambios que [confirmedCount], devuelve NeedsReconfirmation sin borrar. Si no, ejecuta SignOutAndWipeUseCase
+     * manteniendo el Mutex hasta que termina (clearSession incluido): un sync lanzado entre el borrado y el cierre de sesión
+     * esperaría y no repoblaría la BD.
      */
     suspend fun finishSignOut(userId: String, confirmedCount: Int): FinishSignOutResult {
         val result = finishSignOutLocked(userId, confirmedCount)

@@ -36,9 +36,9 @@ fun SplashBrain(size: Dp, pose: () -> SplashPose, modifier: Modifier = Modifier,
 }
 
 /**
- * Lado del AREA DE DIBUJO respecto al lado del cerebro (13b3). Con el desplazamiento inicial de +-84 unidades cada hemisferio sale
- * del cuadro del cerebro, y la capa offscreen recortaria todo lo que cae fuera (la entrada se veria como astillas). El layout NO
- * cambia (el composable mide [size]); solo se amplia lo que se puede pintar, centrado.
+ * Lado del área de dibujo respecto al lado del cerebro. Con el desplazamiento inicial de ±84 unidades cada hemisferio sale
+ * del cuadro del cerebro, y la capa offscreen recortaría todo lo que cae fuera (la entrada se vería como astillas). El layout
+ * no cambia (el composable mide [size]); solo se amplía lo que se puede pintar, centrado.
  */
 const val SPLASH_DRAW_AREA_FACTOR = 2f
 

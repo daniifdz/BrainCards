@@ -7,7 +7,6 @@ enum class FormKeyAction {
     /** Mover el foco al siguiente elemento (campo siguiente o, tras el ultimo, el orden natural: selector, Cancelar...). */
     FocusNext,
 
-    /** Mover el foco al elemento anterior. */
     FocusPrevious,
 
     /** Enviar el formulario (equivale al boton primario). */
@@ -24,15 +23,15 @@ enum class FormKeyAction {
 }
 
 /**
- * Decision pura de teclado de un campo de formulario (handoff v4.10, "Teclado en formularios y dialogos").
+ * Decisión pura de teclado de un campo de formulario.
  *
- * - Campo de UNA linea ([multiline] = false; comportamiento previo de Auth y del dialogo de mazo): Enter, con
- *   cualquier modificador, pasa al campo siguiente o, en el [isLast], envia. Tab se deja al foco nativo ([Ignore]).
- * - Campo MULTILINEA: Tab / Shift+Tab mueven el foco (el campo no inserta tabulador); Enter inserta salto de linea;
- *   Ctrl+Enter o Cmd(Meta)+Enter envia desde cualquier campo. Tab con Ctrl/Alt/Meta y Enter con Shift/Alt se ignoran/insertan.
+ * - Campo de una línea ([multiline] = false): Enter, con cualquier modificador, pasa al campo siguiente o, en el [isLast],
+ *   envía. Tab se deja al foco nativo ([Ignore]).
+ * - Campo multilínea: Tab / Shift+Tab mueven el foco (el campo no inserta tabulador); Enter inserta salto de línea;
+ *   Ctrl+Enter o Cmd(Meta)+Enter envía desde cualquier campo. Tab con Ctrl/Alt/Meta y Enter con Shift/Alt se ignoran/insertan.
  *
- * [isLast] = es el ultimo CAMPO DE TEXTO del orden. Solo afecta al Enter de una linea; el destino de FocusNext tras
- * el ultimo campo lo decide el orden natural del arbol (asi un selector de tema futuro entra sin tocar esto).
+ * [isLast] = es el último campo de texto del orden. Solo afecta al Enter de una línea; el destino de FocusNext tras el último
+ * campo lo decide el orden natural del árbol (así un selector nuevo entra sin tocar esto).
  */
 fun formKeyAction(
     key: Key,

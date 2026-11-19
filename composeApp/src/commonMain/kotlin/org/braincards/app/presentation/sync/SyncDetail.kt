@@ -6,11 +6,10 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.toLocalDateTime
 
-/** "Ultima vez" (handoff seccion 2): "Hoy 14:32", "Ayer 14:32" o "3 oct 14:32". El texto lo pone la UI (recursos). */
+/** «Última vez»: «Hoy 14:32», «Ayer 14:32» o «3 oct 14:32». El texto lo pone la UI (recursos). */
 sealed interface LastSyncLabel {
     data class Today(val time: String) : LastSyncLabel
     data class Yesterday(val time: String) : LastSyncLabel
-    /** [month] 1..12. */
     data class Date(val day: Int, val month: Int, val time: String) : LastSyncLabel
 }
 
@@ -31,8 +30,8 @@ fun formatLastSync(at: Instant, now: Instant, zone: TimeZone): LastSyncLabel {
 enum class SyncDetailState { Syncing, Synced, NeverSynced, Offline, ErrorLocal, ErrorRejected, ErrorPushPartial, ErrorFailed }
 
 /**
- * Detalle de la fila de sync de Ajustes. [lastSync] solo en Synced; [pending] = null donde el handoff no muestra el
- * contador (Sincronizando, Nunca sincronizado, y Sincronizado sin cambios pendientes); [canRetry] en los 4 errores.
+ * Detalle de la fila de sync de Ajustes. [lastSync] solo en Synced; [pending] = null donde no se muestra el contador
+ * (Sincronizando, Nunca sincronizado y Sincronizado sin cambios pendientes); [canRetry] en los 4 errores.
  */
 data class SyncDetail(
     val state: SyncDetailState,

@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** Fraccion de la altura util que ocupa la zona del simbolo (.auth-logo-zone { flex: 0 0 34% } de los mockups). */
+/** Fracción de la altura útil que ocupa la zona del símbolo. */
 private const val LOGO_ZONE_FRACTION = 0.34f
 
 /** Por debajo de este ancho de ventana el dispositivo se considera "movil" (tamano de simbolo movil, ver [welcomeLogoSpec]). */

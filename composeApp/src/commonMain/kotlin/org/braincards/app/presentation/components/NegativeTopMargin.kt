@@ -5,8 +5,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 
 /**
- * Equivalente al `margin-top` negativo de los mockups: el elemento sube [amount] y TAMBIEN deja de reservar ese espacio (lo que va debajo
- * sube con el). Lo usan los avisos `.hint` de Resultados y de Home («Todo al dia»), ambos con `margin-top: -8px`.
+ * Equivale a un `margin-top` negativo: el elemento sube [amount] y además deja de reservar ese espacio (lo que va debajo sube
+ * con él). Lo usan los avisos de Resultados y de Home («Todo al día»), ambos con -8 dp.
  */
 fun Modifier.negativeTopMargin(amount: Dp): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints)

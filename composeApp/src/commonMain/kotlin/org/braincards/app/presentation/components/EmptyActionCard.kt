@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.sp
 import org.braincards.app.presentation.theme.BrainCardsTheme
 
 /**
- * Tarjeta con icono, titulo, texto y un boton de accion. La usan el primer uso de Home (0 mazos), el 5.º estado de Home
- * (mazos sin tarjetas) y el estado vacio de Estadisticas (mismo copy y patron que el primer uso, handoff 5.7).
+ * Tarjeta con icono, título, texto y un botón de acción. La usan el primer uso de Home (0 mazos), el estado de Home con mazos
+ * sin tarjetas y el estado vacío de Estadísticas.
  */
 @Composable
 fun EmptyActionCard(title: String, text: String, cta: String, compact: Boolean, onClick: () -> Unit) {

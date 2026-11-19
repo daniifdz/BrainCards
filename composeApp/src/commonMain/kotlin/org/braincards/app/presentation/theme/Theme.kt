@@ -20,10 +20,10 @@ import org.braincards.app.presentation.screens.settings.AppTheme
 internal val LocalBrainCardsWordmark = staticCompositionLocalOf { TextStyle.Default }
 
 /**
- * Tema de BrainCards: paleta clara u oscura del handoff, Plus Jakarta Sans, formas 12/12/16/18/20 y sin tinte tonal.
+ * Tema de BrainCards: paleta clara u oscura, Plus Jakarta Sans, formas 12/12/16/18/20 y sin tinte tonal.
  * [darkTheme] ya viene resuelto (ver [resolveDarkTheme]); el tema no conoce el enum AppTheme.
- * Al cambiar de claro a oscuro (o al reves) los colores transicionan 250 ms (handoff v4.8) salvo con [animate] = false
- * o movimiento reducido del sistema: entonces el cambio es inmediato.
+ * Al cambiar de claro a oscuro (o al revés) los colores transicionan 250 ms, salvo con [animate] = false o movimiento reducido
+ * del sistema: entonces el cambio es inmediato.
  */
 @Composable
 fun BrainCardsTheme(darkTheme: Boolean, animate: Boolean = true, content: @Composable () -> Unit) {

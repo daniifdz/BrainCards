@@ -94,8 +94,8 @@ fun App(coldStartSplash: SplashExitSignal? = null) {
         // animaciones"). Tras rotar con la ruta ya resuelta, pending = false desde el primer frame: no hay capa ni fundido.
         val pending = shouldShowEntryPending(startRoute, themeLoaded = appTheme != null, themeTimedOut = themeTimedOut)
         val reducedMotion = rememberReducedMotion()
-        // Reloj de la coreografia y permanencia de la capa (contrato D8): con la navegacion lista antes de SPLASH_MIN_HOLD_MS
-        // (600 ms) la capa se queda hasta entonces; la navegacion se compone igualmente por debajo (no se retrasa, solo se tapa).
+        // Reloj de la coreografía y permanencia de la capa: con la navegación lista antes de SPLASH_MIN_HOLD_MS (600 ms) la capa se
+        // queda hasta entonces; la navegación se compone igualmente por debajo (no se retrasa, solo se tapa).
         val splash = rememberSplashTimeline(pending, reducedMotion, coldStartSplash)
         // Iconos claros de la barra de estado mientras EntryPending se ve; se bajan al EMPEZAR el fundido (overlayVisible = false).
         EntryPendingSystemBars(visible = splash.overlayVisible)

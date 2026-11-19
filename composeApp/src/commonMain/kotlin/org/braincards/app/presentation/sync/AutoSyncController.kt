@@ -128,7 +128,6 @@ class AutoSyncController(
     private var job: Job? = null
     private val origin = timeSource.markNow()
 
-    // --- estado: SOLO lo toca el bucle ---
     private var foreground = false
     private var online = false
     private var authReady = false
@@ -203,10 +202,6 @@ class AutoSyncController(
     }
 
     private fun AuthState.isReady() = this is AuthState.Authenticated && sessionConfirmed
-
-    // ------------------------------------------------------------------------------------------------------------
-    // Bucle
-    // ------------------------------------------------------------------------------------------------------------
 
     private suspend fun runLoop() {
         while (true) {
@@ -292,10 +287,6 @@ class AutoSyncController(
         if (foreground && periodicAt == null) periodicAt = now() + config.periodicInterval
     }
 
-    // ------------------------------------------------------------------------------------------------------------
-    // Senales
-    // ------------------------------------------------------------------------------------------------------------
-
     private fun apply(signal: Signal) {
         when (signal) {
             is Signal.Foreground -> {
@@ -369,8 +360,6 @@ class AutoSyncController(
             }
         }
     }
-
-    // --- trazas de diagnostico (no cambian ningun estado) -------------------------------------------------------------
 
     /** Al pasar a segundo plano: si el ultimo intento queda armado, se aplaza (offline / backoff) o se omite, y por que. */
     private fun logBackgroundDecision() {

@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Medidas de un boton «ghost» del repaso libre (`.btn-ghost` de los mockups). */
+/** Medidas de un botón «ghost» del repaso libre. */
 data class GhostButtonMetrics(val iconDp: Int, val fontSp: Float, val gapDp: Int, val horizontalDp: Int, val verticalDp: Int)
 
 /** Home, «Todo al dia» (`home-states.html`): icono 18, fuente 14,5, hueco 8, relleno 10 / 4. */

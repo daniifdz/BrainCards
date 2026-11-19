@@ -1,8 +1,8 @@
 package org.braincards.app.platform
 
 /**
- * ¿Se muestran las pistas de teclado (numero bajo cada boton de puntuacion, "o pulsa Espacio")? Desktop si; Android no
- * (mockup `estudio-mobile.html`). Los ATAJOS funcionan igual en los dos (un teclado fisico en Android tambien los usa):
- * esto solo decide si se DIBUJAN las pistas.
+ * ¿Se muestran las pistas de teclado (número bajo cada botón de puntuación, «o pulsa Espacio»)? En Desktop sí; en Android no.
+ * Los atajos funcionan igual en los dos (un teclado físico en Android también los usa): esto solo decide si se dibujan las
+ * pistas.
  */
 expect val showKeyboardHints: Boolean

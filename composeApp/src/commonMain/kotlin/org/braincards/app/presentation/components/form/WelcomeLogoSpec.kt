@@ -7,19 +7,19 @@ data class WelcomeLogoSpec(
     val gapDp: Float
 )
 
-/** Por debajo de este ancho de ventana el simbolo usa el tamano compacto (handoff v4.10). */
+/** Por debajo de este ancho de ventana el símbolo usa el tamaño compacto. */
 const val WELCOME_COMPACT_WIDTH_DP = 360f
 
-/** Por debajo de este alto de ventana el simbolo usa el tamano compacto (handoff v4.10). */
+/** Por debajo de este alto de ventana el símbolo usa el tamaño compacto. */
 const val WELCOME_COMPACT_HEIGHT_DP = 600f
 
 /**
- * Tamano del simbolo de la Bienvenida (handoff v4.10): dos tamanos fijos por tipo de dispositivo, sin interpolar.
+ * Tamaño del símbolo de la Bienvenida: dos tamaños fijos por tipo de dispositivo, sin interpolar.
  *
- *  - Compacto (ancho < 360 dp o alto < 600 dp): icono 44 / wordmark 27 (Desktop/tablet) o 40 / 25 (movil), gap 10.
- *  - Normal: icono 88 / wordmark 54 / gap 14 (Desktop/tablet) o 80 / 50 / 12 (movil).
+ * - Compacto (ancho < 360 dp o alto < 600 dp): icono 44 / wordmark 27 (Desktop o tablet) o 40 / 25 (móvil), gap 10.
+ * - Normal: icono 88 / wordmark 54 / gap 14 (Desktop o tablet) u 80 / 50 / 12 (móvil).
  *
- * Funcion pura. [widthDp] y [heightDp] deben ser el tamano de la ventana SIN descontar el teclado (IME).
+ * Función pura. [widthDp] y [heightDp] deben ser el tamaño de la ventana sin descontar el teclado (IME).
  */
 fun welcomeLogoSpec(widthDp: Float, heightDp: Float, isMobile: Boolean): WelcomeLogoSpec {
     val compact = widthDp < WELCOME_COMPACT_WIDTH_DP || heightDp < WELCOME_COMPACT_HEIGHT_DP

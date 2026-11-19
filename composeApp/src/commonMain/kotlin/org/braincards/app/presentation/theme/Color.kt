@@ -6,12 +6,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Tokens de color del handoff de diseno (docs/design/mockups/assets/tokens.css es la fuente; el test
- * PaletteTokensSyncTest comprueba que coinciden). Dos instancias: [LightPalette] y [DarkPalette].
+ * Tokens de color de la paleta de diseño (la fuente es tokens.css, en docs/design; PaletteTokensSyncTest comprueba que
+ * coinciden). Dos instancias: [LightPalette] y [DarkPalette].
  *
- * [outline] NO es un token del handoff: es la mezcla MAS SUAVE de textSecondary sobre surface que alcanza 3:1 contra
- * surface (WCAG 1.4.11, borde de campos). Se guarda como constante opaca; el test ContrastTest comprueba que es
- * exactamente esa mezcla (pasos de 1 % de opacidad) y que con 1 % menos no llega a 3:1.
+ * [outline] no es un token de la paleta: es la mezcla más suave de textSecondary sobre surface que alcanza 3:1 contra surface
+ * (WCAG 1.4.11, borde de campos). Se guarda como constante opaca; ContrastTest comprueba que es exactamente esa mezcla
+ * (pasos de 1 % de opacidad) y que con 1 % menos no llega a 3:1.
  */
 @Immutable
 internal data class BrainCardsPalette(
@@ -75,15 +75,14 @@ internal val DarkPalette = BrainCardsPalette(
 )
 
 /**
- * Esquema M3 COMPLETO: se usa el constructor con los 36 roles (sin valores por defecto), asi que no se puede olvidar
- * ninguno y ninguno se cuela en el morado base de Material.
+ * Esquema M3 completo: se usa el constructor con los 36 roles (sin valores por defecto), así que no se puede olvidar ninguno y
+ * ninguno se cuela en el morado base de Material.
  *
- * Mapeo: brand -> primary, brandText -> onPrimary (y on* de secondary, tertiary y error), brandChip ->
- * primaryContainer; chipTeal / chipTealBg -> secondary / secondaryContainer (decision D1); textSecondary ->
- * tertiary (D1, provisional); errorColor / errorBg -> error / errorContainer; ground -> background; surface ->
- * surface; chipGrayBg / textSecondary -> surfaceVariant / onSurfaceVariant; border -> outlineVariant (decorativo);
- * outline = mezcla D3. Todos los surfaceContainer* son surface: la separacion la da el borde, no el tono.
- * surfaceTint transparente: sin tinte tonal de elevacion.
+ * Mapeo: brand -> primary, brandText -> onPrimary (y on* de secondary, tertiary y error), brandChip -> primaryContainer;
+ * chipTeal / chipTealBg -> secondary / secondaryContainer; textSecondary -> tertiary (provisional); errorColor / errorBg ->
+ * error / errorContainer; ground -> background; surface -> surface; chipGrayBg / textSecondary -> surfaceVariant /
+ * onSurfaceVariant; border -> outlineVariant (decorativo); outline = la mezcla descrita arriba. Todos los surfaceContainer*
+ * son surface: la separación la da el borde, no el tono. surfaceTint transparente: sin tinte tonal de elevación.
  */
 internal fun brainCardsColorScheme(p: BrainCardsPalette, inversePrimary: Color): ColorScheme = ColorScheme(
     primary = p.brand,
@@ -128,7 +127,7 @@ internal fun brainCardsColorScheme(p: BrainCardsPalette, inversePrimary: Color):
 internal val LightColorScheme: ColorScheme = brainCardsColorScheme(LightPalette, inversePrimary = DarkPalette.brand)
 internal val DarkColorScheme: ColorScheme = brainCardsColorScheme(DarkPalette, inversePrimary = LightPalette.brand)
 
-/** Colores del handoff que no son un rol M3 (cta, chips, brandChip). Se leen con `BrainCardsTheme.extraColors`. */
+/** Colores de la paleta que no son un rol M3 (cta, chips, brandChip). Se leen con `BrainCardsTheme.extraColors`. */
 @Immutable
 class BrainCardsExtraColors(
     val cta: Color,

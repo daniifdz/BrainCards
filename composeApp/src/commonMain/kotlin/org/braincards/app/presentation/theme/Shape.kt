@@ -6,9 +6,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Radios del tema (decision D2: 12 / 12 / 16 / 18 / 20 en los cinco huecos de M3). Los radios por componente del
- * handoff (tarjetas 18 en Desktop y 16 en movil, CTA 20 / 18, chips e inputs 12, pildora capsula) se aplican al
- * migrar cada pantalla; aqui solo van los huecos del tema.
+ * Radios del tema: 12 / 12 / 16 / 18 / 20 en los cinco huecos de M3. Los radios por componente (tarjetas 18 en Desktop y 16 en
+ * móvil, CTA 20 / 18, chips e inputs 12, píldora cápsula) se aplican en cada pantalla; aquí solo van los huecos del tema.
  */
 internal object BrainCardsRadii {
     val extraSmall: Dp = 12.dp
