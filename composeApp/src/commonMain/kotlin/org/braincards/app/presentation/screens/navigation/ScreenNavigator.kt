@@ -1,7 +1,6 @@
 package org.braincards.app.presentation.screens.navigation
 
 import kotlinx.serialization.Serializable
-import org.braincards.app.domain.models.StudyScope
 
 @Serializable
 sealed class Screen {

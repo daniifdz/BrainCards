@@ -95,7 +95,6 @@ import braincards.composeapp.generated.resources.deckcontent_topic_none
 import braincards.composeapp.generated.resources.deckcontent_topic_empty_text
 import braincards.composeapp.generated.resources.deckcontent_topic_empty_title
 import org.braincards.app.domain.models.Flashcard
-import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.usecase.Topics.CardHit
 import org.braincards.app.domain.usecase.Topics.TopicWithCount
 import org.braincards.app.platform.SystemBackHandler

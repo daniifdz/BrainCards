@@ -6,12 +6,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.TransactionRunner
-import org.braincards.app.data.local.dao.DeckDao
 import org.braincards.app.data.local.dao.FlashcardDao
 import org.braincards.app.data.local.dao.TopicDao
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
-import org.braincards.app.domain.models.Deck
 import org.braincards.app.domain.models.PullApplyReport
 import org.braincards.app.domain.models.Topic
 import org.braincards.app.domain.repository.TopicsRepository

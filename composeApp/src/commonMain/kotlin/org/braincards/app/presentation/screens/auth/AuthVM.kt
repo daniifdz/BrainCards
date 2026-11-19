@@ -17,7 +17,6 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import org.braincards.app.data.mapper.isEmailNotConfirmed
 import org.braincards.app.data.mapper.toAuthErrorKind
-import org.braincards.app.data.mapper.toAuthErrorMessage
 import org.braincards.app.domain.models.AuthState
 import org.braincards.app.domain.models.SignUpOutcome
 import org.braincards.app.domain.repository.AuthRepository

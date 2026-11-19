@@ -73,7 +73,6 @@ import braincards.composeapp.generated.resources.decks_save_failed
 import braincards.composeapp.generated.resources.decks_search_clear
 import braincards.composeapp.generated.resources.decks_search_placeholder
 import braincards.composeapp.generated.resources.decks_title
-import org.braincards.app.domain.models.DeckSummary
 import org.braincards.app.platform.rememberReducedMotion
 import org.braincards.app.presentation.components.form.FormBanner
 import org.jetbrains.compose.resources.stringResource

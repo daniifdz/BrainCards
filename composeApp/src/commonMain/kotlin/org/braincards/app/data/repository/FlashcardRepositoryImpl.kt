@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import org.braincards.app.data.local.dao.FlashcardDao
-import org.braincards.app.data.local.entity.FlashcardEntity
 import org.braincards.app.data.mapper.toDomain
 import org.braincards.app.data.mapper.toEntity
 import org.braincards.app.domain.models.Flashcard

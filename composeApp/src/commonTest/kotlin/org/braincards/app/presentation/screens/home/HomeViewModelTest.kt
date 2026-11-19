@@ -20,9 +20,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import org.braincards.app.domain.fakes.FakeDecksRepository
 import org.braincards.app.domain.models.Deck
-import org.braincards.app.domain.repository.DecksRepository
 import org.braincards.app.domain.repository.DueCardsObserver
 import org.braincards.app.domain.models.DeckSummary
 import org.braincards.app.domain.repository.DeckSummariesObserver
