@@ -95,8 +95,6 @@ class PullFailureClassificationTest {
         return completed.pull.decks
     }
 
-    // --- fetch: red ---
-
     @Test
     fun un_timeout_al_descargar_es_NETWORK() = runBlocking {
         val remote = FakeRemoteDataSource().apply {
@@ -127,8 +125,6 @@ class PullFailureClassificationTest {
         assertEquals(PullFailure.NETWORK, decksPullResult(engine(remote)).failure)
     }
 
-    // --- fetch: el servidor rechaza ---
-
     @Test
     fun un_401_real_de_PostgREST_es_REJECTED() = runBlocking {
         val remote = FakeRemoteDataSource().apply {
@@ -147,8 +143,6 @@ class PullFailureClassificationTest {
         assertEquals(PullFailure.REJECTED, decksPullResult(engine(remote)).failure)
     }
 
-    // --- fetch: sin clasificar ---
-
     @Test
     fun una_excepcion_desconocida_al_descargar_queda_sin_clasificar() = runBlocking {
         val remote = FakeRemoteDataSource().apply {
@@ -160,8 +154,6 @@ class PullFailureClassificationTest {
         assertTrue(result.aborted)
         assertNull(result.failure)
     }
-
-    // --- apply: local ---
 
     @Test
     fun un_fallo_al_aplicar_las_filas_descargadas_es_LOCAL_aunque_la_descarga_fuera_bien() = runBlocking {
@@ -175,8 +167,6 @@ class PullFailureClassificationTest {
         assertEquals(0, result.applied)
         assertEquals(PullFailure.LOCAL, result.failure)
     }
-
-    // --- sin fallo ---
 
     @Test
     fun un_pull_correcto_no_tiene_causa_de_fallo() = runBlocking {

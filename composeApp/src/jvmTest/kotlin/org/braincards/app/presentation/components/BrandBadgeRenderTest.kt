@@ -16,9 +16,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Render real del badge (ImageComposeScene, sin compose.uiTest) con el vector del splash decodificado con el parser de
- * Compose resources, 100 px de lado a densidad 1. Las medidas esperadas salen de los mockups (rx 22 / 100; cerebro dibujado
- * = 53,4 % del lado, 45,3 % de alto, centrado) y no de la frase del handoff.
+ * Render real del badge (ImageComposeScene, sin compose.uiTest) con el vector del splash decodificado con el parser de Compose
+ * resources, 100 px de lado a densidad 1. Medidas esperadas: esquinas del 22 % y cerebro dibujado = 53,4 % del lado, 45,3 %
+ * de alto, centrado.
  */
 class BrandBadgeRenderTest {
 

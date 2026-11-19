@@ -100,8 +100,6 @@ class PullOrphanGuardRoomTest {
             deletedAt = if (deleted) ms(2) else null, userId = userId)
     )
 
-    // --- el caso real: BD vacia, 2 decks, 0 topics, 12 flashcards, 9 card_scheduling ---
-
     @Test
     fun el_caso_de_la_cuenta_con_bd_vacia_no_aborta_ninguna_tabla_y_descarta_las_huerfanas() = runBlocking {
         val remote = FakeRemoteDataSource().apply {
@@ -146,8 +144,6 @@ class PullOrphanGuardRoomTest {
         assertEquals(3L, count("card_scheduling"))
     }
 
-    // --- topics ---
-
     @Test
     fun un_topic_cuyo_deck_no_existe_se_descarta_y_no_aborta_el_lote() = runBlocking {
         seedLocalDeck("deck-1")
@@ -170,8 +166,6 @@ class PullOrphanGuardRoomTest {
 
         assertEquals(PullApplyReport(applied = 1, discarded = 0), report)
     }
-
-    // --- flashcards ---
 
     @Test
     fun una_flashcard_con_deck_valido_y_topic_inexistente_se_descarta() = runBlocking {
@@ -217,8 +211,6 @@ class PullOrphanGuardRoomTest {
         assertEquals(PullApplyReport(applied = 0, discarded = 1, discardedIds = listOf("f1")), report)
     }
 
-    // --- ids descartados (los necesita el pull incremental para retener la marca de agua) ---
-
     @Test
     fun los_ids_descartados_salen_en_el_orden_en_que_llegan_del_servidor() = runBlocking {
         seedLocalDeck("deck-1")
@@ -239,8 +231,6 @@ class PullOrphanGuardRoomTest {
         assertEquals(2, topicReport.discarded)
         assertEquals(3, cardReport.discarded)
     }
-
-    // --- compatibilidad y regresion ---
 
     @Test
     fun applyRemotePull_sigue_devolviendo_solo_las_filas_aplicadas() = runBlocking {

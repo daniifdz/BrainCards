@@ -57,8 +57,6 @@ class PendingChangesObserverRoomTest {
         db.close()
     }
 
-    // --- datos -------------------------------------------------------------------------------------------------------
-
     private suspend fun deck(id: String, owner: String?, updated: Long, synced: Long?, deleted: Boolean = false) =
         db.deckDao().addDeck(
             DeckEntity(id = id, name = id, createdAt = ms(1), updatedAt = ms(updated), description = null,
@@ -107,8 +105,6 @@ class PendingChangesObserverRoomTest {
         withTimeout(5_000) { while (values.lastOrNull()?.let(predicate) != true) delay(10) }
     }
 
-    // --- criterio de conteo ------------------------------------------------------------------------------------------
-
     @Test
     fun foreign_keys_esta_activo() = runBlocking {
         val pragma = db.useWriterConnection { tx -> tx.usePrepared("PRAGMA foreign_keys") { st -> st.step(); st.getLong(0) } }
@@ -135,7 +131,7 @@ class PendingChangesObserverRoomTest {
     @Test
     fun las_filas_limpias_y_las_de_otro_usuario_no_cuentan() = runBlocking {
         deck("d1", me, updated = 100, synced = 100)            // limpia (updatedAt == lastSyncedAt)
-        deck("dx", other, updated = 100, synced = null)        // de otro
+        deck("dx", other, updated = 100, synced = null)
         topic("t1", "d1", me, updated = 100, synced = 100)
         card("c1", "d1", null, me, updated = 100, synced = 100)
         scheduling("c1", me, updated = 100, synced = 100)
@@ -183,8 +179,6 @@ class PendingChangesObserverRoomTest {
         assertEquals(PendingStamp(1, 300), current("user-c"))
     }
 
-    // --- reactividad ---------------------------------------------------------------------------------------------------
-
     @Test
     fun re_emite_cuando_entra_un_cambio_cuando_se_edita_uno_pendiente_y_cuando_se_sube() = runBlocking {
         collecting { values ->
@@ -220,8 +214,6 @@ class PendingChangesObserverRoomTest {
             assertEquals(listOf(PendingStamp(1, 100), PendingStamp(2, 400)), values.toList())
         }
     }
-
-    // --- propiedad: observe == getPendingSync de los 4 repositorios + countUnowned -----------------------------------
 
     @Test
     fun propiedad_la_huella_coincide_con_getPendingSync_mas_countUnowned_en_bds_aleatorias() = runBlocking {

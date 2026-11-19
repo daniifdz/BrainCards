@@ -48,12 +48,13 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
- * INVARIANTE CLAVE del paso 14, a nivel Room: una sesion de REPASO LIBRE completa (con falladas re-encoladas) deja TODAS las tablas
- * exactamente como estaban: `card_scheduling` identica (ni filas nuevas ni cambios), `reviewlog` sin una sola fila, las tarjetas sin
- * tocar (`updatedAt` incluido) y NADA pendiente de sincronizar. El CONTROL negativo ejecuta el mismo flujo en modo normal y comprueba que
- * ahi SI escribe: asi el test no puede estar ciego.
+ * Invariante clave a nivel Room: una sesión de repaso libre completa (con falladas re-encoladas) deja todas las tablas
+ * exactamente como estaban: `card_scheduling` idéntica (ni filas nuevas ni cambios), `reviewlog` sin una sola fila, las
+ * tarjetas sin tocar (`updatedAt` incluido) y nada pendiente de sincronizar. El control negativo ejecuta el mismo flujo en modo
+ * normal y comprueba que ahí sí escribe: así el test no puede estar ciego.
  *
- * Siembra: a1 con scheduling vencido, a2 SIN scheduling, a3 con scheduling futuro (no pendiente), todas del usuario "u" ya sincronizadas.
+ * Siembra: a1 con scheduling vencido, a2 sin scheduling, a3 con scheduling futuro (no pendiente), todas del usuario «u» ya
+ * sincronizadas.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FreeReviewNoWritesRoomTest {

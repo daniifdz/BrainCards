@@ -76,12 +76,12 @@ class StudyMaturityRoomTest {
     private suspend fun seed() {
         deck("A")
         topic("tX", "A", deletedAt = 3)                    // tema borrado: su tarjeta (mazo vivo) sigue contando
-        card("n1", "A", interval = null)                   // Nueva
+        card("n1", "A", interval = null)
         card("n2", "A", interval = null, topicId = "tX")   // Nueva (tema borrado)
         card("l0", "A", interval = 0)                      // Aprendiendo: recien fallada (intervalo 0)
         card("l20", "A", interval = 20)                    // Aprendiendo: justo por debajo del umbral
         card("m21", "A", interval = 21)                    // Madura: justo en el umbral
-        card("m400", "A", interval = 400)                  // Madura
+        card("m400", "A", interval = 400)
         card("borrada", "A", interval = 30, deleted = true) // borrada con scheduling: no cuenta (fila de scheduling huerfana)
 
         deck("B", deletedAt = 4)                           // mazo en tombstone con tarjetas VIVAS
@@ -94,15 +94,12 @@ class StudyMaturityRoomTest {
 
     private fun row(n: Int, l: Int, m: Int) = MaturityCountsRow(newCards = n, learningCards = l, matureCards = m)
 
-    // ---- la consulta ----
-
     @Test
     fun cuenta_nuevas_aprendiendo_y_maduras_sobre_tarjetas_activas() = runBlocking<Unit> {
         seed()
         assertEquals(row(n = 2, l = 2, m = 2), counts())
     }
 
-    // Mutacion M2: con `<= 21` en vez de `< 21`, la tarjeta de intervalo 21 saldria como Aprendiendo.
     @Test
     fun la_frontera_es_20_aprendiendo_y_21_madura() = runBlocking<Unit> {
         deck("A")
@@ -112,7 +109,6 @@ class StudyMaturityRoomTest {
         assertEquals(row(0, 1, 1), counts())
     }
 
-    // Mutacion M3: si "Nueva" se decidiera por repetitions == 0 (definicion antigua) en vez de "sin fila", fallaria.
     @Test
     fun una_tarjeta_recien_fallada_con_intervalo_0_es_Aprendiendo_no_Nueva() = runBlocking<Unit> {
         deck("A")
@@ -129,7 +125,6 @@ class StudyMaturityRoomTest {
         assertEquals(row(0, 1, 0), counts())
     }
 
-    // Mutacion M1: si la consulta no usara LIVE_DECK_JOIN, las 3 tarjetas del mazo en tombstone contarian (3/3/3 extra).
     @Test
     fun las_tarjetas_de_un_mazo_en_tombstone_no_cuentan() = runBlocking<Unit> {
         deck("B", deletedAt = 4)
@@ -152,8 +147,6 @@ class StudyMaturityRoomTest {
         deck("A")
         assertEquals(row(0, 0, 0), counts())   // mazo sin tarjetas
     }
-
-    // ---- paridad con los datos en bruto (el oraculo) ----
 
     /** Misma definicion calculada en memoria a partir de getAllFlashcards() y card_scheduling.getAll(). */
     private suspend fun oracle(): MaturityCountsRow {
@@ -180,8 +173,6 @@ class StudyMaturityRoomTest {
         assertEquals(oracle(), counts())
         assertEquals(row(n = 2, l = 4, m = 3), counts()) // n1 pasa a Aprendiendo: 2 nuevas (n2, x2), 4 aprendiendo, 3 maduras
     }
-
-    // ---- reactividad y mazo que resucita ----
 
     @Test
     fun el_flujo_se_reemite_al_estudiar_una_tarjeta() = runBlocking<Unit> {

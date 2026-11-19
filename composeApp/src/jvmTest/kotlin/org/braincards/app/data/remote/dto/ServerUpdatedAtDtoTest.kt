@@ -31,8 +31,6 @@ class ServerUpdatedAtDtoTest {
 
     private val t = Instant.parse("2026-10-22T10:00:00Z")
 
-    // --- el DTO de subida no la lleva ---------------------------------------------------------------
-
     private val strictJson = Json { encodeDefaults = true }
 
     @Test
@@ -64,8 +62,6 @@ class ServerUpdatedAtDtoTest {
         }
     }
 
-    // --- el pull la decodifica (formato real de PostgREST) ------------------------------------------------
-
     @Test
     fun `el pull decodifica server_updated_at con offset y microsegundos`() {
         val dto = Json { ignoreUnknownKeys = true }.decodeFromString(
@@ -75,9 +71,7 @@ class ServerUpdatedAtDtoTest {
         assertEquals(Instant.parse("2026-10-22T10:00:00.123456Z"), dto.serverUpdatedAt)
     }
 
-    // --- un cliente que NO conoce la columna no se rompe -----------------------------------------------------------
-
-    /** Forma del DeckDto de ANTES de este paso (sin server_updated_at): lo que decodifica el cliente actual. */
+    /** DeckDto sin server_updated_at (forma antigua): lo que decodificaba el cliente antes de incorporar esa columna. */
     @Serializable
     private data class LegacyDeckDto(
         val id: String,

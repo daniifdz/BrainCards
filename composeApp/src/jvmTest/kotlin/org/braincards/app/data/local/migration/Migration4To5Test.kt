@@ -96,7 +96,6 @@ class Migration4To5Test {
 
             MIGRATION_4_5.migrate(connection)
 
-            // --- card_scheduling tiene una fila por cada flashcard, con los valores correctos ---
             assertEquals(2, connection.queryCount("SELECT COUNT(*) FROM card_scheduling"))
 
             val schedStmt1 = connection.prepare(
@@ -128,7 +127,6 @@ class Migration4To5Test {
                 schedStmt2.close()
             }
 
-            // --- flashcards conserva las filas y el contenido, pero ya no tiene las 4 columnas ---
             assertEquals(2, connection.queryCount("SELECT COUNT(*) FROM flashcards"))
 
             val flashcardsColumns = connection.columnNames("flashcards")
@@ -166,7 +164,6 @@ class Migration4To5Test {
                 card2TopicStmt.close()
             }
 
-            // --- indices recreados tras el DROP+RENAME ---
             val expectedIndices = setOf("index_flashcards_deckId", "index_flashcards_topicId")
             val actualIndices = mutableSetOf<String>()
             val idxStmt = connection.prepare(
@@ -182,7 +179,6 @@ class Migration4To5Test {
             }
             assertEquals(expectedIndices, actualIndices)
 
-            // --- red de seguridad generica: integridad referencial tras el remapeo ---
             val fkCheckStmt = connection.prepare("PRAGMA foreign_key_check")
             try {
                 assertFalse(fkCheckStmt.step(), "PRAGMA foreign_key_check encontro violaciones de integridad referencial")

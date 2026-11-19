@@ -82,8 +82,6 @@ class PendingSyncParentsRoomTest {
     private suspend fun pendingCards() = db.flashcardDao().getPendingSyncFlashcards(me).map { it.id }.sorted()
     private suspend fun pendingTopics() = db.topicDao().getPendingSyncTopics(me).map { it.id }.sorted()
 
-    // --- flashcards: el deck ---
-
     @Test
     fun una_flashcard_con_deck_de_otro_usuario_no_es_subible() = runBlocking {
         deck("deck-ajeno", owner = other)
@@ -116,8 +114,6 @@ class PendingSyncParentsRoomTest {
         assertEquals(listOf("c1"), pendingCards())
     }
 
-    // --- flashcards: el topic ---
-
     @Test
     fun una_flashcard_con_topic_de_otro_usuario_no_es_subible() = runBlocking {
         deck("deck-1")
@@ -128,9 +124,9 @@ class PendingSyncParentsRoomTest {
         assertEquals(emptyList(), pendingCards())
     }
 
-    // 6b.3: una tarjeta ya sincronizada (con dueno) que se MUEVE a un tema recien creado con la sesion iniciada (userId
-    // NULL, aun sin adoptar) no es subible hasta que el backfill (SyncEngineUseCase.invoke, ANTES del push) adopte el
-    // tema; despues si. Fija el comportamiento del selector de tema del dialogo de tarjeta.
+    // Una tarjeta ya sincronizada (con dueño) que se mueve a un tema recién creado con la sesión iniciada (userId NULL, aún sin
+    // adoptar) no es subible hasta que el backfill (SyncEngineUseCase.invoke, antes del push) adopte el tema; después sí. Fija el
+    // comportamiento del selector de tema del diálogo de tarjeta.
     @Test
     fun una_flashcard_movida_a_un_topic_aun_sin_dueno_se_sube_tras_adoptarlo() = runBlocking {
         deck("deck-1", synced = true)
@@ -180,8 +176,6 @@ class PendingSyncParentsRoomTest {
         assertEquals(listOf("buena"), pendingCards())
     }
 
-    // --- topics ---
-
     @Test
     fun un_topic_con_deck_de_otro_usuario_no_es_subible() = runBlocking {
         deck("deck-ajeno", owner = other)
@@ -214,8 +208,6 @@ class PendingSyncParentsRoomTest {
         assertEquals(listOf("t1"), pendingTopics())
     }
 
-    // --- la fila reaparece cuando el padre pasa a ser del mismo usuario ---
-
     @Test
     fun la_flashcard_reaparece_cuando_su_deck_pasa_a_ser_del_mismo_usuario() = runBlocking {
         deck("deck-1", owner = other)
@@ -237,8 +229,6 @@ class PendingSyncParentsRoomTest {
 
         assertEquals(listOf("t1"), pendingTopics())
     }
-
-    // --- las condiciones previas se mantienen ---
 
     @Test
     fun una_fila_ya_sincronizada_y_sin_cambios_no_es_pendiente_y_editada_despues_si() = runBlocking {

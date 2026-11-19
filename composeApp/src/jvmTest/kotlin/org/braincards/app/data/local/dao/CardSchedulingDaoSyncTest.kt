@@ -81,8 +81,6 @@ class CardSchedulingDaoSyncTest {
         nextReview = ms(5000), updatedAt = ms(updatedAt), userId = "user-1", lastSyncedAt = null
     )
 
-    // --- foreign keys (sonda del paso 3: decide que el guard del pull es obligatorio) ---
-
     @Test
     fun foreign_keys_esta_activo_e_insertar_scheduling_con_cardId_inexistente_falla() = runBlocking {
         val pragma = db.useWriterConnection { transactor ->
@@ -96,8 +94,6 @@ class CardSchedulingDaoSyncTest {
         assertFailsWith<SQLiteException> { dao.insert(entity("no-existe")) }
         Unit
     }
-
-    // --- claim: invariante de dueno ---
 
     @Test
     fun claim_solo_reclama_huerfanos_cuya_flashcard_es_del_usuario() = runBlocking {
@@ -115,8 +111,6 @@ class CardSchedulingDaoSyncTest {
         assertNull(dao.getByCardId("de-otro")!!.userId)
         assertNull(dao.getByCardId("sin-dueno")!!.userId)
     }
-
-    // --- pendientes ---
 
     @Test
     fun pendientes_exige_flashcard_subida_y_del_mismo_dueno() = runBlocking {
@@ -149,8 +143,6 @@ class CardSchedulingDaoSyncTest {
 
         assertEquals(setOf("nueva", "modificada"), pending)
     }
-
-    // --- markPushed / release / ids existentes ---
 
     @Test
     fun markPushed_y_release() = runBlocking {
@@ -198,8 +190,6 @@ class CardSchedulingDaoSyncTest {
         assertEquals(setOf("viva", "borrada"), ids)
     }
 
-    // --- applyRemotePull con el repositorio real sobre Room real ---
-
     private fun repository() = CardSchedulingRepositoryImpl(dao, RoomTransactionRunner(db))
 
     @Test
@@ -215,8 +205,6 @@ class CardSchedulingDaoSyncTest {
         assertNull(dao.getByCardId("huerfana-1"))
         assertEquals(ms(1000), dao.getByCardId("c1200")!!.lastSyncedAt)
     }
-
-    // --- transaccion ---
 
     @Test
     fun llamar_al_dao_dentro_de_inTransaction_no_se_bloquea() = runBlocking {

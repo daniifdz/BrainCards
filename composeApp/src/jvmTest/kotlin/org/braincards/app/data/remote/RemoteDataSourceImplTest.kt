@@ -86,8 +86,6 @@ class RemoteDataSourceImplTest {
         assertEquals("1000", request.param("limit"))
     }
 
-    // --- regresion: los tres pulls existentes devuelven lo mismo que antes con pocas filas ---
-
     @Test
     fun `pullDecks con pocas filas devuelve las mismas filas con una sola peticion`() = runBlocking {
         val (remote, engine) = remoteWith {
@@ -191,8 +189,6 @@ class RemoteDataSourceImplTest {
         assertPullRequest(engine.requests.single(), "card_scheduling", "card_id")
     }
 
-    // --- paginacion de verdad a traves del cliente ---
-
     private fun schedulingRows(from: Int, count: Int): String =
         (from until from + count).joinToString(prefix = "[", postfix = "]") {
             """{"card_id":"c$it","user_id":"user-1","ease_factor":2.5,"interval_days":1,"repetitions":1,
@@ -237,8 +233,6 @@ class RemoteDataSourceImplTest {
         assertFailsWith<Exception> { runBlocking { remote.pullCardScheduling("user-1", since) } }
         assertEquals(2, engine.requests.size)
     }
-
-    // --- push de card_scheduling ---
 
     @Test
     fun `pushCardScheduling hace upsert con onConflict card_id y las columnas exactas`() = runBlocking {

@@ -43,7 +43,6 @@ class Migration3To4Test {
     }
 
     private fun seedV3Data(connection: SQLiteConnection) {
-        // 2 decks
         connection.execSQL("INSERT INTO decks (id, name, createdAt, updatedAt, description) VALUES (1, 'Deck A', 1000, 1000, 'desc A')")
         connection.execSQL("INSERT INTO decks (id, name, createdAt, updatedAt, description) VALUES (2, 'Deck B', 2000, 2000, 'desc B')")
 
@@ -119,13 +118,11 @@ class Migration3To4Test {
 
             MIGRATION_3_4.migrate(connection)
 
-            // --- conteos: no se perdio ni se duplico ninguna fila ---
             assertEquals(2, connection.queryCount("SELECT COUNT(*) FROM decks"))
             assertEquals(2, connection.queryCount("SELECT COUNT(*) FROM topics"))
             assertEquals(5, connection.queryCount("SELECT COUNT(*) FROM flashcards"))
             assertEquals(0, connection.queryCount("SELECT COUNT(*) FROM reviewlog"))
 
-            // --- UUIDs de decks/topics, y remapeo correcto por identidad de fila ---
             val deckAId = connection.queryText("SELECT id FROM decks WHERE name = 'Deck A'")
             val deckBId = connection.queryText("SELECT id FROM decks WHERE name = 'Deck B'")
             assertValidUuid(deckAId, "id de Deck A")
@@ -158,7 +155,6 @@ class Migration3To4Test {
             assertEquals(deckBId, connection.queryText("SELECT deckId FROM flashcards WHERE question = 'Q4'"))
             assertNull(connection.queryTextOrNull("SELECT topicId FROM flashcards WHERE question = 'Q4'"), "Q4 no tenia topic, debe seguir NULL")
 
-            // --- campos de sync a NULL y cardType/options por defecto en TODAS las filas ---
             assertEquals(
                 0,
                 connection.queryCount("SELECT COUNT(*) FROM decks WHERE deletedAt IS NOT NULL OR userId IS NOT NULL OR lastSyncedAt IS NOT NULL")
@@ -176,7 +172,6 @@ class Migration3To4Test {
             )
             assertEquals(0, connection.queryCount("SELECT COUNT(*) FROM flashcards WHERE cardType != 'FLIP'"))
 
-            // --- indices recreados tras el DROP+RENAME ---
             val expectedIndices = setOf("index_topics_deckId", "index_flashcards_deckId", "index_flashcards_topicId")
             val actualIndices = mutableSetOf<String>()
             val idxStmt = connection.prepare(
@@ -192,7 +187,6 @@ class Migration3To4Test {
             }
             assertEquals(expectedIndices, actualIndices)
 
-            // --- red de seguridad generica: integridad referencial tras el remapeo ---
             val fkCheckStmt = connection.prepare("PRAGMA foreign_key_check")
             try {
                 assertFalse(fkCheckStmt.step(), "PRAGMA foreign_key_check encontro violaciones de integridad referencial")

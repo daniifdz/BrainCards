@@ -94,8 +94,8 @@ class FreeReviewBannerRenderTest {
 
     @Test
     fun el_aviso_ocupa_mas_a_320_dp_de_lo_que_ocuparia_el_chip_solo_y_sigue_cabiendo() {
-        // Documenta POR QUE el aviso es una decision de diseno y no una necesidad: tambien cabria a 320 dp (movil), pero el handoff lo
-        // reserva para Desktop/tablet y el umbral (D5) es 600 dp de ventana.
+        // Documenta por qué el aviso es una decisión de diseño y no una necesidad: también cabría a 320 dp (móvil), pero se reserva
+        // para Desktop o tablet y el umbral es 600 dp de ventana.
         val r = render(widthDp = 320, notice = notice)
         val (min, max) = contentExtent(r.bitmap)
         assertTrue(min >= 0 && max < 320, "chip + aviso caben en 320 dp (${max - min + 1} dp)")

@@ -124,8 +124,6 @@ class SignOutFlowRoomTest {
         coordinator.syncNow()
     }
 
-    // --- el hueco entre el borrado y clearSession ---
-
     @Test
     fun un_sync_lanzado_en_el_hueco_entre_el_borrado_y_el_cierre_de_sesion_no_repuebla_la_bd() = runBlocking {
         remote.decksToPull = listOf(remoteDeck("deck-a", userA))
@@ -163,8 +161,6 @@ class SignOutFlowRoomTest {
         assertEquals(tables.associateWith { 0L }, rowCounts())
     }
 
-    // --- cancelar no limpia ---
-
     @Test
     fun si_el_usuario_cancela_el_dialogo_no_se_borra_ninguna_fila_ni_se_cierra_la_sesion() = runBlocking {
         remote.pushDeckIdsThatFail = setOf("deck-a")
@@ -186,8 +182,6 @@ class SignOutFlowRoomTest {
         assertFalse(auth.clearLocalSessionCalled)
         assertEquals(AuthState.Authenticated(userA, "$userA@x.com", true), auth.authState.first())
     }
-
-    // --- confirmar vacia todo; el cambio de cuenta no ve datos de la anterior ---
 
     @Test
     fun tras_cerrar_sesion_y_entrar_con_otra_cuenta_no_se_ve_nada_de_la_anterior() = runBlocking {

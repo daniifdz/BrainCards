@@ -78,14 +78,10 @@ class LocalTableInspectorRoomTest {
 
     private fun allEmpty() = SyncTable.entries.associateWith { true }
 
-    // --- BD vacia ----------------------------------------------------------------------------------------
-
     @Test
     fun `con la BD vacia las cuatro tablas estan vacias`() = runBlocking {
         assertEquals(allEmpty(), emptiness())
     }
-
-    // --- cada tabla por separado (la respuesta es de LA tabla preguntada) -------------------------------------------
 
     @Test
     fun `una fila en decks solo hace no vacia a decks`() = runBlocking {
@@ -125,8 +121,6 @@ class LocalTableInspectorRoomTest {
         )
     }
 
-    // --- tombstones: una tabla con SOLO borrados logicos NO esta vacia ---------------------------------------------
-
     @Test
     fun `una tabla con solo tombstones no esta vacia`() = runBlocking {
         addDeck(deleted = true)
@@ -147,8 +141,6 @@ class LocalTableInspectorRoomTest {
         assertFalse(inspector.isEmpty(SyncTable.DECKS))
     }
 
-    // --- vaciar la BD ---------------------------------------------------------------------------------------------------
-
     @Test
     fun `tras vaciar la BD las cuatro tablas vuelven a estar vacias`() = runBlocking {
         addDeck()
@@ -161,8 +153,6 @@ class LocalTableInspectorRoomTest {
 
         assertEquals(allEmpty(), emptiness())
     }
-
-    // --- valor por defecto del motor ---------------------------------------------------------------------------------------
 
     @Test
     fun `el valor por defecto nunca dice vacia aunque la BD lo este`() = runBlocking {

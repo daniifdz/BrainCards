@@ -73,9 +73,9 @@ class DueCountRoomTest {
     /** Siembra los casos que distinguen cada trozo del criterio. */
     private suspend fun seedMixed() {
         card("sin-scheduling", nextReview = null)        // nunca repasada: vencida (COALESCE a 0)
-        card("vencida", nextReview = 5_000)              // pasada: vencida
+        card("vencida", nextReview = 5_000)
         card("justo-ahora", nextReview = 10_000)         // nextReview == now: vencida (<=)
-        card("futura", nextReview = 20_000)              // no vencida
+        card("futura", nextReview = 20_000)
         card("borrada-vencida", nextReview = 5_000, deleted = true)  // borrada logicamente: no cuenta
         card("borrada-sin-scheduling", nextReview = null, deleted = true)
         // Deuda (e): tarjeta VIVA y vencida bajo un mazo en tombstone (llegada por sync): no cuenta ni entra en la cola.
@@ -129,10 +129,10 @@ class DueCountRoomTest {
             try {
                 awaitLast(values, 0)
 
-                card("a", nextReview = null)                                  // nueva: vencida
+                card("a", nextReview = null)
                 awaitLast(values, 1)
 
-                card("b", nextReview = 1_000)                                 // otra vencida
+                card("b", nextReview = 1_000)
                 awaitLast(values, 2)
 
                 db.cardSchedulingDao().insert(                                // "repasar" b: pasa al futuro
@@ -141,7 +141,7 @@ class DueCountRoomTest {
                 )
                 awaitLast(values, 1)
 
-                db.flashcardDao().softdeleteFlashcardById("a", ms(6))        // borrar a
+                db.flashcardDao().softdeleteFlashcardById("a", ms(6))
                 awaitLast(values, 0)
             } finally {
                 job.cancel()

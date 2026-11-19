@@ -117,8 +117,6 @@ class AuthViewModelAuthRestErrorsTest {
         assertEquals(AuthFormTarget.Banner(AuthMessage.GenericError), env.vm.uiError.value)
     }
 
-    // --- ConfirmEmail / ForgotPassword / ResetPassword -------------------------------------------------------------
-
     @Test
     fun confirmar_con_codigo_caducado_es_error_del_campo_codigo() = runTest {
         val env = AuthVmEnv()

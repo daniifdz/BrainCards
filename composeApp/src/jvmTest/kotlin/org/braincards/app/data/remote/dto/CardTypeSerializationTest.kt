@@ -7,12 +7,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * FlashcardDto.cardType usa el enum CardType directamente, sin transform ni
- * serializador a medida. kotlinx-serialization serializa un enum por su nombre
- * de constante tal cual, pero esto es lo unico de RemoteDataSourceImpl que toca
- * un CHECK constraint real de Postgres (card_type in ('FLIP', 'MULTIPLE_CHOICE')
- * en sql/supabase_schema.sql) -- un mismatch de formato aqui rechazaria cualquier
- * INSERT/UPSERT. Test de regresion, no solo comprobacion puntual.
+ * FlashcardDto.cardType usa el enum CardType directamente, sin transform ni serializador a medida. kotlinx-serialization
+ * serializa un enum por su nombre de constante tal cual, pero es lo único de RemoteDataSourceImpl que toca un CHECK real de
+ * Postgres (card_type in ('FLIP', 'MULTIPLE_CHOICE') en sql/supabase_schema.sql): un desajuste de formato rechazaría
+ * cualquier INSERT/UPSERT. Test de regresión, no solo comprobación puntual.
  */
 class CardTypeSerializationTest {
 

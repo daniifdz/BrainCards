@@ -27,13 +27,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Guarda del RECORTE (13b3): al separarse, cada hemisferio sale del cuadro del cerebro; si el area de dibujo fuera el cuadro (o
- * menor que `splashMinDrawAreaFactor`), la capa offscreen recortaria lo que cae fuera y la entrada se veria como astillas.
+ * Guarda del recorte: al separarse, cada hemisferio sale del cuadro del cerebro; si el área de dibujo fuera el cuadro (o menor
+ * que `splashMinDrawAreaFactor`), la capa offscreen recortaría lo que cae fuera y la entrada se vería como astillas.
  *
- * Se renderiza el SplashBrainContent REAL (cerebro de 160 dp en una escena de 360 px, densidad 1) en cada fotograma a 60 fps de la
- * convergencia y se cuenta el area pintada (pixeles con alfa > 50 %, con la opacidad forzada a 1 para medir solo la geometria). Debe
- * ser 100 +- 2 % del area del cerebro en reposo en TODOS los fotogramas, tanto con la configuracion actual (+-84, curva de 13b3) como
- * con la anterior (+-58, easeOutBack), que tambien recortaba un poco.
+ * Se renderiza el SplashBrainContent real (cerebro de 160 dp en una escena de 360 px, densidad 1) en cada fotograma a 60 fps de
+ * la convergencia y se cuenta el área pintada (píxeles con alfa > 50 %, con la opacidad forzada a 1 para medir solo la
+ * geometría). Debe ser 100 ± 2 % del área del cerebro en reposo en todos los fotogramas, tanto con la configuración actual
+ * (±84, curva actual) como con la anterior (±58, easeOutBack), que también recortaba un poco.
  */
 class SplashBrainAreaTest {
 

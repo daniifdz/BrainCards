@@ -80,9 +80,9 @@ class LiveDeckRoomTest {
         deck("A")
         topic("tX", "A", deletedAt = 3)             // tema borrado (mazo vivo)
         card("a1", "A", nextReview = null)          // vencida (sin scheduling)
-        card("a2", "A", nextReview = 5_000)         // vencida
-        card("a3", "A", nextReview = 99_000)        // futura
-        card("a4", "A", nextReview = 5_000, deleted = true) // borrada
+        card("a2", "A", nextReview = 5_000)
+        card("a3", "A", nextReview = 99_000)
+        card("a4", "A", nextReview = 5_000, deleted = true)
         card("a5", "A", nextReview = 5_000, topicId = "tX") // tema borrado: sigue activa
 
         deck("B", deletedAt = 4)                    // mazo en tombstone con tarjetas VIVAS
@@ -94,15 +94,11 @@ class LiveDeckRoomTest {
     private suspend fun count() = observer.observeDueCount(flowOf(now)).first()
     private suspend fun dueAll() = db.flashcardDao().getAllDueFlashcards(now).map { it.id }.sorted()
 
-    // ---- contador de Home y cola de "Estudiar Todo" ----
-
-    // Mutacion M1: si observeDueCount no filtrara el mazo vivo, este test fallaria (contaria b1 y b2: 5).
     @Test
     fun el_contador_de_Home_no_cuenta_las_tarjetas_de_un_mazo_borrado() = runBlocking<Unit> {
         assertEquals(3, count()) // a1, a2 y a5 (tema borrado, mazo vivo); no b1 ni b2
     }
 
-    // Mutacion M2: si getAllDueFlashcards no filtrara el mazo vivo, este test fallaria.
     @Test
     fun la_cola_de_Estudiar_Todo_no_incluye_las_tarjetas_de_un_mazo_borrado() = runBlocking<Unit> {
         assertEquals(listOf("a1", "a2", "a5"), dueAll())
@@ -117,15 +113,11 @@ class LiveDeckRoomTest {
         }
     }
 
-    // ---- cola de un mazo concreto ----
-
     @Test
     fun la_cola_de_un_mazo_borrado_esta_vacia_y_la_de_uno_vivo_no() = runBlocking<Unit> {
         assertEquals(emptyList(), db.flashcardDao().getDueFlashcardsByDeck("B", now).map { it.id })
         assertEquals(listOf("a1", "a2", "a5"), db.flashcardDao().getDueFlashcardsByDeck("A", now).map { it.id }.sorted())
     }
-
-    // ---- estadisticas ----
 
     @Test
     fun getAllFlashcards_excluye_las_tarjetas_de_un_mazo_borrado_y_las_borradas() = runBlocking<Unit> {
@@ -133,20 +125,14 @@ class LiveDeckRoomTest {
         assertEquals(listOf("a1", "a2", "a3", "a5"), ids) // no a4 (borrada) ni b1..b3 (mazo borrado)
     }
 
-    // ---- la sesion de estudio comprueba cada tarjeta antes de mostrarla ----
-
-    // Mutacion M3: si la regla compartida dijera IS NOT NULL, este test (y la mayoria) fallaria.
     @Test
     fun getFlashcardById_devuelve_las_activas_y_null_para_borradas_o_de_mazo_borrado() = runBlocking<Unit> {
         assertNotNull(db.flashcardDao().getFlashcardById("a1"))
         assertNotNull(db.flashcardDao().getFlashcardById("a5")) // tema borrado: el mazo manda
-        assertNull(db.flashcardDao().getFlashcardById("a4"))    // tarjeta borrada
-        assertNull(db.flashcardDao().getFlashcardById("b1"))    // mazo borrado
+        assertNull(db.flashcardDao().getFlashcardById("a4"))
+        assertNull(db.flashcardDao().getFlashcardById("b1"))
     }
 
-    // ---- lo que NO debe cambiar ----
-
-    // Mutacion G1: si getFlashcardsByDeckId filtrara el mazo vivo, deleteDeck no encontraria tarjetas que borrar.
     @Test
     fun getFlashcardsByDeckId_sigue_viendo_las_tarjetas_de_un_mazo_borrado_la_cascada_las_necesita() = runBlocking<Unit> {
         val ids = db.flashcardDao().getFlashcardsByDeckId("B").first().map { it.id }.sorted()
@@ -157,8 +143,6 @@ class LiveDeckRoomTest {
     fun las_lecturas_de_sync_siguen_viendo_la_tarjeta_de_un_mazo_borrado() = runBlocking<Unit> {
         assertNotNull(db.flashcardDao().getFlashcardByIdIncludingDeleted("b1"))
     }
-
-    // ---- un mazo que vuelve a estar vivo (pull remoto) recupera sus tarjetas ----
 
     @Test
     fun un_mazo_borrado_que_vuelve_a_estar_vivo_por_pull_recupera_sus_tarjetas_sin_cascada() = runBlocking<Unit> {

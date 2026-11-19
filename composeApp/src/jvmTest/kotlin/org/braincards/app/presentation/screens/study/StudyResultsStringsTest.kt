@@ -6,8 +6,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * "N repasos" (handoff v4.18): el plural vive en strings.xml, asi que se comprueba el propio recurso: singular
- * "1 repaso" y plural "N repasos" (Compose Resources elige la cantidad `one` para 1 y `other` para el resto).
+ * «N repasos»: el plural vive en strings.xml, así que se comprueba el propio recurso: singular «1 repaso» y plural «N repasos»
+ * (Compose Resources elige la cantidad `one` para 1 y `other` para el resto).
  */
 class StudyResultsStringsTest {
 
@@ -30,7 +30,6 @@ class StudyResultsStringsTest {
         return text
     }
 
-    // Mutacion P1: si el singular dijera "repasos" (o el plural "repaso"), estos tests fallarian.
     @Test
     fun el_singular_es_1_repaso() {
         assertEquals("%1\$d repaso", item("one"))

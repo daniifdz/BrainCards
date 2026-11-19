@@ -20,7 +20,7 @@ class FlashcardQueryRuleGuardTest {
         val ENFORCED = setOf(
             "getFlashcardById", "getDueFlashcardsByDeck", "getAllFlashcards", "getAllDueFlashcards", "observeDueCount",
             "observeMaturityCounts",
-            // Repaso libre (paso 14): todas las tarjetas ACTIVAS, sin filtrar por pendientes; getFlashcardsByDeckId no sirve (no aplica la regla).
+            // Repaso libre: todas las tarjetas activas, sin filtrar por pendientes; getFlashcardsByDeckId no sirve (no aplica la regla).
             "getFreeReviewCards", "getFreeReviewCardsByDeck"
         )
 
@@ -84,7 +84,6 @@ class FlashcardQueryRuleGuardTest {
         }
     }
 
-    // Mutacion: anadir una consulta de lectura nueva sin clasificar debe fallar aqui.
     @Test
     fun toda_consulta_esta_clasificada_una_nueva_obliga_a_decidir_si_aplica_la_regla() {
         val unclassified = queries().keys - ENFORCED - ALLOWED.keys

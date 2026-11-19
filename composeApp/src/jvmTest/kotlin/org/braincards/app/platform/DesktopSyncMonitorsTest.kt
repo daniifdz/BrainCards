@@ -13,8 +13,6 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopSyncMonitorsTest {
 
-    // --- DesktopForegroundMonitor: visible y no minimizada ---
-
     @Test
     fun la_ventana_arranca_en_primer_plano() {
         assertTrue(DesktopForegroundMonitor().isForeground.value)
@@ -35,8 +33,6 @@ class DesktopSyncMonitorsTest {
     fun el_valor_inicial_puede_ser_ventana_no_visible() {
         assertFalse(DesktopForegroundMonitor(initiallyVisible = false).isForeground.value)
     }
-
-    // --- DesktopConnectivityMonitor ---
 
     @Test
     fun el_valor_inicial_es_sincrono_sin_esperar_al_primer_sondeo() = runTest {

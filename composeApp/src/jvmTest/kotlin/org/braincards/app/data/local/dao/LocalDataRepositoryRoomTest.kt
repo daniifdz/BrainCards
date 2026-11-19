@@ -115,8 +115,6 @@ class LocalDataRepositoryRoomTest {
     private suspend fun rowCountsByTable(): Map<String, Long> =
         userTableNames().associateWith { countRows(it) }
 
-    // --- wipeAll ---
-
     @Test
     fun las_tablas_de_usuario_de_la_bd_son_exactamente_las_que_el_wipe_conoce() = runBlocking {
         val actual = userTableNames()
@@ -173,8 +171,6 @@ class LocalDataRepositoryRoomTest {
 
         assertEquals(before, rowCountsByTable())
     }
-
-    // --- countUnownedRows ---
 
     @Test
     fun countUnownedRows_cuenta_solo_las_filas_sin_dueno_de_las_cuatro_tablas_sincronizables() = runBlocking {

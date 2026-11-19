@@ -66,7 +66,6 @@ class HomeStateRoomTest {
         assertEquals(HomeUiState.NoCards, state(due = 0))
     }
 
-    // Mutacion D1: si la consulta agregada contara las tarjetas borradas, este test fallaria.
     @Test
     fun una_tarjeta_borrada_no_cuenta_un_mazo_con_solo_tarjetas_borradas_es_NoCards() = runBlocking<Unit> {
         deck("a")
@@ -83,7 +82,6 @@ class HomeStateRoomTest {
         assertEquals(HomeUiState.Content(1), state(due = 1))
     }
 
-    // Mutacion D2: si la consulta agregada no filtrara los mazos borrados, estos tests fallarian.
     @Test
     fun un_mazo_borrado_con_tarjetas_vivas_no_cuenta_y_vuelve_al_primer_uso() = runBlocking<Unit> {
         deck("borrado", deleted = true)

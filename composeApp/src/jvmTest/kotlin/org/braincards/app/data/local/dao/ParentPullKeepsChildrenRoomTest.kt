@@ -44,7 +44,7 @@ class ParentPullKeepsChildrenRoomTest {
         decks = DeckRepositoryImpl(db.deckDao(), db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         topics = TopicRepositoryImpl(db.topicDao(), db.flashcardDao(), RoomTransactionRunner(db))
         flashcards = FlashcardRepositoryImpl(db.flashcardDao())
-        // deck d1 -> topic t1 -> card c1 (+ scheduling c1, reviewlog r1), todo sincronizado.
+        // Mazo d1 -> tema t1 -> tarjeta c1 (+ scheduling c1, reviewlog r1), todo sincronizado.
         db.deckDao().addDeck(DeckEntity(id = "d1", name = "viejo", createdAt = ms(1), updatedAt = ms(1000),
             description = null, deletedAt = null, lastSyncedAt = ms(1000), userId = userId))
         db.topicDao().addTopic(TopicEntity(id = "t1", deckId = "d1", name = "tema", createdAt = ms(1),
@@ -88,8 +88,6 @@ class ParentPullKeepsChildrenRoomTest {
         deletedAt = deletedAt, userId = userId
     )
 
-    // --- esquema real: sin cascade y con foreign_keys activo ---
-
     @Test
     fun foreign_keys_esta_activo_y_ninguna_clave_foranea_tiene_cascade() = runBlocking {
         assertEquals(1L, query("PRAGMA foreign_keys") { it.getLong(0) }.single())
@@ -101,8 +99,6 @@ class ParentPullKeepsChildrenRoomTest {
         }
         assertEquals(emptyList(), query("PRAGMA foreign_key_list(`reviewlog`)") { it.getText(2) })
     }
-
-    // --- el padre se reescribe con REPLACE; los hijos sobreviven ---
 
     @Test
     fun un_mazo_renombrado_en_el_otro_dispositivo_conserva_temas_tarjetas_y_planificacion() = runBlocking {

@@ -60,8 +60,6 @@ internal fun HttpRequestData.param(name: String): String? = url.parameters[name]
 
 internal fun HttpRequestData.table(): String = url.encodedPath.substringAfterLast("/")
 
-// --- filas de respuesta con el formato real de PostgREST (timestamptz con offset +00:00) ----------
-
 internal fun deckRow(id: String, serverUpdatedAt: String?, deletedAt: String? = null) = """
     {"id":"$id","name":"Deck","description":null,"created_at":"2025-01-01T00:00:00+00:00",
      "updated_at":"2025-01-02T00:00:00+00:00","deleted_at":${deletedAt.quoted()},"last_synced_at":null,

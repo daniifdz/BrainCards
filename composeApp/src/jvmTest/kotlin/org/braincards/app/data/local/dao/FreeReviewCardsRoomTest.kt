@@ -87,14 +87,12 @@ class FreeReviewCardsRoomTest {
     private suspend fun all() = db.flashcardDao().getFreeReviewCards().map { it.id }
     private suspend fun byDeck(id: String) = db.flashcardDao().getFreeReviewCardsByDeck(id).map { it.id }
 
-    // Mutacion: usar el filtro de pendientes (nextReview <= now) en lugar de todas: a3 y c1 (futuras) desaparecerian.
     @Test
     fun todas_las_activas_incluidas_las_que_NO_estan_pendientes() = runBlocking {
         assertEquals(listOf("a1", "a2", "a3", "a5", "c1"), all())
         assertTrue("a3" !in db.flashcardDao().getAllDueFlashcards(ms(10_000)).map { it.id }, "a3 no esta pendiente: el repaso libre es otra consulta")
     }
 
-    // Mutacion: quitar LIVE_DECK_JOIN (o usar getFlashcardsByDeckId): b1 y b2 (vivas bajo un mazo en tombstone) entrarian.
     @Test
     fun una_tarjeta_viva_bajo_un_mazo_en_tombstone_no_entra() = runBlocking {
         val ids = all()
@@ -109,7 +107,6 @@ class FreeReviewCardsRoomTest {
         assertTrue("a5" in ids)
     }
 
-    // Mutacion: quitar el filtro de deckId del ambito de un mazo.
     @Test
     fun el_ambito_de_un_mazo_solo_trae_ese_mazo() = runBlocking {
         assertEquals(listOf("a1", "a2", "a3", "a5"), byDeck("A"))

@@ -92,8 +92,6 @@ class DeckDeleteRoomTest {
         }
     }
 
-    // --- sin fallo: mismo resultado que siempre ---------------------------------------------------------------------
-
     @Test
     fun sin_fallo_marca_mazo_temas_y_tarjetas_vivas_con_la_misma_marca() = runBlocking<Unit> {
         repository().deleteDeck(deckToDelete())
@@ -129,8 +127,6 @@ class DeckDeleteRoomTest {
         assertNull(db.deckDao().getDeckById("d1"))
         assertEquals(emptyList(), db.flashcardDao().getAllDueFlashcards(ms(99_999)).filter { it.deckId == "d1" })
     }
-
-    // --- con fallo: atomico -----------------------------------------------------------------------------------------
 
     /** FlashcardDao real, pero el SEGUNDO borrado logico de tarjeta falla (el primero ya se ha ejecutado). */
     private fun failingOnSecondCardDelete(): FlashcardDao = object : FlashcardDao by db.flashcardDao() {

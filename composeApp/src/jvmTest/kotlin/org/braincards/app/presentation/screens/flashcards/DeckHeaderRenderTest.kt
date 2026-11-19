@@ -99,8 +99,6 @@ class DeckHeaderRenderTest {
         assertTrue(heights.max() - heights.min() <= 1f, "$label: alturas distintas $heights (algun texto se parte en 2 lineas)")
     }
 
-    // ---- 360 dp ----
-
     @Test
     fun a_360_dp_aparecen_los_4_botones_sin_salirse_ni_solaparse() {
         val l = layoutOf(360)
@@ -138,8 +136,6 @@ class DeckHeaderRenderTest {
         assertEquals(buttons.toSet(), l.buttonRects().map { it.first }.toSet())
     }
 
-    // ---- fuente ampliada ----
-
     @Test
     fun con_fuente_1_3_la_cabecera_sigue_completa_sin_cortes_ni_solapes() {
         val normal = layoutOf(360, fontScale = 1f)
@@ -169,8 +165,6 @@ class DeckHeaderRenderTest {
         assertSingleLine(l, "320 dp")
     }
 
-    // ---- escritorio ----
-
     @Test
     fun a_ancho_de_escritorio_los_4_botones_van_en_una_sola_fila_junto_al_titulo() {
         val l = layoutOf(1000)
@@ -179,8 +173,6 @@ class DeckHeaderRenderTest {
         val title = l.parts.getValue(DeckHeaderPart.TitleRow)
         assertTrue(l.buttonRects().all { it.second.left >= title.right - 0.5f }, "los botones a la derecha del titulo")
     }
-
-    // ---- condiciones de visibilidad en la cabecera ----
 
     @Test
     fun sin_repaso_libre_la_cabecera_tiene_3_botones_y_sin_estudiar_tampoco_hay_ninguno_de_estudio() {
@@ -191,8 +183,6 @@ class DeckHeaderRenderTest {
         val none = layoutOf(360, showStudy = false, showFreeReview = false)
         assertEquals(setOf(DeckHeaderPart.NewTopic, DeckHeaderPart.NewCard), none.buttonRects().map { it.first }.toSet(), "mazo vacio: se ocultan los dos de estudio a la vez")
     }
-
-    // ---- cada boton llama a su accion ----
 
     @Test
     fun cada_boton_llama_solo_a_su_accion() {

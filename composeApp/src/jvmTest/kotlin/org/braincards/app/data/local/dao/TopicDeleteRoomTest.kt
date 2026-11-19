@@ -79,7 +79,7 @@ class TopicDeleteRoomTest {
         topic("t3", "d2")        // tema de otro mazo
         card("c1", "d1", "t1"); card("c2", "d1", "t1"); card("c-old", "d1", "t1", deletedAt = 600)
         card("c3", "d1", "t2")
-        card("c4", "d1", null)   // sin tema
+        card("c4", "d1", null)
         card("c5", "d2", "t3")
     }
 
@@ -93,8 +93,6 @@ class TopicDeleteRoomTest {
             assertEquals(Triple(null, ms(1), ms(1)), row, "$id debe seguir intacta")
         }
     }
-
-    // --- sin fallo ---------------------------------------------------------------------------------------------------
 
     @Test
     fun marca_el_tema_y_todas_sus_tarjetas_vivas_con_el_mismo_now() = runBlocking<Unit> {
@@ -144,8 +142,6 @@ class TopicDeleteRoomTest {
         val due = db.flashcardDao().getAllDueFlashcards(ms(99_999)).map { it.id }.toSet()
         assertEquals(setOf("c3", "c4", "c5"), due, "c1 y c2 ya no cuentan para estudio ni para Home")
     }
-
-    // --- con fallo: atomico ------------------------------------------------------------------------------------------
 
     /** FlashcardDao real, pero el SEGUNDO borrado logico de tarjeta falla (el primero ya se ha ejecutado). */
     private fun failingOnSecondCardDelete(): FlashcardDao = object : FlashcardDao by db.flashcardDao() {

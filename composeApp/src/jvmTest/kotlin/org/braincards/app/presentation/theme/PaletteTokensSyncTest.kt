@@ -10,8 +10,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Las paletas de Color.kt son EXACTAMENTE las de docs/design/mockups/assets/tokens.css (fuente de los tokens del
- * handoff). Si alguien cambia un hex en un sitio y no en el otro, falla aqui.
+ * Las paletas de Color.kt son exactamente las de docs/design/mockups/assets/tokens.css (fuente de los tokens de color). Si
+ * alguien cambia un hex en un sitio y no en el otro, falla aquí.
  */
 class PaletteTokensSyncTest {
 

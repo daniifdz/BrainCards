@@ -405,9 +405,9 @@ class TwoDeviceAutoSyncRoomTest {
 
         delay(WINDOW_MS)
 
-        // LIMITE CONOCIDO (FINAL_SPRINT.md, deuda (c)): markPushed fija lastSyncedAt = hora del sistema < updatedAt, asi que
-        // A sigue viendo la fila como pendiente y la vuelve a subir en cada sync. Lo que se prueba es que queda ACOTADO:
-        // el observador no cambia (misma huella), asi que solo lo mueve el periodico, y nunca hay un bucle apretado.
+        // Límite conocido: markPushed fija lastSyncedAt = hora del sistema < updatedAt, así que A sigue viendo la fila como pendiente y
+        // la vuelve a subir en cada sync. Lo que se prueba es que queda acotado: el observador no cambia (misma huella), así que solo
+        // lo mueve el periódico, y nunca hay un bucle apretado.
         assertEquals(1, a.pendingCount(), "la fila con updated_at futuro sigue pendiente en A (limite conocido)")
         val syncsAdelta = a.syncs.get() - syncsA
         assertTrue(syncsAdelta <= WINDOW_MS / PERIODIC.inWholeMilliseconds + 3, "syncs de A acotados por el periodico: $syncsAdelta")

@@ -7,10 +7,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
- * Guarda ESTRUCTURAL del repaso libre (paso 14): lo unico que guarda un repaso es `ReviewFlashcardUseCase`, y solo puede referenciarse
- * desde `ScheduledRecorder` (ademas de su propia definicion y del modulo de inyeccion). Si el StudyViewModel (o cualquier otro fichero)
- * lo usara directamente, el repaso libre podria escribir en `card_scheduling` / `reviewlog`. Lee el codigo fuente y IGNORA los
- * comentarios.
+ * Guarda estructural del repaso libre: lo único que guarda un repaso es `ReviewFlashcardUseCase`, y solo puede referenciarse
+ * desde `ScheduledRecorder` (además de su propia definición y del módulo de inyección). Si el StudyViewModel (o cualquier otro
+ * fichero) lo usara directamente, el repaso libre podría escribir en `card_scheduling` / `reviewlog`. Lee el código fuente e
+ * ignora los comentarios.
  */
 class ReviewFlashcardUseCaseGuardTest {
 
