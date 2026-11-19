@@ -55,8 +55,8 @@ import org.jetbrains.compose.resources.stringResource
 private val ROW_SHAPE = RoundedCornerShape(14.dp)
 
 /**
- * Fila de un tema: icono + nombre + "N tarjetas" + menu (⋮) + chevron (handoff 5.1c). Tocar la fila (o el chevron) abre
- * el subnivel del tema. Editar / Eliminar viven en [ContentRowActions] (provisional, ver alli).
+ * Fila de un tema: icono + nombre + «N tarjetas» + menú (⋮) + chevron. Tocar la fila (o el chevron) abre el subnivel del tema.
+ * Editar / Eliminar viven en [ContentRowActions] (provisional, ver allí).
  */
 @Composable
 fun TopicRow(
@@ -207,8 +207,8 @@ private fun RowChip(background: Color, tint: Color, content: @Composable () -> U
 }
 
 /**
- * Acceso PROVISIONAL a Editar / Eliminar de una fila (menu ⋮): el diseno no dibuja todavia como acceder (handoff
- * 5.1c solo muestra el chevron del tema y el lapiz de la tarjeta). Punto unico a sustituir cuando el diseno lo decida.
+ * Acceso provisional a Editar / Eliminar de una fila (menú ⋮): el diseño solo dibuja el chevron del tema y el lápiz de la
+ * tarjeta. Punto único a sustituir cuando se decida otro acceso.
  */
 @Composable
 private fun ContentRowActions(menuLabel: String, onEdit: () -> Unit, onDelete: () -> Unit) {

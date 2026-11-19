@@ -10,7 +10,7 @@ import org.braincards.app.platform.splashLogoSize
 import org.braincards.app.presentation.components.SPLASH_BACKGROUND
 import org.braincards.app.presentation.components.SplashBrain
 
-/** Fundido de salida de EntryPending hacia la pantalla real (handoff 5.8). Con "reducir animaciones" no se usa: el cambio es instantaneo. */
+/** Fundido de salida de EntryPending hacia la pantalla real. Con «reducir animaciones» no se usa: el cambio es instantáneo. */
 const val SPLASH_FADE_MS = 250
 
 /** Tope de espera del tema guardado: pasado este tiempo se arranca con el tema del sistema en vez de seguir esperando. */
@@ -24,11 +24,11 @@ fun shouldShowEntryPending(startRoute: EntryRoute, themeLoaded: Boolean, themeTi
     startRoute == EntryRoute.Pending || (!themeLoaded && !themeTimedOut)
 
 /**
- * Mientras no se sabe a donde arrancar (auth sin resolver) o el tema no se ha leido: IDENTICA al splash del sistema (handoff
- * 5.8). Fondo morado FIJO ([SPLASH_BACKGROUND], igual en claro y oscuro: no usa el tema) y el cerebro blanco centrado, sin
- * texto ni spinner. En Android cubre el hueco si el splash del sistema agota su espera maxima. El tamano del logo lo da la
- * plataforma ([splashLogoSize]: 120 dp en Android, 160 en Desktop). Los hemisferios entran animados ([splashPose] a los
- * [elapsedMs] de la coreografia; por defecto el reposo final = el cerebro completo, igual que el splash del sistema).
+ * Mientras no se sabe a dónde arrancar (auth sin resolver) o el tema no se ha leído: idéntica al splash del sistema. Fondo morado
+ * fijo ([SPLASH_BACKGROUND], igual en claro y oscuro: no usa el tema) y el cerebro blanco centrado, sin texto ni spinner. En
+ * Android cubre el hueco si el splash del sistema agota su espera máxima. El tamaño del logo lo da la plataforma
+ * ([splashLogoSize]: 120 dp en Android, 160 en Desktop). Los hemisferios entran animados ([splashPose] a los [elapsedMs] de la
+ * coreografía; por defecto el reposo final = el cerebro completo, igual que el splash del sistema).
  */
 @Composable
 fun EntryPendingScreen(elapsedMs: () -> Float = { SPLASH_TOTAL_MS.toFloat() }, onFirstDraw: (() -> Unit)? = null) {

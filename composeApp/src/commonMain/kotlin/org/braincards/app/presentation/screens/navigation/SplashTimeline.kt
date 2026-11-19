@@ -17,13 +17,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * Reloj de EntryPending: cuanto lleva la coreografia y si la capa sigue visible. Toda la DECISION de tiempos es pura
- * ([planSplashExit], [splashPose]); aqui solo se ejecuta: un Animatable lineal de 0 a [SPLASH_TOTAL_MS] y la espera hasta el
+ * Reloj de EntryPending: cuánto lleva la coreografía y si la capa sigue visible. Toda la decisión de tiempos es pura
+ * ([planSplashExit], [splashPose]); aquí solo se ejecuta: un Animatable lineal de 0 a [SPLASH_TOTAL_MS] y la espera hasta el
  * instante que dicte el plan.
  *
- * El reloj arranca al componerse EntryPending, salvo en el arranque en frio de Android (13b2): ahi ([exitSignal] != null)
- * arranca cuando el splash del sistema SALE (si no, correria oculto debajo de el: entre el primer dibujo y la salida pasan
- * 150-600 ms), con el plan B de [SPLASH_EXIT_SAFETY_MS] tras el primer dibujo si la salida nunca se avisa.
+ * El reloj arranca al componerse EntryPending, salvo en el arranque en frío de Android: ahí ([exitSignal] != null) arranca
+ * cuando el splash del sistema sale (si no, correría oculto debajo de él: entre el primer dibujo y la salida pasan 150-600 ms),
+ * con el plan B de [SPLASH_EXIT_SAFETY_MS] tras el primer dibujo si la salida nunca se avisa.
  */
 @Stable
 class SplashTimeline internal constructor(

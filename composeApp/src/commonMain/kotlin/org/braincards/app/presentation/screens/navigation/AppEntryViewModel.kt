@@ -53,19 +53,19 @@ sealed interface WelcomeNotice {
 val SESSION_LOSS_DEBOUNCE: Duration = 1_500.milliseconds
 
 /**
- * Arranque y sesion perdida (paso 4). Activity-scoped (como ThemeViewModel): sobrevive a rotar.
+ * Arranque y sesión perdida. Activity-scoped (como ThemeViewModel): sobrevive a rotar.
  *
- *  - [startRoute]: ruta de arranque, FIJADA con el primer valor resuelto (no cambia despues: lo posterior son eventos).
- *  - [signedOut]: se emite UNA vez cuando una sesion estable pasa a NotAuthenticated (cierre de sesion, borrado de
- *    cuenta, sesion revocada). Antes de emitirlo se borra el flag de modo local. Es un Channel: cada evento lo consume
- *    un solo colector y no se repite al recomponer ni al rotar.
- *  - [userSessionExitCount]: contador que sube cuando un cierre de sesion / borrado de cuenta del USUARIO termina
- *    (SyncCoordinator.userSessionExitCount): entonces no hay espera.
- *  - [userExitReason]: motivo de esa salida (null = no fue una salida confirmada, p. ej. SessionCloseFailed: cuenta
- *    como sesion perdida, con espera).
- *  - [welcomeNotice]: aviso de un solo uso para la Bienvenida (ver [WelcomeNotice]). Se fija ANTES de emitir
- *    [signedOut], asi la primera composicion de la Bienvenida ya lo ve. Activity-scoped: sobrevive a rotar; si el
- *    proceso muere desaparece (correcto: no se reconstruye ningun aviso).
+ * - [startRoute]: ruta de arranque, fijada con el primer valor resuelto (no cambia después: lo posterior son eventos).
+ * - [signedOut]: se emite una vez cuando una sesión estable pasa a NotAuthenticated (cierre de sesión, borrado de cuenta,
+ *   sesión revocada). Antes de emitirlo se borra el flag de modo local. Es un Channel: cada evento lo consume un solo
+ *   colector y no se repite al recomponer ni al rotar.
+ * - [userSessionExitCount]: contador que sube cuando un cierre de sesión o borrado de cuenta del usuario termina
+ *   (SyncCoordinator.userSessionExitCount): entonces no hay espera.
+ * - [userExitReason]: motivo de esa salida (null = no fue una salida confirmada, p. ej. SessionCloseFailed: cuenta como sesión
+ *   perdida, con espera).
+ * - [welcomeNotice]: aviso de un solo uso para la Bienvenida (ver [WelcomeNotice]). Se fija antes de emitir [signedOut], así la
+ *   primera composición de la Bienvenida ya lo ve. Activity-scoped: sobrevive a rotar; si el proceso muere desaparece
+ *   (correcto: no se reconstruye ningún aviso).
  */
 class AppEntryViewModel(
     authRepository: AuthRepository,

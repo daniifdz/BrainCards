@@ -46,10 +46,10 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Fila de la Lista de mazos: icono + nombre + "N tarjetas" (handoff 5.1b). Tocar la fila abre el mazo.
+ * Fila de la lista de mazos: icono + nombre + «N tarjetas». Tocar la fila abre el mazo.
  *
- * El acceso a Editar / Eliminar es PROVISIONAL (menu de tres puntos, como antes): el diseno aun decide como debe
- * accederse. Todo ese acceso vive en [DeckRowActions]: para cambiarlo basta con sustituir ese componente.
+ * El acceso a Editar / Eliminar es provisional (menú de tres puntos): todo ese acceso vive en [DeckRowActions], así que para
+ * cambiarlo basta con sustituir ese componente.
  */
 @Composable
 fun DeckRow(

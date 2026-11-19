@@ -51,18 +51,18 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * ¿Hay que mostrar el error "campo vacio"? Solo si el usuario YA cambio el valor del campo desde que se abrio el
- * dialogo ([touched], por cambio de valor, no por foco) y ahora esta en blanco. Un dialogo recien abierto con el campo
- * vacio no muestra error; el boton primario sigue deshabilitado mientras el campo esta vacio (handoff v4.10 #3).
+ * ¿Hay que mostrar el error «campo vacío»? Solo si el usuario ya cambió el valor del campo desde que se abrió el diálogo
+ * ([touched], por cambio de valor, no por foco) y ahora está en blanco. Un diálogo recién abierto con el campo vacío no muestra
+ * error; el botón primario sigue deshabilitado mientras el campo está vacío.
  */
 internal fun shouldShowBlankError(touched: Boolean, value: String): Boolean = touched && value.isBlank()
 
 /**
- * Dialogo de crear / editar tema: un solo campo, "Nombre del tema".
+ * Diálogo de crear / editar tema: un solo campo, «Nombre del tema».
  *
- * Teclado (handoff v4.10): foco inicial en el nombre (tambien al editar); Enter envia (solo con el nombre no vacio);
- * Tab en orden nombre -> Cancelar -> primario; Esc cierra sin guardar (onDismissRequest del Dialog). El boton primario
- * se deshabilita SOLO con el nombre en blanco (o mientras se guarda), nunca por [error].
+ * Teclado: foco inicial en el nombre (también al editar); Enter envía (solo con el nombre no vacío); Tab en orden nombre ->
+ * Cancelar -> primario; Esc cierra sin guardar (onDismissRequest del Dialog). El botón primario se deshabilita solo con el
+ * nombre en blanco (o mientras se guarda), nunca por [error].
  */
 @Composable
 fun TopicNameDialog(

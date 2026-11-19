@@ -6,11 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
- * Interruptor de la animacion de EntryPending en cada ARRANQUE EN FRIO de Android (13b2). Con `false`: comportamiento identico
- * a 13b (la capa solo sale si la navegacion tarda, el reloj arranca al componerse, sin listener de salida del splash) y el
- * splash del sistema conserva su logo. OJO: el icono transparente de `values-v31/splash_system_icon.xml` es un recurso y no lo
- * gobierna este valor; `SplashSystemIconConsistencyTest` exige que ambos esten de acuerdo (para revertir: ponerlo a `false` y
- * borrar ese fichero).
+ * Interruptor de la animación de EntryPending en cada arranque en frío de Android. Con `false`: la capa solo sale si la
+ * navegación tarda, el reloj arranca al componerse, no hay listener de salida del splash y el splash del sistema conserva su
+ * logo. Ojo: el icono transparente de `values-v31/splash_system_icon.xml` es un recurso y no lo gobierna este valor;
+ * `SplashSystemIconConsistencyTest` exige que ambos estén de acuerdo (para revertir: ponerlo a `false` y borrar ese fichero).
  */
 const val SPLASH_ANIMATE_ON_COLD_START = true
 
@@ -18,9 +17,9 @@ const val SPLASH_ANIMATE_ON_COLD_START = true
 const val SPLASH_COLD_START_MIN_SDK = 31
 
 /**
- * Plan B si el listener de salida del splash del sistema nunca llega: el reloj arranca esta cantidad de ms DESPUES del primer
- * dibujo de EntryPending. Mas alto = mas seguro frente a arrancar la coreografia con el splash aun encima (se vería oculta);
- * mas bajo = menos espera si el listener falla. VALOR MEDIDO en la tablet y el emulador, ver el informe de 13b2.
+ * Plan B si el listener de salida del splash del sistema nunca llega: el reloj arranca esta cantidad de ms después del primer
+ * dibujo de EntryPending. Más alto = más seguro frente a arrancar la coreografía con el splash aún encima (se vería oculta); más
+ * bajo = menos espera si el listener falla. Valor medido en una tablet y en el emulador.
  */
 const val SPLASH_EXIT_SAFETY_MS = 1_000L
 

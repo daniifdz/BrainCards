@@ -105,18 +105,18 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 import org.koin.core.parameter.parametersOf
 
-/** Ancho maximo del contenido en pantallas anchas (Desktop/tablet), como el mockup (820 dp con padding). */
+/** Ancho máximo del contenido en pantallas anchas (Desktop o tablet): 820 dp con padding. */
 private val CONTENT_MAX_WIDTH = 820.dp
 
-/** Por debajo de este ancho, los botones de la cabecera bajan a una segunda linea (mockup mobile). PROVISIONAL: se afina a mano. */
+/** Por debajo de este ancho, los botones de la cabecera bajan a una segunda línea. Provisional: se afina a mano. */
 private val COMPACT_WIDTH = 720.dp
 
 /**
- * Contenido de un mazo (handoff 5.1c). Nivel del mazo (temas + tarjetas sin tema + buscador) y subnivel de un tema.
- * El tema abierto vive en el [DeckContentViewModel], no en la ruta.
+ * Contenido de un mazo. Nivel del mazo (temas + tarjetas sin tema + buscador) y subnivel de un tema. El tema abierto vive en el
+ * [DeckContentViewModel], no en la ruta.
  *
- * [onBackClick] vuelve a Mis Mazos desde el nivel del mazo; [onDeckGone] se llama si el mazo desaparece (App.kt lo
- * conecta a popBackStackSafely, nunca a popBackStack).
+ * [onBackClick] vuelve a Mis Mazos desde el nivel del mazo; [onDeckGone] se llama si el mazo desaparece (App.kt lo conecta a
+ * popBackStackSafely, nunca a popBackStack).
  */
 @OptIn(KoinExperimentalAPI::class)
 @Composable
@@ -167,9 +167,8 @@ fun DeckContentScreen(
     // Tarjeta nueva: dentro del tema si estamos en su subnivel.
     val openTopicId = (state as? DeckContentUiState.TopicLevel)?.topic?.id
 
-    // Atras del sistema (handoff 5.1e): dentro de un tema se comporta como la flecha de la barra (vuelve al mazo); en el
-    // nivel del mazo el handler se desactiva y el atras sale a Mis Mazos como siempre. En Desktop no hay boton de
-    // atras del sistema: solo cuenta la flecha.
+    // Atrás del sistema: dentro de un tema se comporta como la flecha de la barra (vuelve al mazo); en el nivel del mazo el handler
+    // se desactiva y el atrás sale a Mis Mazos como siempre. En Desktop no hay botón de atrás del sistema: solo cuenta la flecha.
     SystemBackHandler(enabled = openTopicId != null) { viewModel.closeTopic() }
 
     fun openCreateTopic() {
@@ -397,12 +396,10 @@ fun DeckContentScreen(
     }
 }
 
-// ---- cabeceras ----
-
 /**
- * Cabecera del nivel del mazo: flecha + nombre y, a la derecha (o debajo si no cabe), los botones en este orden:
- * "Estudiar" (accion PRIMARIA, rellena; solo con tarjetas y sin busqueda: [showStudy]), "Nuevo tema" y "Nueva tarjeta"
- * (ambos outline). Los botones van en un FlowRow: si no caben en una linea, envuelven (mockup: `flex-wrap`).
+ * Cabecera del nivel del mazo: flecha + nombre y, a la derecha (o debajo si no cabe), los botones en este orden: «Estudiar»
+ * (acción primaria, rellena; solo con tarjetas y sin búsqueda: [showStudy]), «Nuevo tema» y «Nueva tarjeta» (ambos outline).
+ * Los botones van en un FlowRow: si no caben en una línea, envuelven.
  */
 /** Partes medibles de la cabecera (solo las usa el test de render: `inspect` es null en produccion). */
 internal enum class DeckHeaderPart { TitleRow, Study, FreeReview, NewTopic, NewCard }
@@ -452,9 +449,9 @@ private fun DeckHeader(
 }
 
 /**
- * Cabecera del mazo: flecha + nombre y las acciones en este orden: «Estudiar» (brand, ÚNICA acción primaria), «Repaso libre» (outline, solo con
- * las mismas condiciones que «Estudiar»), «Nuevo tema» y «Nueva tarjeta» (outline). Las dos de estudio van antes que las de creacion. Los
- * botones van en un FlowRow: si no caben en una linea, envuelven (mockup: `flex-wrap`).
+ * Cabecera del mazo: flecha + nombre y las acciones en este orden: «Estudiar» (brand, única acción primaria), «Repaso libre»
+ * (outline, solo con las mismas condiciones que «Estudiar»), «Nuevo tema» y «Nueva tarjeta» (outline). Las dos de estudio van
+ * antes que las de creación. Los botones van en un FlowRow: si no caben en una línea, envuelven.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -576,8 +573,6 @@ private fun TopicHeader(topicName: String, onBack: () -> Unit, onAddCard: () -> 
     }
 }
 
-// ---- listas ----
-
 /**
  * Lista del nivel del mazo, de los resultados de busqueda y del subnivel (solo tarjetas, [cardsTitle] = null):
  * seccion de temas con su contador y seccion de tarjetas, cada una con su titulo y recuento.
@@ -660,8 +655,6 @@ private fun ContentSearchField(query: String, onQueryChange: (String) -> Unit) {
         } else null
     )
 }
-
-// ---- estados ----
 
 /** Tres esqueletos de 64 dp (radio 14). La pulsacion se queda quieta si el sistema pide reducir el movimiento. */
 @Composable

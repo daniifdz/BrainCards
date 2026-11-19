@@ -79,7 +79,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
-/** Ancho maximo del contenido en pantallas anchas (Desktop/tablet), como el mockup (780 dp). */
+/** Ancho máximo del contenido en pantallas anchas (Desktop o tablet): 780 dp. */
 private val DECKS_MAX_WIDTH = 780.dp
 
 @OptIn(KoinExperimentalAPI::class)

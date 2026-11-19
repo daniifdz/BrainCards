@@ -4,45 +4,41 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import kotlin.math.abs
 
-/*
- * Coreografia de EntryPending (handoff v4.22 / 5.8 y contrato v4.23), como FUNCIONES PURAS del tiempo transcurrido: ninguna
- * lee un reloj ni lanza una animacion, asi que se prueban sin temporizadores. El reloj real (un Animatable lineal de 0 a
- * SPLASH_TOTAL_MS) vive en `SplashTimeline`; el dibujo, en `SplashBrain`.
- *
- * DISCREPANCIA CONSCIENTE CON EL HANDOFF: la tabla de `splash-animacion.html` da al pulso final `spring(dampingRatio = 0.5,
- * stiffness = 700)` en "150 ms", pero ese muelle tarda ~350 ms en asentarse y no cabe en 150. Se decidio (D2) usar KEYFRAMES
- * deterministas de 150 ms para el pulso (sube a 1.06 en 75 ms y baja en otros 75, con FastOutSlowInEasing en cada mitad), de modo
- * que el total sea exacto. En Resultados y Estudio mandan los parametros del muelle, no la duracion.
- *
- * 13b3 (ajuste visual, VARIANTE C): la entrada lateral duraba ~100 ms (la curva easeOutBack del handoff recorre el 76 % a los 100 ms y
- * pasa de largo hasta el 110 %) y el resto era pausa. Ahora la convergencia dura 600 ms y se REPARTE: ease-in-out con un rebote pequeno
- * al final (`SplashConvergeEasing`: 4,6 % / 21 % / 52,7 % / 99 % a los 100 / 200 / 300 / 450 ms; pico 104,5 % hacia los 525 ms),
- * desplazamiento inicial mayor y rampa de opacidad corta para que los hemisferios se vean desde el principio del movimiento.
- * El contrato D8 se mantiene con los umbrales nuevos (600 / 750 ms, derivados de [SPLASH_CONVERGE_MS]): coste de +150 ms en cada
- * arranque en frio respecto a la variante B.
- *
- * VARIANTE B (mas corta): `SPLASH_CONVERGE_MS = 450` (con la misma curva, desplazamiento y rampa). La espera minima D8
- * ([SPLASH_MIN_HOLD_MS]) y la duracion total ([SPLASH_TOTAL_MS]) se derivan solas: 450 y 600 ms.
- */
+// Coreografía de EntryPending como funciones puras del tiempo transcurrido: ninguna lee un reloj ni lanza una animación, así que
+// se prueban sin temporizadores. El reloj real (un Animatable lineal de 0 a SPLASH_TOTAL_MS) vive en `SplashTimeline`; el
+// dibujo, en `SplashBrain`.
+//
+// Pulso final: keyframes deterministas de 150 ms (sube a 1.06 en 75 ms y baja en otros 75, con FastOutSlowInEasing en cada
+// mitad) en lugar de un muelle, que tardaría ~350 ms en asentarse y no cabría en 150 ms; así el total es exacto. En Resultados
+// y Estudio mandan los parámetros del muelle, no la duración.
+//
+// Convergencia: dura 600 ms y se reparte con ease-in-out y un rebote pequeño al final (`SplashConvergeEasing`: 4,6 % / 21 % /
+// 52,7 % / 99 % a los 100 / 200 / 300 / 450 ms; pico 104,5 % hacia los 525 ms), con desplazamiento inicial grande y una rampa de
+// opacidad corta para que los hemisferios se vean desde el principio del movimiento. Una curva easeOutBack recorre el 76 % en
+// los primeros 100 ms y deja el resto en pausa, por eso no se usa.
+//
+// El contrato de salida se mantiene con los umbrales derivados de [SPLASH_CONVERGE_MS] (600 / 750 ms). Con
+// `SPLASH_CONVERGE_MS = 450` (misma curva, desplazamiento y rampa) la espera mínima y la duración total se derivan solas (450 y
+// 600 ms), a cambio de 150 ms menos en cada arranque en frío.
 
-/** Convergencia de los hemisferios (curva [SplashConvergeEasing]). Variante C: 600 ms. */
+/** Convergencia de los hemisferios (curva [SplashConvergeEasing]): 600 ms. */
 const val SPLASH_CONVERGE_MS = 600
 
 /** Pulso final de escala, tras la convergencia. */
 const val SPLASH_PULSE_MS = 150
 
-/** Duracion total de la coreografia (convergencia + pulso): 750 ms en la variante C. */
+/** Duración total de la coreografía (convergencia + pulso): 750 ms. */
 const val SPLASH_TOTAL_MS = SPLASH_CONVERGE_MS + SPLASH_PULSE_MS
 
 /**
- * Rampa de opacidad de los hemisferios (0 -> 1, lineal, desde el inicio): 80 ms (13b3; antes 150 y en el handoff 300) para que se vean
- * desde el principio del movimiento, ahora que este esta repartido. Debe ser <= [SPLASH_CONVERGE_MS].
+ * Rampa de opacidad de los hemisferios (0 -> 1, lineal, desde el inicio): 80 ms, para que se vean desde el principio del
+ * movimiento. Debe ser <= [SPLASH_CONVERGE_MS].
  */
 const val SPLASH_ALPHA_RAMP_MS = 80
 
 /**
- * Desplazamiento inicial de cada hemisferio, en unidades del lienzo del vector (230): +-84 (13b3; antes 58). Mayor que el cerebro
- * entero necesita un area de dibujo mas grande que el cerebro (`SPLASH_DRAW_AREA_FACTOR` en SplashBrain).
+ * Desplazamiento inicial de cada hemisferio, en unidades del lienzo del vector (230): ±84. Mayor que el cerebro entero: necesita
+ * un área de dibujo más grande que el cerebro (`SPLASH_DRAW_AREA_FACTOR` en SplashBrain).
  */
 const val SPLASH_OFFSET_UNITS = 84f
 
@@ -53,8 +49,8 @@ const val SPLASH_VECTOR_UNITS = 230f
 const val SPLASH_PULSE_PEAK = 1.06f
 
 /**
- * Contrato D8: tiempo MINIMO que EntryPending permanece antes de empezar el fundido de salida si la navegacion esta lista
- * antes. Igual que la convergencia: no se corta con los hemisferios a medio camino ni se lanza el pulso.
+ * Tiempo mínimo que EntryPending permanece antes de empezar el fundido de salida si la navegación está lista antes. Igual que la
+ * convergencia: no se corta con los hemisferios a medio camino ni se lanza el pulso.
  */
 const val SPLASH_MIN_HOLD_MS = SPLASH_CONVERGE_MS
 
@@ -97,8 +93,8 @@ fun splashPose(elapsedMs: Float): SplashPose {
 fun splashUnitsToPx(units: Float, sizePx: Float): Float = units * sizePx / SPLASH_VECTOR_UNITS
 
 /**
- * Salida de EntryPending (contrato D8). [fadeStartMs] = instante (desde que entro en composicion) en que empieza el fundido;
- * [frozenElapsedMs] = pose con la que se congela el cerebro durante el fundido; [fadeMs] = 0 si no hay fundido.
+ * Salida de EntryPending. [fadeStartMs] = instante (desde que entró en composición) en que empieza el fundido; [frozenElapsedMs] =
+ * pose con la que se congela el cerebro durante el fundido; [fadeMs] = 0 si no hay fundido.
  */
 data class SplashExitPlan(val fadeStartMs: Long, val frozenElapsedMs: Long, val fadeMs: Int)
 

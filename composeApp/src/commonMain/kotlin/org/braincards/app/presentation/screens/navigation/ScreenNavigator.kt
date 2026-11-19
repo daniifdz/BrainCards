@@ -11,8 +11,8 @@ sealed class Screen {
     @Serializable
     data class FlashcardsList(val deckId: String) : Screen()
     @Serializable
-    // freeReview / seed (paso 14, Repaso libre): por DEFECTO es la sesion normal. La semilla del orden aleatorio viaja aqui para que un
-    // reinicio del proceso reproduzca el mismo orden; la genera el punto de navegacion (Random.nextLong()).
+    // freeReview / seed (repaso libre): por defecto es la sesión normal. La semilla del orden aleatorio viaja aquí para que un
+    // reinicio del proceso reproduzca el mismo orden; la genera el punto de navegación (Random.nextLong()).
     data class StudySession(val deckId: String? = null, val freeReview: Boolean = false, val seed: Long = 0L) : Screen()
     @Serializable
 

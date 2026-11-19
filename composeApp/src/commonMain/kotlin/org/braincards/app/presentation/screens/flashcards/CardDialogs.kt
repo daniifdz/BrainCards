@@ -51,17 +51,16 @@ import org.braincards.app.presentation.components.form.rememberFormFocus
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Dialogo de crear / editar tarjeta (handoff 5.1c / v4.10 / v4.17): anverso, reverso y selector de tema.
+ * Diálogo de crear / editar tarjeta: anverso, reverso y selector de tema.
  *
- * Teclado: foco inicial en el anverso (tambien al editar); Tab en orden natural anverso -> reverso -> selector ->
- * Cancelar -> primario (el selector esta en el arbol tras los dos campos y antes de los botones: `formField` ya hace
- * `moveFocus(Next)` desde el ultimo campo, sin tocar `formKeyAction`); Enter inserta salto de linea; Ctrl/Cmd+Enter
- * envia desde cualquiera de los dos campos; Esc cierra sin guardar (onDismissRequest del Dialog).
+ * Teclado: foco inicial en el anverso (también al editar); Tab en orden natural anverso -> reverso -> selector -> Cancelar ->
+ * primario (el selector está en el árbol tras los dos campos y antes de los botones: `formField` ya hace `moveFocus(Next)`
+ * desde el último campo, sin tocar `formKeyAction`); Enter inserta salto de línea; Ctrl/Cmd+Enter envía desde cualquiera de
+ * los dos campos; Esc cierra sin guardar (onDismissRequest del Dialog).
  *
- * El boton primario se deshabilita con CUALQUIERA de los dos campos en blanco (o mientras se guarda). El error de
- * campo vacio solo sale si el usuario ya cambio el valor de ESE campo ([shouldShowBlankError]) o si lo publica el VM
- * ([errors]). El tema que se guarda pasa por [resolveTopicSelection]: si el elegido se borro con el dialogo abierto,
- * cae a "Sin tema".
+ * El botón primario se deshabilita con cualquiera de los dos campos en blanco (o mientras se guarda). El error de campo vacío
+ * solo sale si el usuario ya cambió el valor de ese campo ([shouldShowBlankError]) o si lo publica el VM ([errors]). El tema
+ * que se guarda pasa por [resolveTopicSelection]: si el elegido se borró con el diálogo abierto, cae a «Sin tema».
  */
 @Composable
 fun CardDialog(

@@ -50,13 +50,13 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * Dialogo de crear / editar mazo: un solo campo, "Nombre del mazo" (el formulario no tiene descripcion).
+ * Diálogo de crear / editar mazo: un solo campo, «Nombre del mazo» (el formulario no tiene descripción).
  *
- * Teclado (handoff v4.11): foco inicial en el nombre (tambien al editar); Tab en orden natural nombre -> Cancelar ->
- * boton primario; Enter envia (solo con el nombre no vacio); Esc cierra sin guardar (onDismissRequest del Dialog).
+ * Teclado: foco inicial en el nombre (también al editar); Tab en orden natural nombre -> Cancelar -> botón primario; Enter envía
+ * (solo con el nombre no vacío); Esc cierra sin guardar (onDismissRequest del Dialog).
  *
- * El boton primario se deshabilita SOLO con el nombre en blanco (o mientras se guarda), nunca por [error]: con
- * texto escrito queda habilitado y el error de campo se ve bajo el campo, en rojo y con borde rojo.
+ * El botón primario se deshabilita solo con el nombre en blanco (o mientras se guarda), nunca por [error]: con texto escrito
+ * queda habilitado y el error de campo se ve bajo el campo, en rojo y con borde rojo.
  */
 /**
  * Error de campo que muestra el dialogo de mazo. Manda el error que llega del VM (nombre repetido); si no hay, "Escribe
@@ -173,7 +173,7 @@ fun DeleteDeckDialog(deckName: String, cardCount: Int, saving: Boolean, onConfir
         0 -> stringResource(Res.string.decks_delete_body_empty)
         else -> pluralStringResource(Res.plurals.decks_delete_body, cardCount, countPhrase)
     }
-    // El recuento ("128 tarjetas") va en negrita, como en el mockup; con 1 tarjeta el texto no lo repite.
+    // El recuento («128 tarjetas») va en negrita; con 1 tarjeta el texto no lo repite.
     val bodyText = buildAnnotatedString {
         val start = if (cardCount > 1) body.indexOf(countPhrase) else -1
         if (start < 0) {

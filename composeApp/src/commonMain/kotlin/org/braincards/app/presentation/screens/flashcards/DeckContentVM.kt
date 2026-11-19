@@ -46,7 +46,7 @@ import org.braincards.app.domain.usecase.Topics.topicComparator
 import org.braincards.app.domain.util.IdGenerator
 import org.braincards.app.util.logError
 
-/** Lo que muestra Contenido de un mazo (handoff 5.1c). */
+/** Lo que muestra Contenido de un mazo. */
 sealed interface DeckContentUiState {
     /** Esqueleto: aun no han llegado el mazo, sus temas y sus tarjetas. */
     data object Loading : DeckContentUiState
@@ -133,18 +133,20 @@ internal fun resolveTopicSelection(selectedId: String?, options: List<Topic>): S
 internal fun showStudyButton(state: DeckContentUiState): Boolean =
     state is DeckContentUiState.Root && state.hasCards
 
-/** ¿Se dibuja «Repaso libre» en la cabecera? Misma condicion que «Estudiar» (handoff v4.25): oculto con 0 tarjetas, en busqueda y en el subnivel de un tema. */
+/**
+ * ¿Se dibuja «Repaso libre» en la cabecera? Misma condición que «Estudiar»: oculto con 0 tarjetas, en búsqueda y en el subnivel de
+ * un tema.
+ */
 internal fun showFreeReviewButton(state: DeckContentUiState): Boolean = showStudyButton(state)
 
 /**
- * Contenido de UN mazo ([deckId]): temas + tarjetas, buscador y subnivel de tema. Sustituye a FlashCardViewModel y
- * TopicVM. El tema abierto vive aqui (no en la ruta): handoff 5.1e.
+ * Contenido de un mazo ([deckId]): temas + tarjetas, buscador y subnivel de tema. El tema abierto vive aquí (no en la ruta).
  *
  * Prioridad de estados: Loading -> Error -> DeckGone -> Tema abierto -> Empty -> NoResults / Search -> Root.
  *
- * Crear / editar / eliminar son mutaciones con callback de exito: el dialogo SOLO se cierra si la escritura salio bien.
- * Un nombre de tema repetido o en blanco se publica en [topicNameError] y el dialogo sigue abierto; cualquier otro
- * fallo (disco, base de datos) se registra sin datos sensibles y llega como [ContentMessage] sin tumbar la app.
+ * Crear / editar / eliminar son mutaciones con callback de éxito: el diálogo solo se cierra si la escritura salió bien. Un
+ * nombre de tema repetido o en blanco se publica en [topicNameError] y el diálogo sigue abierto; cualquier otro fallo (disco,
+ * base de datos) se registra sin datos sensibles y llega como [ContentMessage] sin tumbar la app.
  */
 class DeckContentViewModel(
     private val deckId: String,
@@ -254,8 +256,6 @@ class DeckContentViewModel(
         _cardFieldErrors.value = emptySet()
     }
 
-    // ---- temas ----
-
     fun createTopic(name: String, onSuccess: () -> Unit) =
         write(ContentMessage.SaveTopicFailed, "No se pudo crear el tema", onSuccess) {
             val now = clock.now()
@@ -269,8 +269,6 @@ class DeckContentViewModel(
 
     fun deleteTopic(topic: Topic, onSuccess: () -> Unit) =
         write(ContentMessage.DeleteFailed, "No se pudo eliminar el tema", onSuccess) { deleteTopicUseCase(topic) }
-
-    // ---- tarjetas ----
 
     /** Crea una tarjeta flip, opcionalmente dentro de [topicId]. */
     fun createCard(question: String, answer: String, topicId: String?, onSuccess: () -> Unit) =
