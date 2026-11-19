@@ -179,7 +179,6 @@ class SyncEngineIncrementalPullTest {
         suspend fun sync(force: Boolean = false): SyncResult.Completed = engine(force) as SyncResult.Completed
 
         fun savedCursor(table: SyncTable): PullCursor? = store.cursorSaves.lastOrNull { it.first == table }?.second
-        fun savedCursors(table: SyncTable): List<PullCursor> = store.cursorSaves.filter { it.first == table }.map { it.second }
 
         /** Marca previa: un cursor por tabla y un ultimo completo reciente (hace 1 dia). */
         fun seedRecent(vararg cursors: Pair<SyncTable, PullCursor>, lastFull: Instant? = NOW - 1.days) =

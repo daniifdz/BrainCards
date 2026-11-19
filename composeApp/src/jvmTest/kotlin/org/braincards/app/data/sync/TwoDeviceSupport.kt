@@ -32,7 +32,6 @@ import org.braincards.app.data.remote.RemoteDataSourceImpl
 import org.braincards.app.data.remote.StubHttpEngine
 import org.braincards.app.data.remote.stubRemote
 import org.braincards.app.data.remote.table
-import org.braincards.app.data.remote.dto.CardSchedulingDto
 import org.braincards.app.data.remote.dto.DeckDto
 import org.braincards.app.data.remote.dto.FlashcardDto
 import org.braincards.app.data.repository.CardSchedulingRepositoryImpl
@@ -115,7 +114,6 @@ class FakeServer(start: Instant, var autoTick: Duration = 1.minutes) {
 
     fun putDeck(deck: Deck) = store("decks", json.encodeToJsonElement(DeckDto.serializer(), deck.toDto()).jsonObject)
     fun putFlashcard(card: Flashcard) = store("flashcards", json.encodeToJsonElement(FlashcardDto.serializer(), card.toDto()).jsonObject)
-    fun putScheduling(s: CardScheduling) = store("card_scheduling", json.encodeToJsonElement(CardSchedulingDto.serializer(), s.toDto()).jsonObject)
 
     @Synchronized fun stampOf(table: String, id: String): Instant = stampOf(tables.getValue(table).getValue(id))
     @Synchronized fun rowCount(table: String) = tables.getValue(table).size

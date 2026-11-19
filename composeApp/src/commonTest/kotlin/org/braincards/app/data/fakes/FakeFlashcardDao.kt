@@ -12,21 +12,6 @@ import org.braincards.app.data.local.entity.FlashcardEntity
 class FakeFlashcardDao : FlashcardDao {
     private val flashcards = mutableMapOf<String, FlashcardEntity>()
 
-    // Guarda de padres del pull. Por defecto PERMISIVO (todos los decks/topics "existen") para
-    // no alterar los tests de LWW; con enforceParents = true solo existen los sembrados con
-    // seedDeck/seedTopic. El SQL real de la guarda se prueba en jvmTest (PullOrphanGuardRoomTest).
-    var enforceParents = false
-    private val deckIds = mutableSetOf<String>()
-    private val topicIds = mutableSetOf<String>()
-
-    fun seedDeck(id: String) {
-        deckIds.add(id)
-    }
-
-    fun seedTopic(id: String) {
-        topicIds.add(id)
-    }
-
     fun seed(entity: FlashcardEntity) {
         flashcards[entity.id] = entity
     }
@@ -86,11 +71,9 @@ class FakeFlashcardDao : FlashcardDao {
         ids.forEach { id -> flashcards[id]?.let { flashcards[id] = it.copy(lastSyncedAt = syncedAt) } }
     }
 
-    override suspend fun getExistingDeckIds(ids: List<String>): List<String> =
-        if (enforceParents) ids.filter { it in deckIds } else ids
+    override suspend fun getExistingDeckIds(ids: List<String>): List<String> = ids
 
-    override suspend fun getExistingTopicIds(ids: List<String>): List<String> =
-        if (enforceParents) ids.filter { it in topicIds } else ids
+    override suspend fun getExistingTopicIds(ids: List<String>): List<String> = ids
 
     override suspend fun releaseFlashcardsFromUser(userId: String): Int {
         val owned = flashcards.values.filter { it.userId == userId }
