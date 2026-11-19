@@ -9,7 +9,7 @@ import org.braincards.app.domain.models.Flashcard
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
+// LWW por fila: ver DeckRepositoryImpl.applyRemotePull.
 class FlashcardRepositoryImplTest {
 
     private fun localEntity(id: String, updatedAt: Instant, question: String = "Local") = FlashcardEntity(

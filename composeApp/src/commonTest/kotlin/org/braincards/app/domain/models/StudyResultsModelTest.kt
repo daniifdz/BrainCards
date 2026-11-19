@@ -9,7 +9,6 @@ import kotlin.test.assertEquals
 
 class StudyResultsModelTest {
 
-    // Mutacion T1: si el total no fuera la suma de las 4 casillas (p. ej. solo contara las que no son "Otra vez"), falla.
     @Test
     fun el_total_es_la_suma_de_las_4_casillas() {
         val r = StudyResults(mapOf(AGAIN to 2, HARD to 3, GOOD to 5, EASY to 2))

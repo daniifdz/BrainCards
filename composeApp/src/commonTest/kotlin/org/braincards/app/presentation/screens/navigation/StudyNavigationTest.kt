@@ -10,8 +10,6 @@ class StudyNavigationTest {
 
     private val seed = 987_654_321_012L
 
-    // ---- sesion normal ----
-
     @Test
     fun estudiar_un_mazo_es_sesion_normal_sin_semilla_y_sin_sustituir_nada() {
         val nav = studyNavigation(StudyEntry.Study, deckId = "d1", seed = seed)
@@ -28,8 +26,6 @@ class StudyNavigationTest {
         assertFalse(nav.destination.freeReview)
         assertFalse(nav.replaceCurrentStudy)
     }
-
-    // ---- repaso libre desde Contenido de mazo y desde Home ----
 
     @Test
     fun repaso_libre_desde_un_mazo_abre_la_sesion_libre_de_ese_mazo_con_la_semilla() {
@@ -50,8 +46,6 @@ class StudyNavigationTest {
         assertFalse(nav.replaceCurrentStudy, "se APILA sobre Home: ✕ vuelve a Home")
     }
 
-    // ---- repaso libre desde el estado vacio de Estudio ----
-
     @Test
     fun repaso_libre_desde_el_vacio_de_Estudio_SUSTITUYE_a_la_pantalla_actual() {
         val fromHome = studyNavigation(StudyEntry.FreeReviewFromEmpty, deckId = null, seed = seed)
@@ -62,8 +56,6 @@ class StudyNavigationTest {
         assertEquals(Screen.StudySession(deckId = "d1", freeReview = true, seed = seed), fromDeck.destination)
         assertTrue(fromDeck.replaceCurrentStudy)
     }
-
-    // ---- invariantes entre entradas ----
 
     @Test
     fun todas_las_entradas_de_repaso_libre_llevan_freeReview_y_la_semilla_dada() {

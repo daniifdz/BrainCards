@@ -114,8 +114,6 @@ class AutoSyncControllerCoordinatorTest {
         manual.join()
     }
 
-    // --- el controlador es quien sincroniza al arrancar y al iniciar sesion (el sync del init del coordinador se retira) ---
-
     @Test
     fun el_arranque_con_sesion_confirmada_sincroniza_una_sola_vez_por_el_controlador() = runTest {
         val env = Env(this, userId)

@@ -10,8 +10,6 @@ class StartDestinationTest {
     private val confirmed = AuthState.Authenticated("u", "a@b.co", sessionConfirmed = true)
     private val unconfirmed = AuthState.Authenticated("u", "a@b.co", sessionConfirmed = false)
 
-    // --- resolveStartDestination ----------------------------------------------------------------------------------
-
     @Test
     fun sin_estado_estable_es_Pending_con_cualquier_flag() {
         listOf<Boolean?>(null, false, true).forEach { flag ->
@@ -49,8 +47,6 @@ class StartDestinationTest {
         assertEquals(EntryRoute.Welcome, resolveStartDestination(AuthState.NotAuthenticated, false))
     }
 
-    // --- authExitAction -------------------------------------------------------------------------------------------
-
     @Test
     fun la_bienvenida_de_entrada_sale_a_Home() {
         assertEquals(AuthExit.GoHome, authExitAction(asEntry = true))
@@ -65,8 +61,6 @@ class StartDestinationTest {
     fun si_la_entrada_de_Auth_no_esta_en_la_pila_la_salida_segura_es_Home() {
         assertEquals(AuthExit.GoHome, authExitAction(asEntry = null))
     }
-
-    // --- guardia de pila restaurada -------------------------------------------------------------------------------
 
     @Test
     fun guardia_solo_si_el_arranque_es_Welcome_y_la_pila_no_esta_en_un_flujo_de_auth() {

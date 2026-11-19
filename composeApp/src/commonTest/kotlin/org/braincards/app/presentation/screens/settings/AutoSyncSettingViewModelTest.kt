@@ -115,7 +115,7 @@ class AutoSyncSettingViewModelTest {
         val (vm, _) = vm(pref)
 
         vm.setEnabled(false)
-        vm.setEnabled(true) // ignorado
+        vm.setEnabled(true)
         gate.complete(Unit)
 
         assertEquals(1, pref.writes)

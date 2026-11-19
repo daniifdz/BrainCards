@@ -8,10 +8,8 @@ import kotlin.test.assertEquals
 
 class FlashcardMapperTest {
 
-    // Ver comentario en DeckMapperTest. Usa CardType.MULTIPLE_CHOICE con
-    // options/correctOptionIndex rellenos a proposito -- son campos sin usar hoy en
-    // la UI (ver CLAUDE.md, decision de producto), pero siguen siendo parte del
-    // modelo/entidad y el mapper tiene que llevarlos igual.
+    // Ver DeckMapperTest. Usa CardType.MULTIPLE_CHOICE con options/correctOptionIndex rellenos a propósito: son campos sin uso en
+    // la UI, pero siguen siendo parte del modelo y de la entidad, y el mapper tiene que llevarlos igual.
     @Test
     fun `Flashcard round-trip through toEntity and toDomain preserves every field`() {
         val flashcard = Flashcard(

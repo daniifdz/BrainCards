@@ -12,8 +12,6 @@ import kotlin.test.assertTrue
  */
 class AuthValidationTest {
 
-    // --- correo ------------------------------------------------------------------------------------------------------
-
     @Test
     fun correos_validos_incluidos_los_raros_pero_legales() {
         listOf(
@@ -46,8 +44,6 @@ class AuthValidationTest {
         ).forEach { assertEquals(AuthMessage.EmailInvalid, validateEmail(it), "debe ser invalido: $it") }
     }
 
-    // --- contraseña --------------------------------------------------------------------------------------------------
-
     @Test
     fun contrasena_nueva_exactamente_8_es_valida_y_7_no() {
         assertNull(validateNewPassword("12345678"))
@@ -79,8 +75,6 @@ class AuthValidationTest {
         assertEquals(AuthMessage.PasswordsDontMatch, validateConfirmation("12345678", "12345678 "))
     }
 
-    // --- codigo ------------------------------------------------------------------------------------------------------
-
     @Test
     fun codigo_son_exactamente_6_digitos() {
         assertNull(validateCode("123456"))
@@ -89,8 +83,6 @@ class AuthValidationTest {
         assertEquals(AuthMessage.CodeIncomplete, validateCode("12345a"))
         assertEquals(AuthMessage.CodeIncomplete, validateCode(""))
     }
-
-    // --- formularios -------------------------------------------------------------------------------------------------
 
     @Test
     fun formulario_de_login_valido_no_tiene_errores() {

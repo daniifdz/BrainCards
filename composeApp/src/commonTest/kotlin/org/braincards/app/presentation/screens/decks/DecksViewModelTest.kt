@@ -112,8 +112,6 @@ class DecksViewModelTest {
         return seen
     }
 
-    // ---- estados ----
-
     @Test
     fun antes_de_la_primera_lista_es_Loading() = runTest {
         val e = env()
@@ -176,8 +174,6 @@ class DecksViewModelTest {
         assertEquals(2, e.observer.subscriptions)
         assertTrue(seen.last() is DecksUiState.Content)
     }
-
-    // ---- escrituras ----
 
     @Test
     fun crear_un_mazo_ok_guarda_llama_a_onSuccess_y_no_deja_error() = runTest {

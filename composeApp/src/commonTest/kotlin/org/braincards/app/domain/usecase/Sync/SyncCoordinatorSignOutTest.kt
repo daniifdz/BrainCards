@@ -131,7 +131,7 @@ class SyncCoordinatorSignOutTest {
     fun el_sync_previo_se_corta_en_el_limite_y_se_sigue_con_el_conteo_local() = runTest {
         val env = env()
         env.decks.addDeck(deck("d1"))
-        env.remote.pullDecksDelayMillis = 10 * SYNC_BEFORE_SIGN_OUT_TIMEOUT.inWholeMilliseconds // cuelga
+        env.remote.pullDecksDelayMillis = 10 * SYNC_BEFORE_SIGN_OUT_TIMEOUT.inWholeMilliseconds
         val start = testScheduler.currentTime
 
         val prompt = env.coordinator.prepareSignOut()

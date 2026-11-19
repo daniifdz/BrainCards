@@ -8,7 +8,7 @@ import org.braincards.app.domain.models.PullApplyReport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Cambios aditivos del paso 4a: valores por defecto del informe y metodo por defecto del repositorio. */
+/** Valores por defecto del informe y método por defecto del repositorio. */
 class PullApplyReportTest {
 
     @Test

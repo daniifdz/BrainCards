@@ -7,13 +7,12 @@ import org.braincards.app.domain.models.CardScheduling
 import org.braincards.app.domain.repository.CardSchedulingRepository
 
 /**
- * Fake en memoria de CardSchedulingRepository, sin libreria de mocking.
- * upsertCalls registra cada llamada a upsert(...) (seeds de test incluidos) para poder
- * comprobar en los tests cuantas veces se llamo y con que datos exactos.
+ * Fake en memoria de CardSchedulingRepository, sin librería de mocking. upsertCalls registra cada llamada a upsert(...) (seeds
+ * de test incluidos) para comprobar cuántas veces se llamó y con qué datos.
  *
- * Los metodos de sync son una simulacion simple para los tests del SyncEngine (paso 5): NO
- * replican el LWW ni el JOIN con flashcards (eso se prueba en CardSchedulingRepositoryImplTest
- * y CardSchedulingDaoSyncTest). Aqui: pendientes = userId igual y lastSyncedAt nulo o anterior.
+ * Los métodos de sync son una simulación simple para los tests del SyncEngine: no replican el LWW ni el JOIN con tarjetas
+ * (eso se prueba en CardSchedulingRepositoryImplTest y CardSchedulingDaoSyncTest). Aquí: pendientes = userId igual y
+ * lastSyncedAt nulo o anterior.
  */
 class FakeCardSchedulingRepository : CardSchedulingRepository {
 

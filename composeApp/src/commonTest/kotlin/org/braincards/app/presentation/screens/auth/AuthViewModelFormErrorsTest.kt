@@ -56,8 +56,6 @@ class AuthViewModelFormErrorsTest {
 
     private val network get() = HttpRequestException("fallo de red simulado", HttpRequestBuilder())
 
-    // --- login -------------------------------------------------------------------------------------------------------
-
     @Test
     fun login_con_fallo_de_red_es_banner_con_reintentar() = runTest {
         val env = AuthVmEnv()
@@ -118,8 +116,6 @@ class AuthViewModelFormErrorsTest {
         assertEquals(1, env.auth.signInCallCount)
     }
 
-    // --- registro ----------------------------------------------------------------------------------------------------
-
     @Test
     fun registro_que_pide_confirmacion_emite_el_evento_con_el_correo_y_no_es_un_error() = runTest {
         val env = AuthVmEnv()
@@ -141,8 +137,6 @@ class AuthViewModelFormErrorsTest {
 
         assertEquals(AuthFormTarget.Banner(AuthMessage.NetworkError, retryable = true), env.vm.uiError.value)
     }
-
-    // --- los flujos de Ajustes NO cambian ---------------------------------------------------------------------------
 
     @Test
     fun borrar_la_cuenta_ya_no_emite_el_Snackbar_de_Ajustes_y_no_toca_uiError() = runTest {

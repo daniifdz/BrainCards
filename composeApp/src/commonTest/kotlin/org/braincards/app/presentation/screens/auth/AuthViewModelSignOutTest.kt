@@ -391,7 +391,7 @@ class AuthViewModelSignOutTest {
 
         assertEquals(SignOutPhase.SigningOut, env.vm.signOutPhase.value)
         assertTrue(env.vm.isSigningOut.value)
-        env.vm.requestSignOut() // ignorado
+        env.vm.requestSignOut()
         gate.complete(Unit)
         advanceUntilIdle()
 

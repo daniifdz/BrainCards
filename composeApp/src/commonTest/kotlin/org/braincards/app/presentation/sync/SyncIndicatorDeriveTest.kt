@@ -49,8 +49,6 @@ class SyncIndicatorDeriveTest {
         auth, online, syncing, if (hasOutcome) SyncOutcome(result, now) else null, lastSuccess, loaded
     )
 
-    // --- regla 1: sin sesion -> Guest ------------------------------------------------------------------------------
-
     @Test
     fun sin_sesion_es_Guest() {
         assertEquals(SyncIndicator.Guest, indicator(auth = AuthState.NotAuthenticated))
@@ -66,8 +64,6 @@ class SyncIndicatorDeriveTest {
             )
         )
     }
-
-    // --- regla 2: sesion sin confirmar o sin conectividad -> Offline ------------------------------------------------
 
     @Test
     fun sesion_sin_confirmar_es_Offline() {
@@ -91,8 +87,6 @@ class SyncIndicatorDeriveTest {
         assertEquals(SyncIndicator.Offline, indicator(auth = unconfirmed, result = localFailure, hasOutcome = true))
     }
 
-    // --- regla 3: sincronizando -------------------------------------------------------------------------------------
-
     @Test
     fun sincronizando_es_Syncing() {
         assertEquals(SyncIndicator.Syncing, indicator(syncing = true))
@@ -102,8 +96,6 @@ class SyncIndicatorDeriveTest {
     fun sincronizando_manda_sobre_un_error_previo() {
         assertEquals(SyncIndicator.Syncing, indicator(syncing = true, result = general, hasOutcome = true))
     }
-
-    // --- regla 4: error --------------------------------------------------------------------------------------------
 
     @Test
     fun los_cuatro_tipos_de_error() {
@@ -136,8 +128,6 @@ class SyncIndicatorDeriveTest {
         assertEquals(SyncIndicator.Synced(earlier), indicator(result = completed(), hasOutcome = true))
     }
 
-    // --- reglas 5 y 6: Unknown / NeverSynced / Synced ---------------------------------------------------------------
-
     @Test
     fun lectura_sin_terminar_es_Unknown() {
         assertEquals(SyncIndicator.Unknown, indicator(lastSuccess = null, loaded = false))
@@ -162,8 +152,6 @@ class SyncIndicatorDeriveTest {
     fun la_hora_de_Synced_es_la_de_la_ultima_sync_correcta_no_la_del_ultimo_resultado() {
         assertEquals(SyncIndicator.Synced(earlier), indicator(result = completed(), hasOutcome = true, lastSuccess = earlier))
     }
-
-    // --- las reglas 1-4 no esperan a la lectura --------------------------------------------------------------------
 
     @Test
     fun invitado_offline_y_syncing_se_resuelven_sin_esperar_a_la_lectura() {

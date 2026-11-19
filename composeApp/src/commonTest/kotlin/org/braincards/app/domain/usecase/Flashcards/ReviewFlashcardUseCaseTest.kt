@@ -107,8 +107,8 @@ class ReviewFlashcardUseCaseTest {
         assertEquals(6, updated.interval)
     }
 
-    // Antes (SM-2 puro): EASY desde (EF 2.5, intervalo 6, 2 aciertos) -> EF 2.6 e intervalo 16 (round(6 * 2.6)).
-    // Ahora (estilo Anki): EF +0.15 = 2.65 e intervalo = round(Bien * 1.3) = round(15 * 1.3) = 20.
+    // Estilo Anki: EASY desde (EF 2.5, intervalo 6, 2 aciertos) -> EF +0.15 = 2.65 e intervalo = round(Bien * 1.3) =
+    // round(15 * 1.3) = 20.
     @Test
     fun facil_sube_el_easeFactor_0_15_y_aplica_el_bonus_1_3_sobre_el_intervalo_de_bien() = runBlocking {
         val reviewLogRepository = FakeReviewLogRepository()

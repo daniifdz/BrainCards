@@ -12,8 +12,6 @@ import kotlin.test.assertTrue
 /** Celebracion de Resultados: conteo, pulso del badge y medidas. Funciones puras: sin reloj ni temporizadores. */
 class ResultsMotionTest {
 
-    // ---- constantes del handoff ----
-
     @Test
     fun constantes_del_handoff() {
         assertEquals(500, RESULTS_COUNT_MS)
@@ -23,8 +21,6 @@ class ResultsMotionTest {
         assertEquals(1.08f, RESULTS_PULSE_PEAK)
         assertTrue(RESULTS_COUNT_MS <= RESULTS_CELEBRATION_MAX_MS)
     }
-
-    // ---- conteo ----
 
     private val targets = listOf(1, 2, 3, 5, 7, 12, 27, 100, 10_000)
 
@@ -91,8 +87,6 @@ class ResultsMotionTest {
         assertTrue(distintos > 0, "el barrido debe contener casos donde redondear y truncar difieren")
     }
 
-    // ---- pulso del badge ----
-
     private fun springAt(ms: Int): Float {
         val spec = RESULTS_PULSE_SPRING.vectorize(Float.VectorConverter)
         return spec.getValueFromNanos(
@@ -112,7 +106,7 @@ class ResultsMotionTest {
 
     @Test
     fun el_pulso_es_un_solo_rebote_y_se_asienta_antes_de_600_ms() {
-        // Subamortiguado (0.45): rebota alrededor de 1.0 y se apaga; el handoff dice ~400 ms y el muelle real lo cumple.
+        // Subamortiguado (0.45): rebota alrededor de 1.0 y se apaga en ~400 ms; el muelle real lo cumple.
         val lastOutside = (0..1000).last { abs(springAt(it) - 1f) >= 0.005f }
         assertTrue(lastOutside <= 450, "asentado (+-0,5 %) desde ${lastOutside + 1} ms")
         assertTrue(lastOutside + 1 <= RESULTS_CELEBRATION_MAX_MS)
@@ -128,8 +122,6 @@ class ResultsMotionTest {
         assertTrue(pulseKickVelocity(0.45f, 500f, 1.16f) > 1.9f * RESULTS_PULSE_KICK_VELOCITY, "el doble de pico pide ~el doble de velocidad")
     }
 
-    // ---- una sola vez / reducir animaciones ----
-
     @Test
     fun la_celebracion_solo_se_juega_una_vez_y_nunca_con_reducir_animaciones() {
         assertTrue(shouldPlayResultsCelebration(alreadySeen = false, reducedMotion = false))
@@ -137,8 +129,6 @@ class ResultsMotionTest {
         assertFalse(shouldPlayResultsCelebration(alreadySeen = false, reducedMotion = true), "reducir animaciones")
         assertFalse(shouldPlayResultsCelebration(alreadySeen = true, reducedMotion = true))
     }
-
-    // ---- badge ----
 
     @Test
     fun medidas_del_badge_segun_el_mockup() {

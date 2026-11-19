@@ -10,7 +10,7 @@ import org.braincards.app.domain.models.Topic
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// LWW por fila (Bloque E) -- ver comentario detallado en DeckRepositoryImpl.applyRemotePull.
+// LWW por fila: ver DeckRepositoryImpl.applyRemotePull.
 class TopicRepositoryImplTest {
 
     private fun localEntity(id: String, updatedAt: Instant, name: String = "Local") = TopicEntity(

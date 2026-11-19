@@ -4,7 +4,7 @@ import org.braincards.app.presentation.screens.auth.WelcomeInteraction.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Tabla de v4.9: que descarta el aviso persistente de sesion caducada y que no. */
+/** Qué descarta el aviso persistente de sesión caducada y qué no. */
 class WelcomeInteractionTest {
 
     private val expected: Map<WelcomeInteraction, Boolean> = mapOf(

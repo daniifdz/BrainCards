@@ -29,10 +29,7 @@ class FakeFlashcardRepository : FlashcardRepository {
         flashcards.remove(flashcard.id)
     }
 
-    // "due" ahora depende de card_scheduling (separado de Flashcard) y este fake no
-    // modela esa tabla todavia -- stub sin resultados hasta que se retome el wiring
-    // de CardScheduling (misma sesion que ReviewFlashcardUseCase/StudyQueue/StudyViewModel).
-    // Ningun test que sigue en pie llama a estos dos metodos.
+    // «due» depende de card_scheduling y este fake no modela esa tabla: stub sin resultados. Ningún test llama a estos dos métodos.
     override suspend fun getDueFlashcardsByDeck(deckId: String, now: Instant): List<Flashcard> =
         emptyList()
 

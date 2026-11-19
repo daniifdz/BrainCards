@@ -35,8 +35,8 @@ class ThemeSystemTest {
         "surfaceContainerLow" to surfaceContainerLow, "surfaceContainerLowest" to surfaceContainerLowest
     )
 
-    // Roles que pueden coincidir con el esquema base de Material por COINCIDENCIA de valor, no por olvido: el negro del
-    // scrim, los blancos (brandText / surface en claro) y el rojo de error B3261E que el handoff comparte con el base.
+    // Roles que pueden coincidir con el esquema base de Material por coincidencia de valor, no por olvido: el negro del scrim, los
+    // blancos (brandText / surface en claro) y el rojo de error B3261E que la paleta comparte con el base.
     private val allowedEqualToBaselineLight = setOf(
         "scrim", "onPrimary", "onSecondary", "onTertiary", "onError", "error", "surfaceContainerLowest"
     )
@@ -76,9 +76,9 @@ class ThemeSystemTest {
         for ((s, p) in listOf(LightColorScheme to LightPalette, DarkColorScheme to DarkPalette)) {
             assertEquals(p.brand, s.primary)
             assertEquals(p.brandText, s.onPrimary)
-            assertEquals(p.chipTeal, s.secondary)            // D1
-            assertEquals(p.chipTealBg, s.secondaryContainer) // D1
-            assertEquals(p.textSecondary, s.tertiary)        // D1
+            assertEquals(p.chipTeal, s.secondary)
+            assertEquals(p.chipTealBg, s.secondaryContainer)
+            assertEquals(p.textSecondary, s.tertiary)
             assertEquals(p.errorColor, s.error)
             assertEquals(p.errorBg, s.errorContainer)
             assertEquals(p.ground, s.background)
@@ -87,7 +87,7 @@ class ThemeSystemTest {
             assertEquals(p.text, s.onBackground)
             assertEquals(p.text, s.onSurface)
             assertEquals(p.textSecondary, s.onSurfaceVariant)
-            assertEquals(p.outline, s.outline)               // D3
+            assertEquals(p.outline, s.outline)
             listOf(
                 s.surfaceContainer, s.surfaceContainerHigh, s.surfaceContainerHighest,
                 s.surfaceContainerLow, s.surfaceContainerLowest, s.surfaceBright

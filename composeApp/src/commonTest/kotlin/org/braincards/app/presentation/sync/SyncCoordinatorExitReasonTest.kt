@@ -37,8 +37,6 @@ class SyncCoordinatorExitReasonTest {
 
     private val signedIn = AuthState.Authenticated("user-1", "a@b.co", sessionConfirmed = false)
 
-    // --- motivo ----------------------------------------------------------------------------------------------------
-
     @Test
     fun al_empezar_no_hay_motivo_ni_marca() = runTest {
         val env = AuthVmEnv()
@@ -95,8 +93,6 @@ class SyncCoordinatorExitReasonTest {
         assertEquals(listOf<SessionExitReason?>(SessionExitReason.AccountDeleted), seenAtCountChange)
     }
 
-    // --- SessionCloseFailed y fallos: no son una salida -------------------------------------------------------------
-
     @Test
     fun SessionCloseFailed_sube_el_contador_como_siempre_pero_sin_motivo() = runTest {
         val env = AuthVmEnv(signedIn)
@@ -133,8 +129,6 @@ class SyncCoordinatorExitReasonTest {
         assertNull(env.coordinator.userSessionExitReason.value)
         assertNull(env.coordinator.expectedUserExit.value)
     }
-
-    // --- marca de "salida esperada" ---------------------------------------------------------------------------------
 
     @Test
     fun el_cierre_de_sesion_marca_la_salida_esperada_mientras_la_peticion_esta_en_curso() = runTest {

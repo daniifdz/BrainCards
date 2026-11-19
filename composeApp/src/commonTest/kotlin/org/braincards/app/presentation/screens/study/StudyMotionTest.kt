@@ -25,7 +25,7 @@ class StudyMotionTest {
     private fun assertNear(expected: Float, actual: Float, eps: Float = 1e-4f, msg: String = "") =
         assertTrue(abs(expected - actual) <= eps, "$msg esperado=$expected real=$actual")
 
-    // ---- constantes del mockup ----
+    // ---- constantes ----
 
     @Test
     fun constantes_del_mockup() {
@@ -131,7 +131,7 @@ class StudyMotionTest {
 
     @Test
     fun cuando_baja_M_por_una_tarjeta_borrada_la_barra_solo_avanza() {
-        var q = queue(10).rate(ReviewQuality.GOOD).rate(ReviewQuality.GOOD).rate(ReviewQuality.GOOD) // 3/10
+        var q = queue(10).rate(ReviewQuality.GOOD).rate(ReviewQuality.GOOD).rate(ReviewQuality.GOOD)
         val before = q.progress
         q = q.skipCurrent() // se salta una borrada: M = 9, N = 6
         assertEquals(9, q.total)
@@ -184,7 +184,7 @@ class StudyMotionTest {
         assertEquals(0f, studyPressProgress(null, ReviewQuality.GOOD, 0.7f), "sin pulso")
     }
 
-    // ---- estado compartido y teclado (D7) ----
+    // ---- estado compartido y teclado ----
 
     @Test
     fun el_estado_del_pulso_cuenta_cada_disparo_sin_acumular_nada_mas() {
@@ -252,7 +252,7 @@ class StudyMotionTest {
         assertNotEquals(0, pulse.token)
     }
 
-    // ---- fantasma (13d2) ----
+    // ---- fantasma ----
 
     @Test
     fun el_interruptor_del_fantasma_y_su_ventana() {

@@ -401,7 +401,7 @@ class AutoSyncControllerTest {
         env.advance(90.seconds)
         assertEquals(listOf(0L, 30.s(), 90.s()), env.host.calls)
 
-        env.advance(10.seconds)           // 100 s
+        env.advance(10.seconds)
         env.connectivity.state.value = false
         env.advance(10.seconds)
         env.connectivity.state.value = true // 110 s: red restaurada
@@ -557,7 +557,7 @@ class AutoSyncControllerTest {
         assertEquals(2, env.host.calls.size)
 
         env.change(1, 100)       // misma huella: no es un cambio
-        env.change(0, 0)         // todo subido
+        env.change(0, 0)
         env.change(0, 500)       // count 0: nunca dispara
         env.advance(4.minutes)
 

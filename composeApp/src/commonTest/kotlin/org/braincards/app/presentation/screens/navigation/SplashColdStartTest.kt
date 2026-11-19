@@ -5,7 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Decision de la animacion en el arranque en frio de Android (13b2): proceso nuevo, sin estado guardado, Android >= 12. */
+/** Decisión de la animación en el arranque en frío de Android: proceso nuevo, sin estado guardado, Android >= 12. */
 class SplashColdStartTest {
 
     private fun play(enabled: Boolean = true, sdk: Int = 34, saved: Boolean = false, fresh: Boolean = true) =

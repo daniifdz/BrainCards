@@ -12,8 +12,6 @@ class DefaultNetworkTrackerTest {
     private val mobile = 2L
     private val other = 3L
 
-    // --- valor inicial ---
-
     @Test
     fun sin_red_activa_empieza_offline() {
         assertFalse(DefaultNetworkTracker().isOnline)
@@ -29,8 +27,6 @@ class DefaultNetworkTrackerTest {
     fun con_red_activa_sin_internet_empieza_offline() {
         assertFalse(DefaultNetworkTracker(activeNetwork = wifi, activeHasInternet = false).isOnline)
     }
-
-    // --- cambio de red ---
 
     @Test
     fun el_onLost_tardio_de_la_red_antigua_no_pone_offline_tras_el_cambio_de_wifi_a_datos() {
@@ -74,8 +70,6 @@ class DefaultNetworkTrackerTest {
 
         assertFalse(tracker.isOnline)
     }
-
-    // --- perdida y recuperacion ---
 
     @Test
     fun la_perdida_de_la_red_actual_pone_offline_y_una_nueva_la_recupera() {

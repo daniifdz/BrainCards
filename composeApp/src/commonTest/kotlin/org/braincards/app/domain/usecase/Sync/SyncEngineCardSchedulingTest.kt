@@ -65,8 +65,6 @@ class SyncEngineCardSchedulingTest {
 
     private suspend fun Fixture.sync(): SyncResult.Completed = useCase() as SyncResult.Completed
 
-    // --- pull ---
-
     @Test
     fun `el pull de scheduling aplica las filas remotas y las cuenta`() = runBlocking {
         val f = Fixture(userId)
@@ -110,8 +108,6 @@ class SyncEngineCardSchedulingTest {
         assertTrue("pullCardScheduling" in f.remote.calls)
     }
 
-    // --- push en lotes ---
-
     @Test
     fun `250 filas pendientes se suben en lotes de 100, 100 y 50 y se marcan todas en una sola llamada`() = runBlocking {
         val f = Fixture(userId)
@@ -149,12 +145,10 @@ class SyncEngineCardSchedulingTest {
         assertTrue(f.scheduling.markPushedCalls.isEmpty())
     }
 
-    // --- error NO de red en un lote: reintento fila a fila solo de ese lote ---
-
     @Test
     fun `un lote rechazado por una fila mala se reintenta fila a fila y solo se marcan las que subieron`() = runBlocking {
         val f = Fixture(userId)
-        f.seedScheduling(5) // c001..c005
+        f.seedScheduling(5)
         f.remote.pushCardSchedulingIdsThatFail = setOf("c003")
 
         val result = f.sync()
@@ -183,8 +177,6 @@ class SyncEngineCardSchedulingTest {
         assertEquals(149, result.push.cardScheduling.succeeded)
         assertEquals(1, result.push.cardScheduling.failed)
     }
-
-    // --- error de red: se aborta la tabla, sin reintento fila a fila ---
 
     @Test
     fun `un error de red en el primer lote aborta la tabla sin reintento fila a fila ni markPushed`() = runBlocking {
@@ -229,8 +221,6 @@ class SyncEngineCardSchedulingTest {
         assertEquals(PushTableResult(succeeded = 1, failed = 4), result.push.cardScheduling)
         assertEquals(listOf("c001"), f.scheduling.markPushedCalls.single().first)
     }
-
-    // --- regresion: decks/topics/flashcards NO cambian (una peticion por fila, corte a 3 fallos de red) ---
 
     @Test
     fun `los decks se siguen subiendo fila a fila y el corte es a 3 fallos de red consecutivos`() = runBlocking {

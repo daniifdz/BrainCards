@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** Medidas del badge tomadas de los mockups (`rx="22"`, `scale(0.287)` sobre el lienzo de 230 del SVG de marca). */
+/** Medidas del badge: esquinas del 22 % y `scale(0.287)` sobre el lienzo de 230 del SVG de marca. */
 class BrandBadgeSpecTest {
 
     @Test

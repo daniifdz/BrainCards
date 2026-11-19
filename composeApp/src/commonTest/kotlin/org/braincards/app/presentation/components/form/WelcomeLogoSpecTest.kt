@@ -3,7 +3,7 @@ package org.braincards.app.presentation.components.form
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Tamanos del simbolo de la Bienvenida (handoff v4.10): bordes 360 dp de ancho y 600 dp de alto, ambos tipos de dispositivo. */
+/** Tamaños del símbolo de la Bienvenida: bordes de 360 dp de ancho y 600 dp de alto, ambos tipos de dispositivo. */
 class WelcomeLogoSpecTest {
 
     private val desktopNormal = WelcomeLogoSpec(iconDp = 88f, wordmarkSp = 54f, gapDp = 14f)

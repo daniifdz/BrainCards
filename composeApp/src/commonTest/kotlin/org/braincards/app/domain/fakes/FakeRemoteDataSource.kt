@@ -49,10 +49,8 @@ class FakeRemoteDataSource : RemoteDataSource {
     val pushedTopicIds = mutableListOf<String>()
     val pushedFlashcardIds = mutableListOf<String>()
 
-    // Bloque D (sin conexion y reintentos) -- usado por SyncCoordinatorTest para
-    // demostrar con un delay real que dos syncNow() concurrentes no se solapan
-    // (si el Mutex del coordinador fallara, maxConcurrentPullDecksCalls subiria a
-    // mas de 1).
+    // Lo usa SyncCoordinatorTest para demostrar con un delay real que dos syncNow() concurrentes no se solapan (si el Mutex del
+    // coordinador fallara, maxConcurrentPullDecksCalls subiría a más de 1).
     var pullDecksDelayMillis: Long = 0
     private var activePullDecksCalls = 0
     var maxConcurrentPullDecksCalls = 0
@@ -107,9 +105,8 @@ class FakeRemoteDataSource : RemoteDataSource {
         }
     }
 
-    // card_scheduling (mismo patron). pushCardScheduling recibe la lista entera (el lote y el
-    // reintento fila a fila son cosa del SyncEngine, paso 5): si algun cardId esta en
-    // pushCardSchedulingIdsThatFail lanza antes de registrar nada, como un upsert atomico.
+    // card_scheduling (mismo patrón). pushCardScheduling recibe la lista entera (el lote y el reintento fila a fila son cosa del
+    // SyncEngine): si algún cardId está en pushCardSchedulingIdsThatFail lanza antes de registrar nada, como un upsert atómico.
     override suspend fun pullCardScheduling(userId: String, since: Instant): List<CardScheduling> {
         calls.add("pullCardScheduling")
         pullCardSchedulingFailure?.let { throw it }

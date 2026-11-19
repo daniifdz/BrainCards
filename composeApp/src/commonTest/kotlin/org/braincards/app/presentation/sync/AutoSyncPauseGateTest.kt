@@ -15,8 +15,6 @@ class AutoSyncPauseGateTest {
     private val time = TestTimeSource()
     private val gate = AutoSyncPauseGate(timeSource = time)
 
-    // --- recuento de referencias ---
-
     @Test
     fun una_puerta_nueva_esta_abierta() {
         assertNull(gate.activeReason())
@@ -76,8 +74,6 @@ class AutoSyncPauseGateTest {
         study.release()
         assertNull(gate.activeReason())
     }
-
-    // --- caducidad ---
 
     @Test
     fun sign_out_caduca_a_su_propio_plazo_mas_corto_que_el_de_estudio() {

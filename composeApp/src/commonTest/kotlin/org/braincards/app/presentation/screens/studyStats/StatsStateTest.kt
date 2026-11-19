@@ -10,9 +10,6 @@ class StatsStateTest {
 
     private val stats = StudyStats(newCards = 73, learningCards = 64, matureCards = 47)
 
-    // ---- selectStatsState ----
-
-    // Mutacion M5: sin la prioridad «0 mazos -> Vacio», este caso saldria como Content.
     @Test
     fun sin_mazos_es_Empty_aunque_haya_datos_de_madurez_desfasados() {
         assertEquals(StatsUiState.Empty, selectStatsState(deckCount = 0, stats = stats, dueCount = 5))
@@ -40,14 +37,11 @@ class StatsStateTest {
         assertEquals(6, StudyStats(1, 2, 3).totalCards)
     }
 
-    // ---- porcentajes por mayor resto ----
-
     @Test
     fun el_ejemplo_del_mockup_73_64_47_da_40_35_25() {
         assertEquals(listOf(40, 35, 25), stats.percentages())
     }
 
-    // Mutacion M4: con redondeo simple saldria 40/35/26 (suma 101).
     @Test
     fun los_porcentajes_siempre_suman_100_cuando_hay_tarjetas() {
         for (n in 0..40) for (l in 0..40) for (m in 0..40) {

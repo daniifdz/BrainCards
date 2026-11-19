@@ -8,11 +8,7 @@ import org.braincards.app.data.local.dao.DeckSummaryRow
 import org.braincards.app.data.local.dao.PendingStampRow
 import org.braincards.app.data.local.entity.DeckEntity
 
-/**
- * Fake en memoria de DeckDao, sin Room de verdad -- mismo patron que los fakes de
- * repositorio ya existentes, un nivel mas abajo (DAO), para poder probar la logica
- * real de DeckRepositoryImpl.applyRemotePull (LWW, Bloque E).
- */
+/** Fake en memoria de DeckDao, sin Room de verdad: permite probar la lógica real de DeckRepositoryImpl.applyRemotePull (LWW). */
 class FakeDeckDao : DeckDao {
     private val decks = mutableMapOf<String, DeckEntity>()
 

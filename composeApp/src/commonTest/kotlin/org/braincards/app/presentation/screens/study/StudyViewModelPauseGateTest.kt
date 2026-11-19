@@ -104,8 +104,6 @@ class StudyViewModelPauseGateTest {
         }
     }
 
-    // --- toma ---
-
     @Test
     fun iniciar_una_sesion_toma_la_puerta_mientras_se_estudia() {
         val env = Env(listOf(card("a"), card("b")))
@@ -116,8 +114,6 @@ class StudyViewModelPauseGateTest {
         assertEquals(PauseReason.STUDY, env.gate.activeReason())
         assertEquals(1, env.studyPauses)
     }
-
-    // --- liberacion en cada camino ---
 
     @Test
     fun sin_tarjetas_que_estudiar_libera_la_puerta() {
@@ -175,8 +171,6 @@ class StudyViewModelPauseGateTest {
         env.clear()
         assertEquals(0, env.studyPauses)
     }
-
-    // --- caducidad por inactividad y renovacion con cada tarjeta ---
 
     @Test
     fun cada_tarjeta_puntuada_renueva_la_pausa_no_es_un_plazo_fijo() {

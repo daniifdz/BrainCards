@@ -27,10 +27,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Tests del coordinador unico de sync (Bloque D: sin conexion y reintentos).
- * coroutineScope = Dispatchers.Unconfined -- ejecuta las corrutinas del `init`
- * (observar authState) de forma deterministica dentro del mismo runBlocking, sin
- * necesidad de kotlinx-coroutines-test.
+ * Tests del coordinador único de sync (reintentos y comportamiento sin conexión). coroutineScope = Dispatchers.Unconfined:
+ * ejecuta las corrutinas del `init` (observar authState) de forma determinista dentro del mismo runBlocking, sin
+ * kotlinx-coroutines-test.
  */
 class SyncCoordinatorTest {
 

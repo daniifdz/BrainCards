@@ -24,8 +24,6 @@ class StudyQueueTest {
 
     private fun StudyQueue.ids() = queue.map { it.id }
 
-    // ---- total fijo (M) y restantes (N) ----
-
     @Test
     fun el_total_y_los_restantes_arrancan_en_el_numero_de_tarjetas() {
         val q = queueOf("a", "b", "c")
@@ -44,9 +42,6 @@ class StudyQueueTest {
         assertEquals(3, q.total)
     }
 
-    // ---- re-encolado de falladas (opcion A: al final) ----
-
-    // Mutacion Q1: si Otra vez no re-encolara la tarjeta, este test fallaria.
     @Test
     fun otra_vez_mueve_la_tarjeta_al_final_sin_duplicarla_y_N_y_M_no_cambian() {
         val q = queueOf("a", "b", "c").rate(AGAIN)
@@ -66,16 +61,13 @@ class StudyQueueTest {
     @Test
     fun la_sesion_solo_termina_cuando_todas_han_salido_con_un_acierto() {
         var q = queueOf("a", "b")
-        q = q.rate(AGAIN) // b, a
-        q = q.rate(GOOD)  // a
+        q = q.rate(AGAIN)
+        q = q.rate(GOOD)
         assertTrue(!q.isFinished)
         q = q.rate(EASY)
         assertTrue(q.isFinished)
     }
 
-    // ---- contadores (pulsaciones) ----
-
-    // Mutacion Q2: si contara mal las pulsaciones (p. ej. no sumar las falladas, o la calidad equivocada), falla.
     @Test
     fun cada_calidad_cuenta_en_su_casilla_y_el_total_es_la_suma() {
         var q = queueOf("a", "b", "c", "d")
@@ -97,8 +89,6 @@ class StudyQueueTest {
         assertEquals(1, q.results().countOf(GOOD))
     }
 
-    // ---- progreso (M - N) / M ----
-
     @Test
     fun el_progreso_avanza_al_salir_una_tarjeta_y_una_fallada_no_lo_hace_avanzar() {
         val q = queueOf("a", "b", "c", "d")
@@ -106,9 +96,6 @@ class StudyQueueTest {
         assertEquals(0f, q.rate(AGAIN).progress)
     }
 
-    // ---- salto de tarjetas borradas ----
-
-    // Mutacion Q3: si skipCurrent no decrementara el total M, este test fallaria.
     @Test
     fun saltar_una_tarjeta_baja_N_y_M_y_mantiene_N_menor_o_igual_que_M() {
         val q = queueOf("a", "b", "c").skipCurrent()

@@ -5,7 +5,7 @@ import org.braincards.app.domain.models.ReviewQuality
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Decision pura del teclado de la sesion de estudio (handoff 5.5): no hace falta compose.uiTest. */
+/** Decisión pura del teclado de la sesión de estudio: no hace falta compose.uiTest. */
 class StudyKeysTest {
 
     private fun action(key: Key, answerVisible: Boolean, ctrl: Boolean = false, alt: Boolean = false, meta: Boolean = false) =
@@ -14,8 +14,6 @@ class StudyKeysTest {
     private val reveal = StudyKeyAction.Reveal
     private val ignore = StudyKeyAction.Ignore
     private fun rate(q: ReviewQuality) = StudyKeyAction.Rate(q)
-
-    // ---- pregunta en pantalla: Espacio / Enter revelan ----
 
     @Test
     fun con_la_pregunta_visible_espacio_y_enter_revelan_tambien_el_del_teclado_numerico() {
@@ -30,9 +28,6 @@ class StudyKeysTest {
             .forEach { assertEquals(ignore, action(it, answerVisible = false), "tecla $it") }
     }
 
-    // ---- respuesta visible: 1-4 puntuan ----
-
-    // Mutacion K2: si se confundiera algun numero (p. ej. 2 -> Otra vez), este test fallaria.
     @Test
     fun con_la_respuesta_visible_1_2_3_4_puntuan_otra_vez_dificil_bien_facil() {
         assertEquals(rate(ReviewQuality.AGAIN), action(Key.One, answerVisible = true))
@@ -57,9 +52,6 @@ class StudyKeysTest {
         }
     }
 
-    // ---- con la respuesta visible Espacio y Enter se ignoran ----
-
-    // Mutacion K1: si se quitara la guarda de estado (Espacio/Enter revelaran tambien con la respuesta visible), falla.
     @Test
     fun con_la_respuesta_visible_espacio_y_enter_se_ignoran_para_no_robarselos_a_un_boton_con_foco() {
         assertEquals(ignore, action(Key.Spacebar, answerVisible = true))
@@ -67,17 +59,12 @@ class StudyKeysTest {
         assertEquals(ignore, action(Key.NumPadEnter, answerVisible = true))
     }
 
-    // ---- Esc siempre sale ----
-
     @Test
     fun esc_sale_en_los_dos_estados() {
         assertEquals(StudyKeyAction.Exit, action(Key.Escape, answerVisible = false))
         assertEquals(StudyKeyAction.Exit, action(Key.Escape, answerVisible = true))
     }
 
-    // ---- modificadores ----
-
-    // Mutacion K3: si se aceptara Ctrl/Alt/Meta+tecla, estos tests fallarian.
     @Test
     fun cualquier_combinacion_con_ctrl_alt_o_meta_se_ignora() {
         for (visible in listOf(false, true)) {
@@ -89,8 +76,6 @@ class StudyKeysTest {
             }
         }
     }
-
-    // ---- sin tarjeta en pantalla ----
 
     @Test
     fun sin_tarjeta_solo_vale_esc_y_no_se_roban_espacio_ni_enter_a_los_botones() {

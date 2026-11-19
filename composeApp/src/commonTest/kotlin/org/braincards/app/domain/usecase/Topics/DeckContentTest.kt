@@ -29,8 +29,6 @@ class DeckContentTest {
 
     private fun counts(c: DeckContent) = c.topics.associate { it.topic.id to it.cardCount }
 
-    // ---- contadores ----
-
     @Test
     fun cuenta_las_tarjetas_de_cada_tema_sin_mezclarlas() {
         val c = DeckContent.of(
@@ -65,8 +63,6 @@ class DeckContentTest {
         assertNull(c.topic("t1"))
     }
 
-    // ---- sin tema ----
-
     // M9: si el filtro de "sin tema" estuviera invertido, este test fallaria.
     @Test
     fun las_tarjetas_sin_tema_son_solo_las_que_no_tienen_topicId() {
@@ -90,8 +86,6 @@ class DeckContentTest {
         assertEquals(listOf("1", "3"), c.cardsOf("t1").map { it.id })
     }
 
-    // ---- orden ----
-
     // M10: un orden sensible a mayusculas/acentos haria fallar este test.
     @Test
     fun los_temas_se_ordenan_por_nombre_sin_mayusculas_ni_acentos() {
@@ -110,8 +104,6 @@ class DeckContentTest {
         assertEquals(listOf("a", "b", "c"), c.looseCards.map { it.id })
     }
 
-    // ---- vacio ----
-
     @Test
     fun vacio_solo_si_no_hay_ni_temas_ni_tarjetas() {
         assertTrue(DeckContent.of(emptyList(), emptyList()).isEmpty)
@@ -119,8 +111,6 @@ class DeckContentTest {
         assertFalse(DeckContent.of(emptyList(), listOf(card("1"))).isEmpty)
         assertFalse(DeckContent.of(listOf(topic("t", "A")), emptyList()).hasCards)
     }
-
-    // ---- busqueda ----
 
     @Test
     fun la_busqueda_encuentra_temas_por_nombre_sin_acentos() {

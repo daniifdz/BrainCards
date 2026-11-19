@@ -25,8 +25,6 @@ class Sm2SchedulerTest {
         return out
     }
 
-    // ---- primer acierto ----
-
     @Test
     fun primer_acierto_dificil_y_bien_dan_1_dia_y_facil_4() {
         assertEquals(1, next(2.5, 0, 0, HARD).interval)
@@ -34,8 +32,6 @@ class Sm2SchedulerTest {
         assertEquals(4, next(2.5, 0, 0, EASY).interval)
         assertEquals(1, next(2.5, 0, 0, GOOD).repetitions)
     }
-
-    // ---- pasos siguientes ----
 
     @Test
     fun segundo_acierto_dificil_2_bien_6_facil_8() {
@@ -51,13 +47,11 @@ class Sm2SchedulerTest {
         assertEquals(20, next(2.5, 6, 2, EASY).interval) // round(15 * 1.3)
     }
 
-    // Mutacion H1: si Dificil no aplicara el multiplicador 1.2 (solo el minimo +1 dia), este test fallaria.
     @Test
     fun dificil_usa_el_multiplicador_1_2_con_intervalos_largos() {
         assertEquals(24, next(2.5, 20, 3, HARD).interval) // round(20 * 1.2) = 24 > 20 + 1
     }
 
-    // Mutacion E1: si Facil no aplicara el bonus 1.3 sobre Bien, este test fallaria.
     @Test
     fun facil_usa_el_bonus_1_3_sobre_el_intervalo_de_bien_con_intervalos_largos() {
         assertEquals(50, next(2.5, 20, 3, GOOD).interval)
@@ -69,9 +63,6 @@ class Sm2SchedulerTest {
         assertEquals(2, next(1.3, 1, 3, GOOD).interval) // round(1 * 1.3) = 1 -> al menos intervalo + 1
     }
 
-    // ---- fallo ----
-
-    // Mutacion A1: si Otra vez no reseteara repetitions, falla. Mutacion A2: si no reseteara interval, falla.
     @Test
     fun otra_vez_resetea_repeticiones_e_intervalo_y_baja_el_factor_0_20() {
         val s = next(2.5, 20, 5, AGAIN)
@@ -88,9 +79,6 @@ class Sm2SchedulerTest {
         assertEquals(1, recovered.interval)
     }
 
-    // ---- factor de facilidad ----
-
-    // Mutacion D1: si algun delta fuera otro (p. ej. Facil +0.10 o Dificil -0.14), este test fallaria.
     @Test
     fun el_factor_varia_por_calidad_otra_vez_menos_0_20_dificil_menos_0_15_bien_0_facil_mas_0_15() {
         assertEquals(2.3, next(2.5, 6, 2, AGAIN).easeFactor)
@@ -99,7 +87,6 @@ class Sm2SchedulerTest {
         assertEquals(2.65, next(2.5, 6, 2, EASY).easeFactor)
     }
 
-    // Mutacion S1: si se quitara el suelo de 1.3, estos tests fallarian.
     @Test
     fun el_factor_no_baja_de_1_3() {
         assertEquals(1.3, next(1.35, 6, 2, AGAIN).easeFactor)  // 1.15 sin suelo
@@ -112,8 +99,6 @@ class Sm2SchedulerTest {
         val ef = repeat(HARD, 4).last().easeFactor
         assertEquals(1.9, ef) // 2.5 - 4 * 0.15, exacto
     }
-
-    // ---- repetir la misma calidad: la tabla de intervalos ----
 
     @Test
     fun repetir_bien_da_1_6_15_38_95() {
@@ -136,9 +121,6 @@ class Sm2SchedulerTest {
         assertEquals(3.25, steps.last().easeFactor)
     }
 
-    // ---- invariantes ----
-
-    // Mutacion C1: si Dificil no estuviera acotado por Bien - 1, o Facil por Bien + 1, este test fallaria.
     @Test
     fun desde_el_segundo_acierto_dificil_menor_que_bien_menor_que_facil_estrictamente() {
         var checked = 0

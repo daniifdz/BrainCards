@@ -16,15 +16,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** Que entrada al repaso libre se muestra en cada pantalla (handoff v4.25): decisiones puras. */
+/** Qué entrada al repaso libre se muestra en cada pantalla: decisiones puras. */
 class FreeReviewEntriesTest {
 
     private val t0 = Instant.fromEpochMilliseconds(1_000)
     private val topic = Topic("t1", "d1", "Verbs", t0, t0)
     private fun root(hasCards: Boolean) =
         DeckContentUiState.Root("Ingles", topics = emptyList(), looseCards = emptyList(), hasCards = hasCards)
-
-    // ---- Contenido de un mazo: la misma condicion que «Estudiar» ----
 
     @Test
     fun el_boton_del_mazo_sale_con_tarjetas_en_el_nivel_del_mazo() {
@@ -61,8 +59,6 @@ class FreeReviewEntriesTest {
         for (s in states) assertEquals(showStudyButton(s), showFreeReviewButton(s), "$s")
     }
 
-    // ---- Home: solo «Todo al dia» ----
-
     @Test
     fun home_ofrece_el_repaso_libre_solo_en_Todo_al_dia() {
         assertTrue(homeShowsFreeReview(HomeUiState.Empty))
@@ -78,15 +74,11 @@ class FreeReviewEntriesTest {
         assertFalse(homeShowsFreeReview(HomeUiState.Error))
     }
 
-    // ---- vacio de Estudio: siempre, con cualquier origen ----
-
     @Test
     fun el_vacio_de_Estudio_siempre_ofrece_el_repaso_libre_con_cualquier_origen() {
         assertTrue(studyEmptyShowsFreeReview(StudyOrigin.Home))
         assertTrue(studyEmptyShowsFreeReview(StudyOrigin.Deck))
     }
-
-    // ---- medidas de los mockups ----
 
     @Test
     fun el_boton_ghost_de_Home_mide_lo_que_dice_home_states() {

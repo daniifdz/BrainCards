@@ -47,8 +47,6 @@ class SyncUserMessageTest {
         assertEquals(SyncUserMessage.Synced, completed(flashcards = withDiscards).toSyncUserMessage())
     }
 
-    // --- filas descargadas y servidor desactualizado ---
-
     @Test
     fun synced_no_depende_de_las_filas_descargadas() {
         fun downloaded(n: Int) = PullTableResult(applied = n, aborted = false, downloaded = n)
@@ -90,8 +88,6 @@ class SyncUserMessageTest {
         assertEquals(SyncUserMessage.Synced, message)
     }
 
-    // --- pull abortado: un mensaje por causa ---
-
     @Test
     fun pull_abortado_por_red_da_el_mensaje_de_red() {
         assertEquals(SyncUserMessage.PullNetwork, completed(topics = aborted(PullFailure.NETWORK)).toSyncUserMessage())
@@ -111,8 +107,6 @@ class SyncUserMessageTest {
     fun pull_abortado_por_fallo_local_da_el_mensaje_local() {
         assertEquals(SyncUserMessage.PullLocal, completed(flashcards = aborted(PullFailure.LOCAL)).toSyncUserMessage())
     }
-
-    // --- prioridad cuando varias tablas fallan por causas distintas: LOCAL > REJECTED > NETWORK ---
 
     @Test
     fun local_manda_sobre_rechazo_y_red() {
@@ -142,8 +136,6 @@ class SyncUserMessageTest {
 
         assertEquals(SyncUserMessage.PullNetwork, result.toSyncUserMessage())
     }
-
-    // --- push ---
 
     @Test
     fun push_parcial_lleva_el_numero_de_filas_pendientes() {

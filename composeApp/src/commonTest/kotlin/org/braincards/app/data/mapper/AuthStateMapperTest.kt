@@ -9,10 +9,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Tests del mapeo puro SessionStatus -> AuthState. Cubren el hallazgo del Bloque D
- * (sin conexion y reintentos): RefreshFailure (NetworkError o InternalServerError)
- * con una sesion guardada no debe colapsar a NotAuthenticated -- ver cabecera de
- * AuthStateMapper.kt.
+ * Tests del mapeo puro SessionStatus -> AuthState. Cubren que RefreshFailure (NetworkError o InternalServerError) con una
+ * sesión guardada no colapsa a NotAuthenticated; ver AuthStateMapper.
  */
 class AuthStateMapperTest {
 

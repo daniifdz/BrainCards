@@ -4,7 +4,7 @@ import org.braincards.app.data.mapper.AuthErrorKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** Reparto de los fallos de auth entre campo / banner / ir a confirmar (handoff v4.3, seccion 2), por contexto. */
+/** Reparto de los fallos de auth entre campo / banner / ir a confirmar, por contexto. */
 class AuthFormErrorTest {
 
     private val genericBanner = AuthFormTarget.Banner(AuthMessage.GenericError)

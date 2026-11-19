@@ -21,8 +21,6 @@ private fun deck(id: String, name: String, createdAt: Long = 0, deleted: Boolean
 
 class DeckNameTest {
 
-    // ---- normalizacion (clave de duplicados) ----
-
     @Test
     fun normalizar_recorta_colapsa_espacios_y_pasa_a_minusculas() {
         assertEquals("vocabulario inglés b2", normalizeDeckName("  Vocabulario   INGLÉS \t B2 "))
@@ -32,8 +30,6 @@ class DeckNameTest {
     fun los_acentos_SI_distinguen_para_el_duplicado() {
         assertNotEquals(normalizeDeckName("Física"), normalizeDeckName("Fisica"))
     }
-
-    // ---- clave de orden y busqueda (pliega acentos) ----
 
     @Test
     fun la_clave_de_orden_pliega_acentos_y_la_enie() {
@@ -47,8 +43,6 @@ class DeckNameTest {
         assertTrue(deckMatchesQuery("Vocabulario Inglés", "  "))
         assertFalse(deckMatchesQuery("Vocabulario Inglés", "frances"))
     }
-
-    // ---- orden fijo ----
 
     private fun summary(id: String, name: String, createdAt: Long = 0) = DeckSummary(deck(id, name, createdAt), 0)
 
@@ -73,8 +67,6 @@ class DeckNameTest {
         ).sortedWith(deckSummaryComparator).map { it.deck.id }
         assertEquals(listOf("z", "a", "b"), sorted)
     }
-
-    // ---- validacion ----
 
     @Test
     fun un_nombre_en_blanco_es_Blank() {

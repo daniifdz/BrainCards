@@ -62,8 +62,6 @@ class GetFreeReviewCardsUseCaseTest {
         assertEquals(listOf("c", "b", "a"), GetFreeReviewCardsUseCase(source, reverse)(StudyScope.All, 1).map { it.id })
     }
 
-    // ---- barajado real con semilla ----
-
     private val many = (1..30).map { card("c%02d".format(it)) }
 
     @Test

@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 /** Origen (boton "Volver al inicio" / "Volver al mazo") y etiqueta de Resultados por alcance de la sesion. */
 class StudyResultsTest {
 
-    // Mutacion O1: si se intercambiaran los alcances (All -> Deck, Deck -> Home), estos tests fallarian.
     @Test
     fun la_sesion_global_viene_de_Home() {
         assertEquals(StudyOrigin.Home, studyOrigin(StudyScope.All))
@@ -19,7 +18,6 @@ class StudyResultsTest {
         assertEquals(StudyOrigin.Deck, studyOrigin(StudyScope.Deck("d1")))
     }
 
-    // Mutacion L1: si la etiqueta de la sesion global dependiera del nombre o se intercambiara, estos tests fallarian.
     @Test
     fun la_sesion_global_se_etiqueta_Estudiar_Todo_aunque_haya_un_nombre() {
         assertEquals(StudyResultsLabel.AllDecks, resultsLabel(StudyScope.All, deckName = null))

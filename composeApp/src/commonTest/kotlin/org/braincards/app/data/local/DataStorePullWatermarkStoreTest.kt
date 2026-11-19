@@ -38,8 +38,6 @@ class DataStorePullWatermarkStoreTest {
     private val scheduling = cursor("2026-10-22T10:00:03.000001Z", "sched-9")
     private val fullPullAt = Instant.parse("2026-10-20T08:00:00Z")
 
-    // --- ida y vuelta -------------------------------------------------------------------------------
-
     @Test
     fun `ida y vuelta de los cuatro cursores y la fecha del ultimo pull completo`() = runBlocking {
         val store = DataStorePullWatermarkStore(FakeSettingsDataStore())
@@ -86,8 +84,6 @@ class DataStorePullWatermarkStoreTest {
         assertFalse("+00:00" in json, "nunca +00:00: $json")
     }
 
-    // --- actualizar una tabla no pisa las demas -------------------------------------------------------
-
     @Test
     fun `actualizar el cursor de una tabla conserva el de las demas y la fecha de pull completo`() = runBlocking {
         val store = DataStorePullWatermarkStore(FakeSettingsDataStore())
@@ -114,8 +110,6 @@ class DataStorePullWatermarkStoreTest {
         assertEquals(flashcards, store.load(userA)!!.cursors[SyncTable.FLASHCARDS])
     }
 
-    // --- usuario distinto: se ignora y NO se reutiliza -------------------------------------------------------
-
     @Test
     fun `lo guardado por otro usuario se ignora`() = runBlocking {
         val store = DataStorePullWatermarkStore(FakeSettingsDataStore())
@@ -139,8 +133,6 @@ class DataStorePullWatermarkStoreTest {
         assertNull(b.lastFullPullAt, "la fecha de pull completo de A no se hereda")
         assertNull(store.load(userA), "lo de A ya no esta")
     }
-
-    // --- JSON corrupto o ilegible: sin marca y sin excepcion ----------------------------------------------------
 
     @Test
     fun `un JSON corrupto se trata como sin marca sin lanzar excepcion`() = runBlocking {
@@ -188,8 +180,6 @@ class DataStorePullWatermarkStoreTest {
         assertEquals(emptyMap(), store.load(userA)!!.cursors)
     }
 
-    // --- el DataStore falla: se degrada a sin marca y nunca rompe el sync ---------------------------------------
-
     private class BrokenDataStore : DataStore<Preferences> {
         override val data: Flow<Preferences> = flow { throw IllegalStateException("disco no disponible") }
         override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences =
@@ -210,8 +200,6 @@ class DataStorePullWatermarkStoreTest {
 
         assertNull(store.load(userA))
     }
-
-    // --- implementacion sin efecto ---------------------------------------------------------------------------------
 
     @Test
     fun `la implementacion sin efecto nunca devuelve marca y no guarda nada`() = runBlocking {

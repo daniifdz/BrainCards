@@ -49,8 +49,6 @@ class CardSchedulingRepositoryImplTest {
         val repository = CardSchedulingRepositoryImpl(dao, runner)
     }
 
-    // --- LWW ---
-
     @Test
     fun `applyRemotePull sobrescribe cuando el remoto es mas nuevo y marca lastSyncedAt`() = runBlocking {
         val f = Fixture()
@@ -90,8 +88,6 @@ class CardSchedulingRepositoryImplTest {
         assertEquals(ms(1000), result.lastSyncedAt)
         assertEquals("user-1", result.userId)
     }
-
-    // --- desempate con updatedAt igual ---
 
     @Test
     fun `con updatedAt igual gana el remoto con mas repetitions`() = runBlocking {
@@ -167,8 +163,6 @@ class CardSchedulingRepositoryImplTest {
         assertNull(f.dao.get("c")!!.lastSyncedAt)
     }
 
-    // --- guard de flashcard inexistente ---
-
     @Test
     fun `applyRemotePull descarta las filas cuya flashcard no existe y aplica las demas del lote`() = runBlocking {
         val f = Fixture()
@@ -212,8 +206,6 @@ class CardSchedulingRepositoryImplTest {
         assertEquals(0, f.repository.applyRemotePull(emptyList()))
         assertEquals(0, f.runner.transactionCount)
     }
-
-    // --- claim / pendientes / markPushed / release (semantica del fake; el SQL real en jvmTest) ---
 
     @Test
     fun `claimOrphanedScheduling solo toca filas sin dueno de flashcards del usuario`() = runBlocking {

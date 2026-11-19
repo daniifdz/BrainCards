@@ -33,8 +33,6 @@ class SignOutAndWipeUseCaseTest {
 
     private suspend fun currentState() = auth.authState.first()
 
-    // --- camino feliz y orden ---
-
     @Test
     fun borra_primero_y_cierra_sesion_remota_despues_sin_usar_el_respaldo_local() = runTest {
         val result = useCase(userId)
@@ -44,8 +42,6 @@ class SignOutAndWipeUseCaseTest {
         assertFalse(auth.clearLocalSessionCalled)
         assertEquals(AuthState.NotAuthenticated, currentState())
     }
-
-    // --- el signOut() remoto falla: forma "excepcion" ---
 
     @Test
     fun si_signOut_lanza_una_excepcion_cierra_la_sesion_con_clearLocalSession() = runTest {
@@ -57,8 +53,6 @@ class SignOutAndWipeUseCaseTest {
         assertEquals(listOf("wipeAll", "signOut", "clearLocalSession"), log)
         assertEquals(AuthState.NotAuthenticated, currentState())
     }
-
-    // --- el signOut() remoto no responde: forma "tiempo agotado" ---
 
     @Test
     fun si_signOut_no_responde_se_corta_al_limite_y_cierra_con_clearLocalSession() = runTest {
@@ -86,8 +80,6 @@ class SignOutAndWipeUseCaseTest {
         assertEquals(AuthState.NotAuthenticated, currentState())
     }
 
-    // --- wipeAll() falla: la sesion NO se cierra ---
-
     @Test
     fun si_wipeAll_falla_devuelve_error_y_no_cierra_la_sesion() = runTest {
         val boom = IllegalStateException("disco lleno")
@@ -102,8 +94,6 @@ class SignOutAndWipeUseCaseTest {
         assertFalse(auth.clearLocalSessionCalled)
         assertEquals(authenticated, currentState())
     }
-
-    // --- el usuario cambio: no se borra nada ---
 
     @Test
     fun si_el_usuario_actual_es_otro_no_borra_ni_cierra_nada() = runTest {
@@ -132,8 +122,6 @@ class SignOutAndWipeUseCaseTest {
         assertTrue(log.isEmpty())
     }
 
-    // --- ni signOut() ni el respaldo local cierran la sesion ---
-
     @Test
     fun si_tambien_falla_clearLocalSession_devuelve_SessionCloseFailed_con_la_bd_ya_vaciada() = runTest {
         val boom = IllegalStateException("no se pudo borrar la sesion guardada")
@@ -147,8 +135,6 @@ class SignOutAndWipeUseCaseTest {
         assertTrue(local.wipeCompleted)
         assertEquals(authenticated, currentState())
     }
-
-    // --- cancelacion: el borrado y el cierre no pueden quedar a medias ---
 
     @Test
     fun cancelar_mientras_el_signOut_remoto_esta_en_curso_no_deja_la_sesion_viva() = runTest {

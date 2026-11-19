@@ -40,7 +40,6 @@ class UpdateFlashcardUseCaseTest {
         assertTrue(repository.updateFlashcardCalls.isEmpty())
     }
 
-    // Mutacion U1: si no se fijara updatedAt, este test fallaria (una edicion no se sincronizaria nunca).
     @Test
     fun guardar_fija_updatedAt_al_reloj_y_conserva_el_resto() = runBlocking<Unit> {
         useCase(card(question = "Q2", answer = "A2"))
@@ -52,7 +51,6 @@ class UpdateFlashcardUseCaseTest {
         assertEquals("Q2", saved.question)
     }
 
-    // Mutacion U1: el caso que importa: mover la tarjeta de tema avanza updatedAt, asi que vuelve a ser pendiente.
     @Test
     fun cambiar_de_tema_avanza_updatedAt_por_encima_de_lastSyncedAt() = runBlocking<Unit> {
         useCase(card(topicId = "t-nuevo"))

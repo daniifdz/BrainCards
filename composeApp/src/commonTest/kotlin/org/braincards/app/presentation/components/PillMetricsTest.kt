@@ -5,8 +5,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * Medidas de la pastilla compartida. Son EXACTAMENTE las que tenia la pildora de sincronizacion de Home antes de extraer el `Pill`
- * (10 / 6 / 6 / 12 compacta y 14 / 8 / 8 / 13 normal, icono de 16 dp) y las de `.pill.sm` / `.pill` de los mockups: si cambian, Home cambia.
+ * Medidas de la pastilla compartida. Son exactamente las que tenía la píldora de sincronización de Home antes de extraer el
+ * `Pill` (10 / 6 / 6 / 12 compacta y 14 / 8 / 8 / 13 normal, icono de 16 dp): si cambian, Home cambia.
  */
 class PillMetricsTest {
 

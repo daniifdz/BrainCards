@@ -11,8 +11,7 @@ import org.braincards.app.domain.models.Deck
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// LWW por fila (Bloque E) en applyRemotePull -- ver el comentario detallado en
-// DeckRepositoryImpl.applyRemotePull para la regla exacta.
+// LWW por fila en applyRemotePull; la regla exacta está en DeckRepositoryImpl.applyRemotePull.
 class DeckRepositoryImplTest {
 
     private fun localEntity(id: String, updatedAt: Instant, name: String = "Local") = DeckEntity(

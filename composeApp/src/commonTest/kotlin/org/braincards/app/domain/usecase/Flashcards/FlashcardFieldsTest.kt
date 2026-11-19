@@ -15,13 +15,11 @@ class FlashcardFieldsTest {
         checkFlashcardFields("¿Qué significa \"to get along\"?", "Llevarse bien")
     }
 
-    // Mutacion F3: si la excepcion llevara el campo cambiado, este test fallaria.
     @Test
     fun un_anverso_en_blanco_marca_solo_el_anverso() {
         assertEquals(setOf(CardField.Question), fieldsOf("", "Respuesta"))
     }
 
-    // Mutacion F1: si se ignorara el reverso, este test fallaria.
     @Test
     fun un_reverso_en_blanco_marca_solo_el_reverso() {
         assertEquals(setOf(CardField.Answer), fieldsOf("Pregunta", ""))
@@ -32,7 +30,6 @@ class FlashcardFieldsTest {
         assertEquals(setOf(CardField.Question, CardField.Answer), fieldsOf("", ""))
     }
 
-    // Mutacion F2: con isEmpty en vez de isBlank, un campo de solo espacios o saltos de linea pasaria.
     @Test
     fun un_campo_de_solo_espacios_o_saltos_de_linea_cuenta_como_vacio() {
         assertEquals(setOf(CardField.Question), fieldsOf("  \n\t ", "ok"))

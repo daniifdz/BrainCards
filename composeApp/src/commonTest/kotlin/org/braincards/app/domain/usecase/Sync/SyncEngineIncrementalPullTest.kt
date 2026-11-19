@@ -41,9 +41,8 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * Motor de sync con pull INCREMENTAL (paso 4b, aun desconectado de la app): marca de agua, pull completo
- * semanal, descartes, tabla local vacia, fallback sin server_updated_at y almacen roto. Todo con fakes y
- * un "servidor" que sella cada fila con su cursor.
+ * Motor de sync con pull incremental: marca de agua, pull completo semanal, descartes, tabla local vacía, fallback sin
+ * server_updated_at y almacén roto. Todo con fakes y un «servidor» que sella cada fila con su cursor.
  */
 class SyncEngineIncrementalPullTest {
 

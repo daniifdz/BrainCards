@@ -57,8 +57,6 @@ class AuthViewModelAccountFlowsTest {
         return s
     }
 
-    // --- ConfirmEmail: confirmar ------------------------------------------------------------------------------------
-
     @Test
     fun confirmar_con_exito_avisa_a_la_pantalla() = runTest {
         val env = AuthVmEnv()
@@ -100,8 +98,6 @@ class AuthViewModelAccountFlowsTest {
 
         assertNull(env.vm.uiError.value)
     }
-
-    // --- ConfirmEmail: reenviar y cooldown --------------------------------------------------------------------------
 
     @Test
     fun reenviar_con_exito_avisa_con_la_notificacion_y_arranca_el_cooldown() = runTest {
@@ -153,8 +149,6 @@ class AuthViewModelAccountFlowsTest {
         assertTrue(seen.notices.isEmpty())
     }
 
-    // --- Abrir la pantalla del codigo NO envia nada -----------------------------------------------------------------
-
     @Test
     fun abrir_la_pantalla_tras_registrarse_solo_arranca_el_cooldown_sin_enviar_ningun_codigo() = runTest {
         val env = AuthVmEnv()
@@ -194,8 +188,6 @@ class AuthViewModelAccountFlowsTest {
         assertEquals(0, first.auth.resendSignUpCodeCallCount)
     }
 
-    // --- ForgotPassword ---------------------------------------------------------------------------------------------
-
     @Test
     fun enviar_el_codigo_de_recuperacion_emite_el_evento_con_el_correo() = runTest {
         val env = AuthVmEnv()
@@ -228,8 +220,6 @@ class AuthViewModelAccountFlowsTest {
 
         assertEquals(AuthFormTarget.Field(AuthField.EMAIL, AuthMessage.EmailEmpty), env.vm.uiError.value)
     }
-
-    // --- ResetPassword ----------------------------------------------------------------------------------------------
 
     @Test
     fun restablecer_con_exito_avisa_a_la_pantalla() = runTest {

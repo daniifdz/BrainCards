@@ -115,7 +115,7 @@ class AuthViewModelDeleteAccountTest {
 
         env.vm.deleteAccount()
         assertTrue(env.vm.isDeletingAccount.value)
-        env.vm.deleteAccount() // ignorado
+        env.vm.deleteAccount()
         gate.complete(Unit)
 
         assertEquals(1, env.auth.deleteAccountCallCount)

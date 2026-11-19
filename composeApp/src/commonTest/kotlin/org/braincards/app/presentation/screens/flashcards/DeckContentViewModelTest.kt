@@ -546,7 +546,6 @@ class DeckContentViewModelTest {
         assertNull(e.cardRepo.inner.updateFlashcardCalls.single().topicId)
     }
 
-    // Mutacion T2: si no se ordenara, este test fallaria. Mutacion T1: si no filtrara los borrados, tambien.
     @Test
     fun topicOptions_son_los_temas_vivos_ordenados_por_nombre() = runTest {
         val e = env()

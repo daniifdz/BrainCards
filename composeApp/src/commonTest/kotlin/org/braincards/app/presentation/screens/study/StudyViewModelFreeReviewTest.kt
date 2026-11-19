@@ -46,9 +46,9 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
- * StudyViewModel en REPASO LIBRE (paso 14): usa todas las tarjetas barajadas, NUNCA guarda nada (ni programacion ni historial), re-encola
- * las falladas, no se reordena al rotar, no pausa la sync y, sin tarjetas, vuelve al origen. Cada test que mira «nada guardado» tiene un
- * control en la sesion normal que SI guarda (para que el espia no pueda estar ciego).
+ * StudyViewModel en repaso libre: usa todas las tarjetas barajadas, nunca guarda nada (ni programación ni historial), re-encola
+ * las falladas, no se reordena al rotar, no pausa la sync y, sin tarjetas, vuelve al origen. Cada test que mira «nada
+ * guardado» tiene un control en la sesión normal que sí guarda (para que el espía no pueda estar ciego).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StudyViewModelFreeReviewTest {
@@ -261,7 +261,7 @@ class StudyViewModelFreeReviewTest {
     fun rotar_no_reinicia_ni_reordena_la_sesion() {
         val e = Env(listOf(card("a"), card("b"), card("c")), shuffler = { cards, _ -> cards.reversed() })
         e.vm.initSession(StudyScope.All, free)
-        e.rate(GOOD) // c puntuada
+        e.rate(GOOD)
         assertEquals("b", e.reviewing.currentCard.id)
 
         e.vm.initSession(StudyScope.All, free) // la pantalla se recompone tras rotar

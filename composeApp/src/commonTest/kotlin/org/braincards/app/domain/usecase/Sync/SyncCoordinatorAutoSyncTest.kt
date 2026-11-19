@@ -259,7 +259,7 @@ class SyncCoordinatorAutoSyncTest {
         val f = fixture(pullDelayMillis = 60)
         val manual = async { f.coordinator.syncNow() }          // tiene el Mutex
         awaitValue({ f.remote.maxConcurrentPullDecksCalls }, 1)
-        val auto = async { f.coordinator.requestAutoSync() }     // encolado
+        val auto = async { f.coordinator.requestAutoSync() }
         repeat(3) { kotlinx.coroutines.yield() }
 
         val prompt = f.coordinator.prepareSignOut()              // cierra la puerta ANTES de esperar el lock

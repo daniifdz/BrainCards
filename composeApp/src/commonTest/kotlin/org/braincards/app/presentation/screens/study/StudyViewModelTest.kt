@@ -179,7 +179,6 @@ class StudyViewModelTest {
 
     // ---- inicio idempotente (rotacion) ----
 
-    // Mutacion V1: si initSession no tuviera el guard por alcance, este test fallaria (la cola se re-leeria y M cambiaria).
     @Test
     fun repetir_initSession_con_el_mismo_alcance_no_reinicia_ni_cambia_M() {
         val e = Env(listOf(card("a"), card("b"), card("c")))
@@ -234,9 +233,9 @@ class StudyViewModelTest {
         assertEquals(2, e.reviewing.total)
         assertEquals(false, e.reviewing.isAnswerVisible)
 
-        e.rate(GOOD) // b
+        e.rate(GOOD)
 
-        assertEquals("a", e.reviewing.currentCard.id) // reaparece
+        assertEquals("a", e.reviewing.currentCard.id)
         assertEquals(1, e.reviewing.remaining)
         assertEquals(2, e.reviewing.total)
     }
@@ -255,15 +254,14 @@ class StudyViewModelTest {
 
     // ---- Finished con desglose ----
 
-    // Mutacion Q2 (en la cola) tambien se ve aqui: el desglose y el total salen de las pulsaciones.
     @Test
     fun finished_lleva_el_desglose_y_el_total_son_pulsaciones_no_tarjetas() {
         val e = Env(listOf(card("a"), card("b")))
         e.vm.initSession(StudyScope.All)
 
-        e.rate(AGAIN) // a vuelve
-        e.rate(HARD)  // b
-        e.rate(EASY)  // a
+        e.rate(AGAIN)
+        e.rate(HARD)
+        e.rate(EASY)
 
         val results = e.finished.results
         assertEquals(1, results.countOf(AGAIN))
@@ -276,7 +274,6 @@ class StudyViewModelTest {
 
     // ---- tarjetas borradas ----
 
-    // Mutacion Q3 (en la cola): si M no bajara al saltar, este test fallaria.
     @Test
     fun una_tarjeta_borrada_se_salta_antes_de_mostrarla_y_M_baja_en_1() {
         val e = Env(listOf(card("a"), card("b"), card("c")))
@@ -288,7 +285,7 @@ class StudyViewModelTest {
         val r = e.reviewing
         assertEquals("c", r.currentCard.id)
         assertEquals(1, r.remaining)
-        assertEquals(2, r.total) // 3 - 1
+        assertEquals(2, r.total)
     }
 
     @Test
@@ -325,9 +322,8 @@ class StudyViewModelTest {
         assertEquals(1, e.finished.results.totalReviews)
     }
 
-    // ---- error al puntuar (v4.18): no avanza y NO cuenta ----
+    // ---- error al puntuar: no avanza y no cuenta ----
 
-    // Mutacion V3: si el repaso se contara ANTES de guardarlo, este test fallaria.
     @Test
     fun si_falla_al_guardar_la_tarjeta_se_queda_la_cola_no_avanza_y_ese_repaso_no_cuenta() = runTest {
         val e = Env(listOf(card("a"), card("b")))
@@ -346,14 +342,13 @@ class StudyViewModelTest {
 
         // Se reintenta con exito: el repaso fallido NO cuenta, solo el guardado.
         e.scheduling.failure = null
-        e.rate(GOOD) // a
+        e.rate(GOOD)
         assertEquals("b", e.reviewing.currentCard.id) // no se salto b
-        e.rate(GOOD) // b
+        e.rate(GOOD)
         assertEquals(2, e.finished.results.totalReviews) // 2 guardados, no 3
         assertEquals(2, e.finished.results.countOf(GOOD))
     }
 
-    // Mutacion V2: si no se liberara isSubmitting tras el fallo, el reintento seria ignorado y este test fallaria.
     @Test
     fun tras_un_fallo_se_libera_isSubmitting_y_se_puede_volver_a_puntuar() = runTest {
         val e = Env(listOf(card("a")))
@@ -474,14 +469,13 @@ class StudyViewModelTest {
 
     // ---- segunda barrera: no se puntua con la respuesta oculta ----
 
-    // Mutacion V4: si rateCard no comprobara isAnswerVisible, este test fallaria.
     @Test
     fun puntuar_con_la_respuesta_oculta_no_hace_nada() {
         val e = Env(listOf(card("a"), card("b")))
         e.vm.initSession(StudyScope.All)
         val before = e.reviewing
 
-        e.vm.rateCard(GOOD) // sin showAnswer()
+        e.vm.rateCard(GOOD)
 
         assertEquals(before, e.state)
         assertEquals(0, e.scheduling.inner.upsertCalls.size)

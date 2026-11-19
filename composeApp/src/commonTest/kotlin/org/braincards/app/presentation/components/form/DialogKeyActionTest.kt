@@ -11,7 +11,7 @@ import org.braincards.app.presentation.components.form.FormKeyAction.Ignore
 import org.braincards.app.presentation.components.form.FormKeyAction.InsertNewline
 import org.braincards.app.presentation.components.form.FormKeyAction.Submit
 
-/** Teclado de formularios y dialogos (handoff v4.10): campos de una linea frente a multilinea. */
+/** Teclado de formularios y diálogos: campos de una línea frente a multilínea. */
 class DialogKeyActionTest {
 
     private data class Case(
@@ -31,7 +31,6 @@ class DialogKeyActionTest {
     @Test
     fun tabla_de_teclado() {
         listOf(
-            // Multilinea
             Case("Tab multilinea -> siguiente", Key.Tab, true, false, FocusNext),
             Case("Tab en el ultimo multilinea -> siguiente (orden natural)", Key.Tab, true, true, FocusNext),
             Case("Shift+Tab multilinea -> anterior", Key.Tab, true, false, FocusPrevious, shift = true),

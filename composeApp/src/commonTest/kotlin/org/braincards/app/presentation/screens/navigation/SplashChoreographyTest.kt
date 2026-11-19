@@ -6,22 +6,21 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Coreografia de EntryPending (variante C de 13b3: convergencia de 600 ms, pulso hasta 750 ms) y contrato de salida D8 con los
- * umbrales nuevos (600 / 750 ms): funciones puras, sin reloj ni temporizadores.
+ * Coreografía de EntryPending (convergencia de 600 ms, pulso hasta 750 ms) y contrato de salida con esos umbrales (600 / 750
+ * ms): funciones puras, sin reloj ni temporizadores.
  */
 class SplashChoreographyTest {
 
     private fun assertNear(expected: Float, actual: Float, eps: Float = 1e-4f, msg: String = "") =
         assertTrue(abs(expected - actual) <= eps, "$msg esperado=$expected real=$actual")
 
-    // ---- constantes ----
-
     @Test
     fun duraciones_de_la_variante_C() {
         assertEquals(600, SPLASH_CONVERGE_MS)
         assertEquals(150, SPLASH_PULSE_MS)
         assertEquals(750, SPLASH_TOTAL_MS)
-        assertEquals(80, SPLASH_ALPHA_RAMP_MS) // 13b3: visibles desde el principio del movimiento
+        // Visibles desde el principio del movimiento.
+        assertEquals(80, SPLASH_ALPHA_RAMP_MS)
         assertTrue(SPLASH_ALPHA_RAMP_MS in 1..SPLASH_CONVERGE_MS, "la rampa cabe en la convergencia")
         assertEquals(250, SPLASH_FADE_MS)
         assertEquals(600, SPLASH_MIN_HOLD_MS)
@@ -33,8 +32,6 @@ class SplashChoreographyTest {
         assertEquals(230f, SPLASH_VECTOR_UNITS)
         assertEquals(1.06f, SPLASH_PULSE_PEAK)
     }
-
-    // ---- curva de la convergencia ----
 
     private fun progressAt(ms: Float) = SplashConvergeEasing.transform((ms / SPLASH_CONVERGE_MS).coerceIn(0f, 1f))
 
@@ -83,8 +80,6 @@ class SplashChoreographyTest {
         assertNear(-84f, splashPose(0f).leftUnits)
         assertNear(84f, splashPose(0f).rightUnits)
     }
-
-    // ---- pose ----
 
     @Test
     fun pose_inicial_hemisferios_fuera_e_invisibles() {
@@ -171,8 +166,6 @@ class SplashChoreographyTest {
         assertEquals(29f, splashUnitsToPx(58f, 115f))
         assertEquals(0f, splashUnitsToPx(0f, 480f))
     }
-
-    // ---- contrato D8 con los umbrales de la variante C ----
 
     private fun plan(r: Long) = planSplashExit(r, reducedMotion = false)
 

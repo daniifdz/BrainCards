@@ -13,13 +13,11 @@ class ResolveTopicSelectionTest {
     private fun topic(id: String) = Topic(id, "d1", id, t0, t0)
     private val options = listOf(topic("t1"), topic("t2"))
 
-    // Mutacion R2: si siempre devolviera null, este test fallaria.
     @Test
     fun un_tema_que_sigue_vivo_se_conserva() {
         assertEquals("t2", resolveTopicSelection("t2", options))
     }
 
-    // Mutacion R1: si siempre devolviera el id elegido, este test fallaria.
     @Test
     fun un_tema_que_ya_no_esta_cae_a_Sin_tema() {
         assertNull(resolveTopicSelection("borrado", options))

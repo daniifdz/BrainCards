@@ -72,8 +72,6 @@ class AppEntryViewModelTest {
         return flagAtEvent
     }
 
-    // --- ruta de arranque -----------------------------------------------------------------------------------------
-
     @Test
     fun mientras_auth_esta_en_Loading_la_ruta_es_Pending() = runTest {
         val env = Env(AuthState.Loading)
@@ -127,8 +125,6 @@ class AppEntryViewModelTest {
 
         assertTrue(env.pref.state.value)
     }
-
-    // --- sesion perdida -------------------------------------------------------------------------------------------
 
     @Test
     fun el_arranque_sin_sesion_no_es_una_sesion_perdida() = runTest {
@@ -239,8 +235,6 @@ class AppEntryViewModelTest {
 
         assertTrue(events.isEmpty())
     }
-
-    // --- consumo unico del evento ---------------------------------------------------------------------------------
 
     @Test
     fun el_evento_se_consume_una_sola_vez_un_colector_nuevo_no_lo_recibe_otra_vez() = runTest {

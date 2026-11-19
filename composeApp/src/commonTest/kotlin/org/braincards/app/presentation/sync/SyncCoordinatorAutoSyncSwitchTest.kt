@@ -72,8 +72,6 @@ class SyncCoordinatorAutoSyncSwitchTest {
         assertEquals("DARK", prefs()[themeKey], "app_theme se conserva: nunca clear()")
     }
 
-    // --- el sync automatico se omite; el manual no --------------------------------------------------------------------
-
     @Test
     fun con_el_interruptor_apagado_el_sync_automatico_se_omite_con_DISABLED() = runTest {
         val env = AuthVmEnv(confirmed)
@@ -103,8 +101,6 @@ class SyncCoordinatorAutoSyncSwitchTest {
         assertEquals(false, env.prefs()[AUTO_SYNC_ENABLED_KEY])
     }
 
-    // --- DataStore ilegible: el valor por defecto (activado), igual en preferencia y coordinador ---------------------------
-
     @Test
     fun si_DataStore_lanza_IOException_al_leer_el_interruptor_el_sync_automatico_corre_como_activado() = runTest {
         val env = AuthVmEnv(confirmed)
@@ -131,8 +127,6 @@ class SyncCoordinatorAutoSyncSwitchTest {
         env.dataStore.readFailure = IllegalStateException("un bug, no un fallo de disco")
         assertFailsWith<IllegalStateException> { env.coordinator.requestAutoSync() }
     }
-
-    // --- reinicio solo en salidas confirmadas ---------------------------------------------------------------------------
 
     @Test
     fun resetSyncState_con_SignedOut_reinicia_el_interruptor_y_borra_las_claves_de_sync() = runTest {

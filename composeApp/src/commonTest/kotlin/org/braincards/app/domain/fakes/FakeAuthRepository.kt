@@ -25,8 +25,7 @@ class FakeAuthRepository(
     private val state = MutableStateFlow(initialState)
     override val authState: Flow<AuthState> = state
 
-    // Controlables desde el test (Bloque F, DeleteAccountUseCaseTest): si no son null,
-    // el metodo correspondiente lanza esa excepcion en vez de "tener exito".
+    // Controlables desde el test: si no son null, el método correspondiente lanza esa excepción en vez de «tener éxito».
     var deleteAccountFailure: Throwable? = null
     var signOutFailure: Throwable? = null
     // Si no es null, signOut() espera este tiempo (delay, respeta el tiempo virtual de runTest)

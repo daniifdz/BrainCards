@@ -16,7 +16,6 @@ class ShowStudyButtonTest {
     private fun root(hasCards: Boolean) =
         DeckContentUiState.Root("Ingles", topics = emptyList(), looseCards = emptyList(), hasCards = hasCards)
 
-    // Mutacion S2: si ignorara hasCards, el siguiente test (Root sin tarjetas) fallaria.
     @Test
     fun en_el_nivel_del_mazo_con_tarjetas_se_muestra() {
         assertTrue(showStudyButton(root(hasCards = true)))
@@ -27,7 +26,6 @@ class ShowStudyButtonTest {
         assertFalse(showStudyButton(root(hasCards = false)))
     }
 
-    // Mutacion S1: si Search devolviera true, este test fallaria.
     @Test
     fun con_busqueda_activa_no_se_muestra_ni_con_resultados_ni_sin_ellos() {
         assertFalse(showStudyButton(DeckContentUiState.Search("Ingles", emptyList(), emptyList<CardHit>())))

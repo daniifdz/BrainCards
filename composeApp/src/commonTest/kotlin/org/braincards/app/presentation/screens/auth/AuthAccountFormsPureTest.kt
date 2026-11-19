@@ -9,8 +9,6 @@ import kotlin.test.assertTrue
 /** Lo puro de ConfirmEmail / ForgotPassword / ResetPassword: formato del cooldown, formulario de restablecer y reparto. */
 class AuthAccountFormsPureTest {
 
-    // --- cooldown ----------------------------------------------------------------------------------------------------
-
     @Test
     fun el_cooldown_se_formatea_como_m_ss() {
         assertEquals("0:38", formatCooldown(38))
@@ -24,8 +22,6 @@ class AuthAccountFormsPureTest {
     fun un_cooldown_negativo_se_trata_como_cero() {
         assertEquals("0:00", formatCooldown(-4))
     }
-
-    // --- restablecer -------------------------------------------------------------------------------------------------
 
     @Test
     fun restablecer_con_todo_correcto_no_tiene_errores() {
@@ -61,8 +57,6 @@ class AuthAccountFormsPureTest {
         assertEquals(AuthMessage.CodeIncomplete, validateResetForm("12345a", "12345678", "12345678")[AuthField.CODE])
         assertEquals(AuthMessage.CodeIncomplete, validateResetForm("1234567", "12345678", "12345678")[AuthField.CODE])
     }
-
-    // --- reparto por contexto de las pantallas de cuenta -------------------------------------------------------------
 
     @Test
     fun codigo_caducado_solo_es_error_de_campo_al_confirmar_y_al_restablecer() {
