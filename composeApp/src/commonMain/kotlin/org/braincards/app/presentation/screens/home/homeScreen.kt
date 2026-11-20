@@ -101,7 +101,7 @@ fun HomeScreen(
     val sampleDeckCreating by sampleDeckViewModel.creating.collectAsState()
     val sampleDeckNames = sampleDeckNames()
     val snackbarHostState = remember { SnackbarHostState() }
-    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onNavigateToSampleDeck)
+    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onNavigateToSampleDeck, onHasDecks = onNavigateToDecks)
 
     // Snackbar superpuesto (sin Scaffold: no cambia márgenes ni el tratamiento de insets de Home).
     Box(modifier = Modifier.fillMaxSize()) {

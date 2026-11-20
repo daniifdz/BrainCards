@@ -138,6 +138,21 @@ class SampleDeckViewModelTest {
     }
 
     @Test
+    fun si_ya_hay_mazos_emite_AlreadyHasDecks_sin_escribir_y_el_boton_vuelve_a_reposo() = runTest {
+        val env = Env()
+        val t = Instant.fromEpochMilliseconds(1_000)
+        env.decksRepository.addDeck(Deck("suyo", "Inglés B2", t, t, null))
+        val events = mutableListOf<SampleDeckEvent>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { env.vm.events.toList(events) }
+
+        env.vm.create(names)
+
+        assertEquals(listOf<SampleDeckEvent>(SampleDeckEvent.AlreadyHasDecks), events)
+        assertEquals(0, env.store.calls)
+        assertFalse(env.vm.creating.value)
+    }
+
+    @Test
     fun el_estado_inicial_es_en_reposo() = runTest {
         assertFalse(Env().vm.creating.value)
     }

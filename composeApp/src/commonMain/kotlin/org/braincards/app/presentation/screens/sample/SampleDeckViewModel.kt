@@ -12,12 +12,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.braincards.app.domain.sample.SampleDeckNames
 import org.braincards.app.domain.usecase.Decks.CreateSampleDeckUseCase
+import org.braincards.app.domain.usecase.Decks.SampleDeckResult
 import org.braincards.app.util.logError
 
 /** Resultado de pulsar «Crear mazo de ejemplo». Se entrega una sola vez. */
 sealed interface SampleDeckEvent {
     /** El mazo está listo (recién creado o ya existía): hay que abrirlo. */
     data class Ready(val deckId: String) : SampleDeckEvent
+
+    /** Ya hay mazos (y ninguno es el de ejemplo): no se crea nada y se lleva al usuario a la Lista de mazos. */
+    data object AlreadyHasDecks : SampleDeckEvent
 
     /** No se pudo crear: se avisa y el botón vuelve a reposo. */
     data object Failed : SampleDeckEvent
@@ -41,8 +45,11 @@ class SampleDeckViewModel(private val createSampleDeck: CreateSampleDeckUseCase)
         if (!_creating.compareAndSet(expect = false, update = true)) return // toque repetido: ya se está creando
         viewModelScope.launch {
             try {
-                val result = createSampleDeck(names)
-                _events.trySend(SampleDeckEvent.Ready(result.deckId))
+                val event = when (val result = createSampleDeck(names)) {
+                    is SampleDeckResult.Ready -> SampleDeckEvent.Ready(result.deckId)
+                    SampleDeckResult.AlreadyHasDecks -> SampleDeckEvent.AlreadyHasDecks
+                }
+                _events.trySend(event)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

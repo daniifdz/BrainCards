@@ -50,8 +50,8 @@ class SampleDeckWiringGuardTest {
     fun home_y_la_lista_atienden_el_resultado_con_el_mismo_componente_y_la_regla_de_visibilidad() {
         val home = source("$screens/home/homeScreen.kt")
         val decks = source("$screens/decks/DecksScreen.kt")
-        assertTrue("CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onNavigateToSampleDeck)" in home)
-        assertTrue("CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onSampleDeckReady)" in decks)
+        assertTrue("CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onNavigateToSampleDeck, onHasDecks = onNavigateToDecks)" in home)
+        assertTrue("CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onSampleDeckReady, onHasDecks = {})" in decks)
         assertTrue("homeShowsSampleDeck(state)" in home)
         assertTrue("decksShowSampleDeck(current)" in decks)
     }
@@ -68,6 +68,7 @@ class SampleDeckWiringGuardTest {
         val events = source("$screens/sample/SampleDeckEvents.kt")
         assertTrue("is SampleDeckEvent.Ready -> currentOnReady(event.deckId)" in events)
         assertTrue("SampleDeckEvent.Failed -> snackbarHostState.showSnackbar(failedText)" in events)
+        assertTrue("SampleDeckEvent.AlreadyHasDecks -> currentOnHasDecks()" in events, "con mazos previos se lleva a la Lista")
         assertTrue("Res.string.sample_deck_failed" in events)
     }
 

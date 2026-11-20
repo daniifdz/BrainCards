@@ -112,7 +112,8 @@ fun DecksScreen(
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onSampleDeckReady)
+    // Ya hay mazos: la propia lista se actualiza sola, no hay nada a lo que navegar.
+    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onSampleDeckReady, onHasDecks = {})
     val saveFailed = stringResource(Res.string.decks_save_failed)
     val deleteFailed = stringResource(Res.string.decks_delete_failed)
     LaunchedEffect(viewModel, saveFailed, deleteFailed) {

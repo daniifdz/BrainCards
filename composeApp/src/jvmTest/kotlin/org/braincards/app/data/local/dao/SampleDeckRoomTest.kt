@@ -16,6 +16,9 @@ import org.braincards.app.data.repository.SampleDeckStoreImpl
 import org.braincards.app.data.repository.TopicRepositoryImpl
 import org.braincards.app.domain.sample.SampleDeckNames
 import org.braincards.app.domain.usecase.Decks.CreateSampleDeckUseCase
+import org.braincards.app.domain.usecase.Decks.SampleDeckResult
+import org.braincards.app.domain.usecase.Decks.created
+import org.braincards.app.domain.usecase.Decks.deckId
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -205,5 +208,47 @@ class SampleDeckRoomTest {
         assertTrue(second.created)
         assertTrue(second.deckId != first.deckId)
         assertEquals(1, db.deckDao().observeDeckSummaries().first().size, "solo el nuevo está vivo")
+    }
+
+    private suspend fun addOwnDeck(name: String = "Inglés B2"): org.braincards.app.domain.models.Deck {
+        val own = org.braincards.app.domain.models.Deck("suyo", name, now, now, null)
+        decksRepository().addDeck(own)
+        return own
+    }
+
+    @Test
+    fun con_otro_mazo_vivo_y_sin_el_de_ejemplo_no_se_escribe_nada() = runBlocking {
+        addOwnDeck()
+
+        val result = useCase()(names)
+
+        assertEquals(SampleDeckResult.AlreadyHasDecks, result)
+        assertEquals(1, db.deckDao().observeDeckSummaries().first().size, "solo el mazo del usuario")
+        assertEquals(0, db.flashcardDao().getFreeReviewCards().size, "ni una tarjeta")
+        assertEquals(0, topicsRepository().claimOrphanedTopics("u"), "ni temas")
+    }
+
+    @Test
+    fun un_mazo_borrado_de_otro_nombre_no_impide_crear_el_de_ejemplo() = runBlocking {
+        val own = addOwnDeck()
+        decksRepository().deleteDeck(own)
+
+        val result = useCase()(names)
+
+        assertTrue(result is SampleDeckResult.Created)
+        assertEquals(1, db.deckDao().observeDeckSummaries().first().size, "solo el de ejemplo está vivo")
+        assertEquals(10, db.flashcardDao().getFreeReviewCards().size)
+    }
+
+    @Test
+    fun con_el_de_ejemplo_y_otro_mazo_se_devuelve_el_existente_sin_duplicar() = runBlocking {
+        val first = useCase()(names)
+        addOwnDeck()
+
+        val second = useCase()(names)
+
+        assertEquals(SampleDeckResult.AlreadyExists(first.deckId), second)
+        assertEquals(2, db.deckDao().observeDeckSummaries().first().size)
+        assertEquals(10, db.flashcardDao().getFreeReviewCards().size)
     }
 }

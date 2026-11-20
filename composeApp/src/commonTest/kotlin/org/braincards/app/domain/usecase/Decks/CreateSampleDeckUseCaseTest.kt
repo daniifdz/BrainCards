@@ -152,11 +152,51 @@ class CreateSampleDeckUseCaseTest {
     }
 
     @Test
-    fun otro_mazo_con_nombre_parecido_no_cuenta_como_existente() = runTest {
+    fun otro_mazo_con_nombre_parecido_no_es_el_de_ejemplo_y_no_se_crea_nada() = runTest {
         decksRepository.addDeck(deck("primeros pasos"))
         decksRepository.addDeck(deck("Primeros pasos 2", id = "otro"))
 
-        assertTrue(useCase(names).created)
+        assertEquals(SampleDeckResult.AlreadyHasDecks, useCase(names))
+        assertEquals(0, store.calls)
+    }
+
+    @Test
+    fun con_otro_mazo_vivo_y_sin_el_de_ejemplo_no_se_escribe_nada() = runTest {
+        decksRepository.addDeck(deck("Inglés B2", id = "suyo"))
+
+        val result = useCase(names)
+
+        assertEquals(SampleDeckResult.AlreadyHasDecks, result)
+        assertEquals(0, store.calls, "no se escribe nada")
+        assertTrue(store.decks.isEmpty() && store.topics.isEmpty() && store.cards.isEmpty())
+    }
+
+    @Test
+    fun con_varios_mazos_vivos_tampoco_se_escribe_nada() = runTest {
+        decksRepository.addDeck(deck("Uno", id = "1"))
+        decksRepository.addDeck(deck("Dos", id = "2"))
+
+        assertEquals(SampleDeckResult.AlreadyHasDecks, useCase(names))
+        assertEquals(0, store.calls)
+    }
+
+    @Test
+    fun un_mazo_borrado_de_otro_nombre_no_cuenta_como_mazo_vivo_y_se_crea() = runTest {
+        decksRepository.addDeck(deck("Inglés B2", deletedAt = now, id = "borrado"))
+
+        val result = useCase(names)
+
+        assertTrue(result is SampleDeckResult.Created)
+        assertEquals(1, store.calls)
+    }
+
+    @Test
+    fun si_existe_el_de_ejemplo_junto_a_otros_mazos_gana_el_existente() = runTest {
+        decksRepository.addDeck(deck("Inglés B2", id = "suyo"))
+        decksRepository.addDeck(deck("Primeros pasos", id = "ejemplo"))
+
+        assertEquals(SampleDeckResult.AlreadyExists("ejemplo"), useCase(names))
+        assertEquals(0, store.calls)
     }
 
     @Test

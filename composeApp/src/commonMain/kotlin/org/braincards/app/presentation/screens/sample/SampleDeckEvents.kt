@@ -17,17 +17,25 @@ fun sampleDeckNames(): SampleDeckNames = SampleDeckNames(
 )
 
 /**
- * Atiende el resultado de «Crear mazo de ejemplo»: con el mazo listo llama a [onReady] (la pantalla navega a su contenido) y si falla
- * muestra el Snackbar de error en [snackbarHostState]. El Snackbar de éxito lo muestra la pantalla de destino.
+ * Atiende el resultado de «Crear mazo de ejemplo»: con el mazo listo llama a [onReady] (la pantalla navega a su contenido), si ya había
+ * mazos llama a [onHasDecks] (la pantalla lleva a la Lista de mazos) y si falla muestra el Snackbar de error en [snackbarHostState].
+ * El Snackbar de éxito lo muestra la pantalla de destino.
  */
 @Composable
-fun CollectSampleDeckEvents(viewModel: SampleDeckViewModel, snackbarHostState: SnackbarHostState, onReady: (String) -> Unit) {
+fun CollectSampleDeckEvents(
+    viewModel: SampleDeckViewModel,
+    snackbarHostState: SnackbarHostState,
+    onReady: (String) -> Unit,
+    onHasDecks: () -> Unit
+) {
     val failedText = stringResource(Res.string.sample_deck_failed)
     val currentOnReady by rememberUpdatedState(onReady)
+    val currentOnHasDecks by rememberUpdatedState(onHasDecks)
     LaunchedEffect(viewModel, failedText) {
         viewModel.events.collect { event ->
             when (event) {
                 is SampleDeckEvent.Ready -> currentOnReady(event.deckId)
+                SampleDeckEvent.AlreadyHasDecks -> currentOnHasDecks()
                 SampleDeckEvent.Failed -> snackbarHostState.showSnackbar(failedText)
             }
         }
