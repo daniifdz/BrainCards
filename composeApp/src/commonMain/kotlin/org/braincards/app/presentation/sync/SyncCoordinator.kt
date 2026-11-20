@@ -9,18 +9,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -148,12 +145,6 @@ class SyncCoordinator(
     // Resultado del ULTIMO sync, venga de donde venga (manual, completo o automatico): lo escribe syncLocked.
     private val _lastOutcome = MutableStateFlow<SyncOutcome?>(null)
     override val lastOutcome: StateFlow<SyncOutcome?> = _lastOutcome.asStateFlow()
-
-    /** Estado observable de la sincronizacion (silencioso: sin textos ni carteles). Lo mostrara el rediseño. */
-    val status: StateFlow<SyncStatus> = combine(
-        authRepository.authState, _isSyncing, _lastOutcome, _lastSuccessfulSyncAt
-    ) { auth, syncing, outcome, lastSuccess -> deriveSyncStatus(auth, syncing, outcome, lastSuccess) }
-        .stateIn(scope, SharingStarted.Eagerly, SyncStatus.SignedOut)
 
     // Lease SIGN_OUT del cierre de sesion en curso (prepareSignOut -> finishSignOut/abortSignOut). Uno solo.
     private var signOutLease: AutoSyncPauseGate.Lease? = null

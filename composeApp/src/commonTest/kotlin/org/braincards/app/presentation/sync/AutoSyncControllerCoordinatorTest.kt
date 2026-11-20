@@ -122,7 +122,6 @@ class AutoSyncControllerCoordinatorTest {
         env.advance(5.seconds)
 
         assertEquals(1, env.pulls, "un solo sync de arranque (primer plano + sesion confirmada + red), y es del controlador")
-        assertIs<SyncStatus.Synced>(env.coordinator.status.value)
     }
 
     @Test
@@ -183,7 +182,6 @@ class AutoSyncControllerCoordinatorTest {
         env.advance(20.minutes)
 
         assertEquals(baseline, env.pulls)
-        assertEquals(SyncStatus.SignedOut, env.coordinator.status.value)
     }
 
     @Test

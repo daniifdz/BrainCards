@@ -32,8 +32,6 @@ import org.braincards.app.presentation.sync.PauseReason
 import org.braincards.app.presentation.sync.SIGN_OUT_PAUSE_TTL
 import org.braincards.app.presentation.sync.SignOutPrompt
 import org.braincards.app.presentation.sync.SyncCoordinator
-import org.braincards.app.presentation.sync.SyncErrorKind
-import org.braincards.app.presentation.sync.SyncStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -45,7 +43,7 @@ import kotlin.time.TestTimeSource
 
 /**
  * SyncCoordinator.requestAutoSync(): sesion y puerta de pausa comprobadas DENTRO del Mutex, sin solaparse con un
- * sync manual ni con el cierre de sesion; lastOutcome y SyncStatus. Reloj monotonico y reloj de pared falsos.
+ * sync manual ni con el cierre de sesion; y lastOutcome. Reloj monotonico y reloj de pared falsos.
  */
 class SyncCoordinatorAutoSyncTest {
 
@@ -410,72 +408,4 @@ class SyncCoordinatorAutoSyncTest {
         assertNull(f.coordinator.lastOutcome.value)
     }
 
-    // --- SyncStatus ---
-
-    @Test
-    fun status_sin_sesion_es_SignedOut() = runBlocking<Unit> {
-        val f = fixture(authState = AuthState.NotAuthenticated)
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.SignedOut)
-    }
-
-    @Test
-    fun status_con_sesion_sin_confirmar_es_Offline() = runBlocking<Unit> {
-        val f = fixture(authState = AuthState.Authenticated(userId, "a@b.com", sessionConfirmed = false))
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Offline)
-    }
-
-    @Test
-    fun status_tras_un_sync_correcto_es_Synced_con_la_hora() = runBlocking<Unit> {
-        val f = fixture()
-        f.coordinator.syncNow()
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Synced(fixedNow))
-    }
-
-    @Test
-    fun status_durante_un_sync_es_Syncing() = runBlocking<Unit> {
-        val f = fixture(pullDelayMillis = 300)
-        f.coordinator.syncNow() // deja un resultado previo
-        val running = async { f.coordinator.requestAutoSync() }
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Syncing)
-        running.await()
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Synced(fixedNow))
-    }
-
-    @Test
-    fun status_con_el_pull_caido_por_red_es_Offline() = runBlocking<Unit> {
-        val f = fixture()
-        f.remote.pullDecksFailure = IllegalStateException("sin red simulada")
-
-        f.coordinator.syncNow()
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Offline)
-    }
-
-    @Test
-    fun status_con_filas_sin_subir_es_Error_PUSH_PARTIAL() = runBlocking<Unit> {
-        val f = fixture()
-        f.remote.pushDeckIdsThatFail = setOf("d1")
-        f.fakeDecks.addDeck(pendingDeck("d1"))
-
-        f.coordinator.syncNow()
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Error(SyncErrorKind.PUSH_PARTIAL))
-    }
-
-    @Test
-    fun status_pasa_a_SignedOut_al_cerrar_sesion() = runBlocking<Unit> {
-        val f = fixture()
-        f.coordinator.syncNow()
-        awaitValue({ f.coordinator.status.value }, SyncStatus.Synced(fixedNow))
-
-        f.coordinator.prepareSignOut()
-        f.coordinator.finishSignOut(userId, confirmedCount = 0)
-
-        awaitValue({ f.coordinator.status.value }, SyncStatus.SignedOut)
-    }
 }
