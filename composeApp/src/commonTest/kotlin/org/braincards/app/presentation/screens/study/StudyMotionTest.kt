@@ -5,6 +5,7 @@ import androidx.compose.animation.core.VectorConverter
 import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.ui.input.key.Key
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -20,6 +21,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /** Feedback de interaccion de Estudio: barra con muelle, pulso de los botones y su disparo por teclado. Funciones puras. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class StudyMotionTest {
 
     private fun assertNear(expected: Float, actual: Float, eps: Float = 1e-4f, msg: String = "") =

@@ -32,6 +32,7 @@ class ServerUpdatedAtDtoTest {
     private val t = Instant.parse("2026-10-22T10:00:00Z")
 
     private val strictJson = Json { encodeDefaults = true }
+    private val lenientJson = Json { ignoreUnknownKeys = true }
 
     @Test
     fun `los toDto no rellenan la marca de servidor`() {
@@ -64,7 +65,7 @@ class ServerUpdatedAtDtoTest {
 
     @Test
     fun `el pull decodifica server_updated_at con offset y microsegundos`() {
-        val dto = Json { ignoreUnknownKeys = true }.decodeFromString(
+        val dto = lenientJson.decodeFromString(
             DeckDto.serializer(), deckRow("d1", "2026-10-22T10:00:00.123456+00:00")
         )
 

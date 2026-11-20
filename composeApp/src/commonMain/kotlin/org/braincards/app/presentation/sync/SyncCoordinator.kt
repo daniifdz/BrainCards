@@ -47,6 +47,7 @@ import org.braincards.app.domain.usecase.Sync.isFullySuccessful
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import org.braincards.app.util.logError
+import org.braincards.app.util.logSync
 
 /**
  * Tiempo maximo del sync previo al cierre de sesion. Si se agota (o falla), se sigue con el
@@ -408,8 +409,8 @@ class SyncCoordinator(
         val pull = result.pull
         val tables = listOf(pull.decks, pull.topics, pull.flashcards, pull.cardScheduling)
         val mode = if (tables.all { it.fullPull }) "completo" else "incremental"
-        println(
-            "Sync: bajadas decks=${pull.decks.downloaded} topics=${pull.topics.downloaded} " +
+        logSync(
+            "bajadas decks=${pull.decks.downloaded} topics=${pull.topics.downloaded} " +
                 "flashcards=${pull.flashcards.downloaded} scheduling=${pull.cardScheduling.downloaded} ($mode)"
         )
     }

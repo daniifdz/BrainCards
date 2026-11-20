@@ -2,6 +2,7 @@ package org.braincards.app.domain.usecase.Auth
 
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -21,6 +22,7 @@ import kotlin.time.Duration.Companion.seconds
  * Todos con runTest: el tiempo es virtual (delay no espera de verdad) y testScheduler.currentTime
  * mide cuanto "tarda" el use case.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SignOutAndWipeUseCaseTest {
 
     private val userId = "user-1"

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
@@ -46,6 +47,7 @@ import kotlin.test.assertTrue
  * REAL (SyncEngineUseCase) contra FakeRemoteDataSource, asi que el limite de tiempo se prueba
  * sobre el camino real del sync, no sobre un stub.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SyncCoordinatorSignOutTest {
 
     private val userId = "user-1"
