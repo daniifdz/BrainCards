@@ -11,12 +11,12 @@ import kotlin.test.assertEquals
 class PillMetricsTest {
 
     @Test
-    fun la_pastilla_compacta_es_la_pill_sm_de_los_mockups() {
+    fun la_pastilla_compacta_usa_las_medidas_pequenas() {
         assertEquals(PillMetrics(horizontalDp = 10, verticalDp = 6, gapDp = 6, fontSp = 12), pillMetrics(compact = true))
     }
 
     @Test
-    fun la_pastilla_normal_es_la_pill_de_los_mockups() {
+    fun la_pastilla_normal_usa_las_medidas_estandar() {
         assertEquals(PillMetrics(horizontalDp = 14, verticalDp = 8, gapDp = 8, fontSp = 13), pillMetrics(compact = false))
     }
 

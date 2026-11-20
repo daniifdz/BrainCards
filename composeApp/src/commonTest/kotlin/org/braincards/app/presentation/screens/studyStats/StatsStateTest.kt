@@ -38,7 +38,7 @@ class StatsStateTest {
     }
 
     @Test
-    fun el_ejemplo_del_mockup_73_64_47_da_40_35_25() {
+    fun el_ejemplo_73_64_47_da_40_35_25() {
         assertEquals(listOf(40, 35, 25), stats.percentages())
     }
 

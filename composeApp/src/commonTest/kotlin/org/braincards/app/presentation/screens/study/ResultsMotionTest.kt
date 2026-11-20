@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class ResultsMotionTest {
 
     @Test
-    fun constantes_del_handoff() {
+    fun constantes_de_la_celebracion() {
         assertEquals(500, RESULTS_COUNT_MS)
         assertEquals(600, RESULTS_CELEBRATION_MAX_MS)
         assertEquals(0.45f, RESULTS_PULSE_DAMPING)
@@ -131,14 +131,14 @@ class ResultsMotionTest {
     }
 
     @Test
-    fun medidas_del_badge_segun_el_mockup() {
+    fun medidas_del_badge_de_resultados() {
         assertEquals(ResultsBadgeSpec(sizeDp = 64, cornerPercent = 31), resultsBadgeSpec(480f), "tarjeta normal: 64 px / 20 px")
         assertEquals(ResultsBadgeSpec(sizeDp = 56, cornerPercent = 32), resultsBadgeSpec(360f), "movil: 56 px / 18 px")
         assertEquals(ResultsBadgeSpec(64, 31), resultsBadgeSpec(1200f))
     }
 
     @Test
-    fun el_umbral_compacto_esta_entre_las_dos_tarjetas_del_mockup() {
+    fun el_umbral_compacto_esta_entre_los_dos_anchos_de_referencia() {
         assertEquals(420f, RESULTS_COMPACT_WIDTH_DP)
         assertEquals(56, resultsBadgeSpec(419.9f).sizeDp)
         assertEquals(64, resultsBadgeSpec(420f).sizeDp)

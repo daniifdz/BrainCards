@@ -66,7 +66,7 @@ class BrandBadgeRenderTest {
     }
 
     @Test
-    fun proporcion_del_cerebro_igual_a_la_del_mockup() {
+    fun proporcion_del_cerebro_dentro_del_badge() {
         val bmp = render()
         var minX = 100; var maxX = -1; var minY = 100; var maxY = -1
         for (y in 0 until 100) for (x in 0 until 100) {

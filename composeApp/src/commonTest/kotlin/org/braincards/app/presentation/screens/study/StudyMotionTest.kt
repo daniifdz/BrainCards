@@ -28,7 +28,7 @@ class StudyMotionTest {
     // ---- constantes ----
 
     @Test
-    fun constantes_del_mockup() {
+    fun constantes_de_movimiento() {
         assertEquals(0.6f, STUDY_PROGRESS_DAMPING)
         assertEquals(380f, STUDY_PROGRESS_STIFFNESS)
         assertEquals(60, STUDY_PRESS_DOWN_MS)
@@ -61,7 +61,7 @@ class StudyMotionTest {
         val from = 0.25f
         val to = 0.33f
         val lastOutside = (0..1500).last { abs(barAt(it, from, to) - to) >= 0.005f * (to - from) }
-        assertTrue(lastOutside + 1 <= 600, "asentada (+-0,5 % del tramo) desde ${lastOutside + 1} ms (handoff: ~380 ms)")
+        assertTrue(lastOutside + 1 <= 600, "asentada (+-0,5 % del tramo) desde ${lastOutside + 1} ms (objetivo: ~380 ms)")
         assertTrue(abs(barAt(1500, from, to) - to) < 1e-4f)
     }
 
@@ -167,7 +167,7 @@ class StudyMotionTest {
         val minimum = (0..1000).minOf { upAt(it) }
         assertTrue(minimum < 0f && minimum > -0.25f, "rebote de vuelta = $minimum (escala ${studyPressScale(minimum)})")
         val lastOutside = (0..1500).last { abs(upAt(it)) >= 0.005f }
-        assertTrue(lastOutside + 1 <= 500, "apagado desde ${lastOutside + 1} ms (el handoff dice ~180 ms; mandan los parametros del muelle)")
+        assertTrue(lastOutside + 1 <= 500, "apagado desde ${lastOutside + 1} ms (se esperan ~180 ms; mandan los parametros del muelle)")
     }
 
     @Test

@@ -29,7 +29,7 @@ class AuthAccountFormsPureTest {
     }
 
     @Test
-    fun restablecer_con_los_tres_campos_mal_da_un_error_por_campo_como_el_mockup() {
+    fun restablecer_con_los_tres_campos_mal_da_un_error_por_campo() {
         val errors = validateResetForm("", "1234567", "12345")
         assertEquals(AuthMessage.CodeIncomplete, errors[AuthField.CODE])
         assertEquals(AuthMessage.PasswordTooShort, errors[AuthField.PASSWORD])

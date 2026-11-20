@@ -72,7 +72,7 @@ class ThemeSystemTest {
     }
 
     @Test
-    fun mapeo_de_roles_segun_el_handoff_y_las_decisiones_D1_D3() {
+    fun mapeo_de_roles_de_la_paleta() {
         for ((s, p) in listOf(LightColorScheme to LightPalette, DarkColorScheme to DarkPalette)) {
             assertEquals(p.brand, s.primary)
             assertEquals(p.brandText, s.onPrimary)

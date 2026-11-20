@@ -32,7 +32,7 @@ class AuthValidationTest {
     }
 
     @Test
-    fun el_caso_del_mockup_sin_punto_en_el_dominio_es_invalido() {
+    fun un_dominio_sin_punto_es_invalido() {
         assertEquals(AuthMessage.EmailInvalid, validateEmail("daniifdz@ejemplo"))
     }
 
