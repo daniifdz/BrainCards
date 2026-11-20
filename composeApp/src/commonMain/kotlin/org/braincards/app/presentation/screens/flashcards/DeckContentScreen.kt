@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import braincards.composeapp.generated.resources.Res
 import braincards.composeapp.generated.resources.deckcontent_add_card_short
+import braincards.composeapp.generated.resources.sample_deck_created
 import braincards.composeapp.generated.resources.deckcontent_back_to_deck
 import braincards.composeapp.generated.resources.deckcontent_back_to_decks
 import braincards.composeapp.generated.resources.deckcontent_delete_failed
@@ -122,6 +123,8 @@ private val COMPACT_WIDTH = 720.dp
 @Composable
 fun DeckContentScreen(
     deckId: String,
+    /** Se llegó desde «Crear mazo de ejemplo»: se muestra una sola vez «Mazo de ejemplo creado». */
+    sampleCreated: Boolean = false,
     onBackClick: () -> Unit,
     onDeckGone: () -> Unit,
     onStudyClick: (String) -> Unit,
@@ -145,6 +148,14 @@ fun DeckContentScreen(
     var deleteCardId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val sampleCreatedText = stringResource(Res.string.sample_deck_created)
+    var sampleNoticeShown by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(sampleCreated) {
+        if (sampleCreated && !sampleNoticeShown) {
+            sampleNoticeShown = true
+            snackbarHostState.showSnackbar(sampleCreatedText)
+        }
+    }
     val saveCardFailed = stringResource(Res.string.deckcontent_save_card_failed)
     val saveTopicFailed = stringResource(Res.string.deckcontent_save_topic_failed)
     val deleteFailed = stringResource(Res.string.deckcontent_delete_failed)

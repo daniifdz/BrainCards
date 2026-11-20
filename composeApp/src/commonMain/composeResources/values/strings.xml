@@ -330,4 +330,13 @@
     <string name="feedback_unavailable_body">No hay ninguna aplicación de correo configurada. Escríbenos a esta dirección:</string>
     <string name="feedback_copy_address">Copiar dirección</string>
     <string name="feedback_close">Cerrar</string>
+
+    <!-- Mazo de ejemplo «Primeros pasos» -->
+    <string name="sample_deck_create">Crear mazo de ejemplo</string>
+    <string name="sample_deck_creating">Creando…</string>
+    <string name="sample_deck_created">Mazo de ejemplo creado</string>
+    <string name="sample_deck_failed">No se pudo crear el mazo de ejemplo. Inténtalo de nuevo.</string>
+    <string name="sample_deck_name">Primeros pasos</string>
+    <string name="sample_deck_topic_study">Cómo estudiar con BrainCards</string>
+    <string name="sample_deck_topic_organize">Cómo organizar y sincronizar tus mazos</string>
 </resources>

@@ -73,7 +73,14 @@ import braincards.composeapp.generated.resources.decks_save_failed
 import braincards.composeapp.generated.resources.decks_search_clear
 import braincards.composeapp.generated.resources.decks_search_placeholder
 import braincards.composeapp.generated.resources.decks_title
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import org.braincards.app.platform.rememberReducedMotion
+import org.braincards.app.presentation.components.SampleDeckButton
+import org.braincards.app.presentation.screens.sample.CollectSampleDeckEvents
+import org.braincards.app.presentation.screens.sample.SampleDeckViewModel
+import org.braincards.app.presentation.screens.sample.decksShowSampleDeck
+import org.braincards.app.presentation.screens.sample.sampleDeckNames
 import org.braincards.app.presentation.components.form.FormBanner
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -84,8 +91,16 @@ private val DECKS_MAX_WIDTH = 780.dp
 
 @OptIn(KoinExperimentalAPI::class)
 @Composable
-fun DecksScreen(onDeckClick: (String) -> Unit, onBackClick: () -> Unit) {
+fun DecksScreen(
+    onDeckClick: (String) -> Unit,
+    onBackClick: () -> Unit,
+    /** «Crear mazo de ejemplo» terminó: se abre el contenido del mazo (nuevo o ya existente). */
+    onSampleDeckReady: (String) -> Unit
+) {
     val viewModel = koinViewModel<DecksViewModel>()
+    val sampleDeckViewModel = koinViewModel<SampleDeckViewModel>()
+    val sampleDeckCreating by sampleDeckViewModel.creating.collectAsState()
+    val sampleDeckNames = sampleDeckNames()
     val state by viewModel.state.collectAsState()
     val query by viewModel.searchQuery.collectAsState()
     val nameError by viewModel.nameError.collectAsState()
@@ -97,6 +112,7 @@ fun DecksScreen(onDeckClick: (String) -> Unit, onBackClick: () -> Unit) {
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onSampleDeckReady)
     val saveFailed = stringResource(Res.string.decks_save_failed)
     val deleteFailed = stringResource(Res.string.decks_delete_failed)
     LaunchedEffect(viewModel, saveFailed, deleteFailed) {
@@ -139,7 +155,12 @@ fun DecksScreen(onDeckClick: (String) -> Unit, onBackClick: () -> Unit) {
                         message = stringResource(Res.string.decks_load_error),
                         onRetry = viewModel::retry
                     )
-                    DecksUiState.Empty -> DecksEmpty(onCreateClick = ::openCreate)
+                    DecksUiState.Empty -> DecksEmpty(
+                        onCreateClick = ::openCreate,
+                        secondary = if (decksShowSampleDeck(current)) {
+                            { SampleDeckButton(creating = sampleDeckCreating, onClick = { sampleDeckViewModel.create(sampleDeckNames) }) }
+                        } else null
+                    )
                     is DecksUiState.NoResults -> DecksNoResults(query = current.query)
                     is DecksUiState.Content -> LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -277,8 +298,9 @@ private fun DecksSkeleton() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun DecksEmpty(onCreateClick: () -> Unit) {
+internal fun DecksEmpty(onCreateClick: () -> Unit, secondary: (@Composable () -> Unit)? = null) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -307,7 +329,18 @@ private fun DecksEmpty(onCreateClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Button(onClick = onCreateClick) { Text(stringResource(Res.string.decks_empty_cta)) }
+            if (secondary == null) {
+                Button(onClick = onCreateClick) { Text(stringResource(Res.string.decks_empty_cta)) }
+            } else {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(onClick = onCreateClick) { Text(stringResource(Res.string.decks_empty_cta)) }
+                    secondary()
+                }
+            }
         }
     }
 }

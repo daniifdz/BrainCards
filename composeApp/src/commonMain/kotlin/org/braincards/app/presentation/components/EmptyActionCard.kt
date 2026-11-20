@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -31,7 +33,16 @@ import org.braincards.app.presentation.theme.BrainCardsTheme
  * sin tarjetas y el estado vacío de Estadísticas.
  */
 @Composable
-fun EmptyActionCard(title: String, text: String, cta: String, compact: Boolean, onClick: () -> Unit) {
+@OptIn(ExperimentalLayoutApi::class)
+fun EmptyActionCard(
+    title: String,
+    text: String,
+    cta: String,
+    compact: Boolean,
+    onClick: () -> Unit,
+    /** Segundo botón (p. ej. «Crear mazo de ejemplo») junto al principal; sin él, la tarjeta es la de siempre. */
+    secondary: (@Composable () -> Unit)? = null
+) {
     val extra = BrainCardsTheme.extraColors
     Surface(
         shape = RoundedCornerShape(if (compact) 16.dp else 18.dp),
@@ -64,15 +75,29 @@ fun EmptyActionCard(title: String, text: String, cta: String, compact: Boolean, 
                     modifier = Modifier.widthIn(max = 480.dp)
                 )
             }
-            Button(
-                onClick = onClick,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 22.dp, vertical = 13.dp)
-            ) {
-                Text(
-                    text = cta,
-                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                )
+            val primary: @Composable () -> Unit = {
+                Button(
+                    onClick = onClick,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 22.dp, vertical = 13.dp)
+                ) {
+                    Text(
+                        text = cta,
+                        style = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    )
+                }
+            }
+            if (secondary == null) {
+                primary()
+            } else {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    itemVerticalAlignment = Alignment.CenterVertically
+                ) {
+                    primary()
+                    secondary()
+                }
             }
         }
     }

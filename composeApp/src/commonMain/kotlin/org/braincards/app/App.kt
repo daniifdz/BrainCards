@@ -160,11 +160,14 @@ private fun AppNavigation(
                 onNavigateToSettings = { navController.navigate(Screen.Settings) },
                 onNavigateToStats = { navController.navigate(Screen.Stats) },
                 // Invitado: la pildora lleva a Bienvenida apilada (con flecha de vuelta).
-                onNavigateToAuth = { navController.navigate(Screen.Auth()) }
+                onNavigateToAuth = { navController.navigate(Screen.Auth()) },
+                // «Crear mazo de ejemplo»: se abre su contenido (el aviso de éxito lo muestra esa pantalla).
+                onNavigateToSampleDeck = { deckId -> navController.navigate(Screen.FlashcardsList(deckId, sampleCreated = true)) }
             )
         }
         composable<Screen.DecksList> {
             DecksScreen(
+                onSampleDeckReady = { deckId -> navController.navigate(Screen.FlashcardsList(deckId, sampleCreated = true)) },
                 onDeckClick = { deckId ->
                     navController.navigate(Screen.FlashcardsList(deckId))
                 },
@@ -178,6 +181,7 @@ private fun AppNavigation(
             val route = backStackEntry.toRoute<Screen.FlashcardsList>()
             DeckContentScreen(
                 deckId = route.deckId,
+                sampleCreated = route.sampleCreated,
                 onBackClick = { navController.popBackStackSafely() },
                 // Si el mazo desaparece (p. ej. borrado en otro dispositivo): salida segura, nunca popBackStack().
                 onDeckGone = { navController.popBackStackSafely() },

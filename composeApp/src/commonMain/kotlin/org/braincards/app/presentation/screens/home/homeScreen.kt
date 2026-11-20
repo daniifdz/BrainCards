@@ -44,7 +44,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import org.braincards.app.presentation.components.SampleDeckButton
+import org.braincards.app.presentation.screens.sample.CollectSampleDeckEvents
+import org.braincards.app.presentation.screens.sample.SampleDeckViewModel
+import org.braincards.app.presentation.screens.sample.homeShowsSampleDeck
+import org.braincards.app.presentation.screens.sample.sampleDeckNames
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -82,12 +91,20 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToStats: () -> Unit,
     onNavigateToAuth: () -> Unit,
+    onNavigateToSampleDeck: (String) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
-    syncStatusViewModel: SyncStatusViewModel = koinViewModel()
+    syncStatusViewModel: SyncStatusViewModel = koinViewModel(),
+    sampleDeckViewModel: SampleDeckViewModel = koinViewModel()
 ) {
     val state by homeViewModel.state.collectAsState()
     val indicator by syncStatusViewModel.indicator.collectAsState()
+    val sampleDeckCreating by sampleDeckViewModel.creating.collectAsState()
+    val sampleDeckNames = sampleDeckNames()
+    val snackbarHostState = remember { SnackbarHostState() }
+    CollectSampleDeckEvents(sampleDeckViewModel, snackbarHostState, onNavigateToSampleDeck)
 
+    // Snackbar superpuesto (sin Scaffold: no cambia márgenes ni el tratamiento de insets de Home).
+    Box(modifier = Modifier.fillMaxSize()) {
     HomeContent(
         state = state,
         indicator = indicator,
@@ -98,8 +115,12 @@ fun HomeScreen(
         onNavigateToStats = onNavigateToStats,
         // Con sesion (incluido "sin conexion") la pildora lleva a Ajustes; en modo invitado, a iniciar sesion.
         onPillClick = if (indicator == SyncIndicator.Guest) onNavigateToAuth else onNavigateToSettings,
-        onNavigateToSettings = onNavigateToSettings
+        onNavigateToSettings = onNavigateToSettings,
+        sampleDeckCreating = sampleDeckCreating,
+        onCreateSampleDeck = { sampleDeckViewModel.create(sampleDeckNames) }
     )
+    SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
+    }
 }
 
 @Composable
@@ -112,7 +133,10 @@ internal fun HomeContent(
     onNavigateToFreeReview: () -> Unit,
     onNavigateToStats: () -> Unit,
     onPillClick: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    /** «Crear mazo de ejemplo» solo en el primer uso; `null` = sin botón. */
+    sampleDeckCreating: Boolean = false,
+    onCreateSampleDeck: (() -> Unit)? = null
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -161,7 +185,13 @@ internal fun HomeContent(
                             is HomeUiState.Content -> StudyAllButton(
                                 dueCount = state.dueCount, compact = compact, onClick = onNavigateToStudy
                             )
-                            HomeUiState.NoDecks -> FirstUseCard(compact = compact, onCreateDeck = onNavigateToDecks)
+                            HomeUiState.NoDecks -> FirstUseCard(
+                                compact = compact,
+                                onCreateDeck = onNavigateToDecks,
+                                secondary = onCreateSampleDeck?.takeIf { homeShowsSampleDeck(state) }?.let { create ->
+                                    { SampleDeckButton(creating = sampleDeckCreating, onClick = create) }
+                                }
+                            )
                             // 5.º estado: mazos sin ninguna tarjeta. Sin "Estudiar Todo": no hay nada que estudiar.
                             HomeUiState.NoCards -> NoCardsCard(compact = compact, onGoToDecks = onNavigateToDecks)
                             HomeUiState.Empty -> AllDoneButton(compact = compact, onClick = onNavigateToStudy)
@@ -338,13 +368,14 @@ private fun StudyAllButton(dueCount: Int, compact: Boolean, onClick: () -> Unit)
  * "Todo al dia" (sugeriria que el usuario ya hizo algo).
  */
 @Composable
-private fun FirstUseCard(compact: Boolean, onCreateDeck: () -> Unit) {
+private fun FirstUseCard(compact: Boolean, onCreateDeck: () -> Unit, secondary: (@Composable () -> Unit)? = null) {
     EmptyActionCard(
         title = stringResource(Res.string.home_first_use_title),
         text = stringResource(Res.string.home_first_use_text),
         cta = stringResource(Res.string.home_first_use_cta),
         compact = compact,
-        onClick = onCreateDeck
+        onClick = onCreateDeck,
+        secondary = secondary
     )
 }
 
