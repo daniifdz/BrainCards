@@ -14,6 +14,20 @@
     <string name="sign_out_loss_text">No se pudieron subir a tu cuenta. Si cierras sesión ahora, se borrarán de este dispositivo.</string>
     <string name="sign_out_loss_confirm">Cerrar sesión de todos modos</string>
     <string name="settings_delete_account_subtitle">Borra tu cuenta y todos tus mazos de la nube.</string>
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_back">Volver</string>
+    <string name="settings_account_header">Cuenta</string>
+    <string name="settings_signed_in_fallback">Sesión iniciada</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="settings_delete_account">Eliminar cuenta</string>
+    <string name="settings_about_header">Acerca de</string>
+    <string name="settings_version_title">Versión de BrainCards</string>
+    <string name="settings_developer_title">Desarrollado por</string>
+    <string name="settings_developer_name" translatable="false">Daniel Fernández-Muñiz Arribas</string>
+    <string name="settings_feedback_title">Enviar comentarios</string>
+    <string name="settings_feedback_subtitle">Ayúdanos a mejorar</string>
+    <string name="settings_copyright_title">Copyright</string>
+    <string name="settings_copyright_text">© 2026 BrainCards. Todos los derechos reservados.</string>
     <string name="delete_account_dialog_title">Eliminar tu cuenta</string>
     <string name="delete_account_dialog_text">Esta acción borra tu cuenta y todos tus mazos de la nube de forma permanente. Los mazos guardados solo en este dispositivo no se verán afectados.</string>
     <string name="delete_account_dialog_confirm">Eliminar cuenta</string>

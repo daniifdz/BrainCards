@@ -135,13 +135,13 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         BrandBadge(size = SETTINGS_TITLE_BADGE_DP.dp)
                         Spacer(Modifier.width(SETTINGS_TITLE_BADGE_GAP_DP.dp))
-                        Text("Ajustes")
+                        Text(stringResource(Res.string.settings_title))
                     }
                 },
                 navigationIcon = {
                     // Desactivada a mitad del cierre de sesion o del borrado de cuenta: no se sale de Ajustes.
                     IconButton(onClick = onBackClick, enabled = !isSigningOut && !isDeletingAccount) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.settings_back))
                     }
                 }
             )
@@ -180,17 +180,17 @@ fun SettingsScreen(
                     is AuthState.Authenticated -> {
                         SectionDivider()
                         Text(
-                            text = "Cuenta",
+                            text = stringResource(Res.string.settings_account_header),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
                         ListItem(
-                            headlineContent = { Text(state.email ?: "Sesión iniciada") },
+                            headlineContent = { Text(state.email ?: stringResource(Res.string.settings_signed_in_fallback)) },
                             leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
                         )
                         ListItem(
-                            headlineContent = { Text("Cerrar sesión") },
+                            headlineContent = { Text(stringResource(Res.string.settings_sign_out)) },
                             leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
                             modifier = Modifier.clickable(enabled = !isSigningOut && !isDeletingAccount) {
                                 authViewModel.requestSignOut()
@@ -198,7 +198,7 @@ fun SettingsScreen(
                         )
                         ListItem(
                             headlineContent = {
-                                Text("Eliminar cuenta", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(Res.string.settings_delete_account), color = MaterialTheme.colorScheme.error)
                             },
                             supportingContent = { Text(stringResource(Res.string.settings_delete_account_subtitle)) },
                             leadingContent = {
@@ -237,7 +237,7 @@ fun SettingsScreen(
                 SectionDivider()
 
                 Text(
-                    text = "Acerca de",
+                    text = stringResource(Res.string.settings_about_header),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -251,20 +251,20 @@ fun SettingsScreen(
                 )
 
                 ListItem(
-                    headlineContent = { Text("Versión de BrainCards") },
+                    headlineContent = { Text(stringResource(Res.string.settings_version_title)) },
                     supportingContent = { Text(APP_VERSION) },
                     leadingContent = { Icon(Icons.Default.Info, contentDescription = null) }
                 )
 
                 ListItem(
-                    headlineContent = { Text("Desarrollado por") },
-                    supportingContent = { Text("Daniel Fernández-Muñiz Arribas") },
+                    headlineContent = { Text(stringResource(Res.string.settings_developer_title)) },
+                    supportingContent = { Text(stringResource(Res.string.settings_developer_name)) },
                     leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
                 )
 
                 ListItem(
-                    headlineContent = { Text("Enviar comentarios") },
-                    supportingContent = { Text("Ayúdanos a mejorar") },
+                    headlineContent = { Text(stringResource(Res.string.settings_feedback_title)) },
+                    supportingContent = { Text(stringResource(Res.string.settings_feedback_subtitle)) },
                     leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
                     modifier = Modifier.clickable {
                         val opened = openEmailClient(
@@ -277,8 +277,8 @@ fun SettingsScreen(
                 )
 
                 ListItem(
-                    headlineContent = { Text("Copyright") },
-                    supportingContent = { Text("© 2026 BrainCards. Todos los derechos reservados.") },
+                    headlineContent = { Text(stringResource(Res.string.settings_copyright_title)) },
+                    supportingContent = { Text(stringResource(Res.string.settings_copyright_text)) },
                     leadingContent = { Icon(Icons.Default.Code, contentDescription = null) }
                 )
             }
