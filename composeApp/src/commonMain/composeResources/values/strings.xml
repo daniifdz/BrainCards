@@ -325,4 +325,9 @@
     <string name="stats_empty_text">Crea tu primer mazo para empezar a ver tus estadísticas aquí.</string>
     <string name="stats_empty_cta">Crear tu primer mazo</string>
 
+    <!-- Enviar comentarios sin cliente de correo -->
+    <string name="feedback_unavailable_title">No se pudo abrir el correo</string>
+    <string name="feedback_unavailable_body">No hay ninguna aplicación de correo configurada. Escríbenos a esta dirección:</string>
+    <string name="feedback_copy_address">Copiar dirección</string>
+    <string name="feedback_close">Cerrar</string>
 </resources>

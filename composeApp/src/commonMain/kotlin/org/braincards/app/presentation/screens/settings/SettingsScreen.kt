@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import braincards.composeapp.generated.resources.*
 import org.braincards.app.domain.models.AuthState
+import org.braincards.app.platform.copyToClipboard
 import org.braincards.app.platform.openEmailClient
 import org.braincards.app.APP_VERSION
 import org.braincards.app.presentation.components.BrandBadge
@@ -71,6 +72,7 @@ fun SettingsScreen(
     val autoSyncViewModel = koinViewModel<AutoSyncSettingViewModel>()
     val autoSyncEnabled by autoSyncViewModel.enabled.collectAsState()
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showFeedbackUnavailableDialog by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -265,11 +267,12 @@ fun SettingsScreen(
                     supportingContent = { Text("Ayúdanos a mejorar") },
                     leadingContent = { Icon(Icons.Default.Email, contentDescription = null) },
                     modifier = Modifier.clickable {
-                        openEmailClient(
-                            recipient = "braincards.soporte@proton.me",
+                        val opened = openEmailClient(
+                            recipient = FEEDBACK_EMAIL,
                             subject = "Feedback para BrainCards v$APP_VERSION",
                             body = "Hola, tengo una sugerencia/problema:\n\n"
                         )
+                        if (!opened) showFeedbackUnavailableDialog = true
                     }
                 )
 
@@ -298,6 +301,17 @@ fun SettingsScreen(
 
     if (isDeletingAccount) {
         DeletingAccountDialog()
+    }
+
+    if (showFeedbackUnavailableDialog) {
+        FeedbackUnavailableDialog(
+            address = FEEDBACK_EMAIL,
+            onCopy = {
+                copyToClipboard(FEEDBACK_EMAIL)
+                showFeedbackUnavailableDialog = false
+            },
+            onDismiss = { showFeedbackUnavailableDialog = false }
+        )
     }
 
     if (showDeleteAccountDialog) {

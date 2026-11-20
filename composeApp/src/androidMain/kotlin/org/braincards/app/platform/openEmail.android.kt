@@ -10,28 +10,26 @@ actual fun openEmailClient(
     recipient: String,
     subject: String,
     body: String
-) {
+): Boolean {
     // Obtenemos el contexto a través de Koin
     val context = try {
         GlobalContext.get().get<Context>()
     } catch (e: Exception) {
         null
-    }
+    } ?: return false
 
-    if (context != null) {
-        try {
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:")
-                putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
-                putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, body)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            logError("Error al abrir el cliente de email", e)
+    return try {
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = Uri.parse("mailto:")
+            putExtra(Intent.EXTRA_EMAIL, arrayOf(recipient))
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            putExtra(Intent.EXTRA_TEXT, body)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-    } else {
-        println("Error: Contexto de Android no encontrado en Koin.")
+        context.startActivity(intent)
+        true
+    } catch (e: Exception) {
+        logError("Error al abrir el cliente de email", e)
+        false
     }
 }
