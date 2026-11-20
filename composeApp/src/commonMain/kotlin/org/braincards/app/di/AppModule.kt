@@ -29,6 +29,7 @@ import org.braincards.app.data.repository.LocalDataRepositoryImpl
 import org.braincards.app.data.repository.DeckSummariesObserverImpl
 import org.braincards.app.data.repository.DueCardsObserverImpl
 import org.braincards.app.data.repository.FreeReviewCardsSourceImpl
+import org.braincards.app.data.repository.SampleDeckStoreImpl
 import org.braincards.app.data.repository.StudyStatsObserverImpl
 import org.braincards.app.data.repository.PendingChangesObserverImpl
 import org.braincards.app.data.repository.ReviewLogRepositoryImpl
@@ -47,6 +48,7 @@ import org.braincards.app.domain.repository.AutoSyncPreference
 import org.braincards.app.domain.repository.LocalModePreference
 import org.braincards.app.domain.repository.PendingChangesObserver
 import org.braincards.app.domain.repository.PullWatermarkStore
+import org.braincards.app.domain.repository.SampleDeckStore
 import org.braincards.app.domain.repository.RemoteDataSource
 import org.braincards.app.domain.repository.ReviewLogRepository
 import org.braincards.app.domain.repository.TopicsRepository
@@ -64,6 +66,7 @@ import org.braincards.app.domain.usecase.Auth.VerifyPasswordResetCodeUseCase
 import org.braincards.app.domain.usecase.Auth.VerifySignUpCodeUseCase
 import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
 import org.braincards.app.domain.usecase.Decks.AddDeckUseCase
+import org.braincards.app.domain.usecase.Decks.CreateSampleDeckUseCase
 import org.braincards.app.domain.usecase.Decks.GetDeckUseCase
 import org.braincards.app.domain.usecase.Decks.ObserveDeckSummariesUseCase
 import org.braincards.app.domain.usecase.Decks.UpdateDeckUseCase
@@ -278,6 +281,11 @@ fun appModule(
     // Lista de mazos: mazos con su recuento de tarjetas (una consulta agregada), interfaz aditiva aparte.
     single<DeckSummariesObserver> { DeckSummariesObserverImpl(deckDao = get()) }
     factory { ObserveDeckSummariesUseCase(observer = get()) }
+    // Mazo de ejemplo «Primeros pasos»: una sola transaccion con los repositorios de siempre (interfaz aditiva).
+    single<SampleDeckStore> {
+        SampleDeckStoreImpl(transactionRunner = get(), decksRepository = get(), topicsRepository = get(), flashcardRepository = get())
+    }
+    factory { CreateSampleDeckUseCase(decksRepository = get(), store = get()) }
 
     viewModel {
         DecksViewModel(
