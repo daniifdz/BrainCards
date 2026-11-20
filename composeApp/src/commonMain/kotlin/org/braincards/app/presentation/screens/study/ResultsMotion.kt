@@ -69,3 +69,13 @@ const val RESULTS_COMPACT_WIDTH_DP = 420f
 fun resultsBadgeSpec(availableWidthDp: Float): ResultsBadgeSpec =
     if (availableWidthDp < RESULTS_COMPACT_WIDTH_DP) ResultsBadgeSpec(sizeDp = 56, cornerPercent = 32)
     else ResultsBadgeSpec(sizeDp = 64, cornerPercent = 31)
+
+/** Tamaño (sp) del título de Resultados: 20 en ancho compacto (misma regla que el badge) y 22 en el resto. */
+fun resultsTitleSizeSp(availableWidthDp: Float): Int = if (availableWidthDp < RESULTS_COMPACT_WIDTH_DP) 20 else 22
+
+/** Relleno de la tarjeta de Resultados: 24 / 32 dp en ancho compacto y 36 / 40 dp en el resto. */
+data class ResultsCardPadding(val horizontalDp: Int, val verticalDp: Int)
+
+fun resultsCardPadding(availableWidthDp: Float): ResultsCardPadding =
+    if (availableWidthDp < RESULTS_COMPACT_WIDTH_DP) ResultsCardPadding(horizontalDp = 24, verticalDp = 32)
+    else ResultsCardPadding(horizontalDp = 36, verticalDp = 40)

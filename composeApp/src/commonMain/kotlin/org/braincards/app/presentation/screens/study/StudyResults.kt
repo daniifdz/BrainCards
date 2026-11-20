@@ -172,6 +172,8 @@ fun StudyFinished(
 
     BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         val badge = resultsBadgeSpec(maxWidth.value)
+        val cardPadding = resultsCardPadding(maxWidth.value)
+        val titleSizeSp = resultsTitleSizeSp(maxWidth.value)
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.Center,
@@ -184,7 +186,7 @@ fun StudyFinished(
                 border = BorderStroke(1.dp, scheme.outlineVariant)
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 36.dp),
+                    modifier = Modifier.padding(horizontal = cardPadding.horizontalDp.dp, vertical = cardPadding.verticalDp.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
@@ -209,7 +211,7 @@ fun StudyFinished(
                     }
                     Text(
                         text = stringResource(studyResultsTitleRes(freeReview)),
-                        style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                        style = MaterialTheme.typography.headlineSmall.copy(fontSize = titleSizeSp.sp),
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.semantics {

@@ -143,4 +143,29 @@ class ResultsMotionTest {
         assertEquals(56, resultsBadgeSpec(419.9f).sizeDp)
         assertEquals(64, resultsBadgeSpec(420f).sizeDp)
     }
+
+    @Test
+    fun el_titulo_mide_20_sp_en_compacto_y_22_en_el_resto() {
+        assertEquals(20, resultsTitleSizeSp(360f), "movil")
+        assertEquals(20, resultsTitleSizeSp(419.9f), "justo por debajo del umbral")
+        assertEquals(22, resultsTitleSizeSp(420f), "en el umbral ya es normal")
+        assertEquals(22, resultsTitleSizeSp(1200f), "escritorio")
+    }
+
+    @Test
+    fun el_relleno_de_la_tarjeta_es_24_32_en_compacto_y_36_40_en_el_resto() {
+        assertEquals(ResultsCardPadding(horizontalDp = 24, verticalDp = 32), resultsCardPadding(360f))
+        assertEquals(ResultsCardPadding(horizontalDp = 24, verticalDp = 32), resultsCardPadding(419.9f))
+        assertEquals(ResultsCardPadding(horizontalDp = 36, verticalDp = 40), resultsCardPadding(420f))
+        assertEquals(ResultsCardPadding(horizontalDp = 36, verticalDp = 40), resultsCardPadding(1200f))
+    }
+
+    @Test
+    fun titulo_y_relleno_comparten_el_umbral_del_badge() {
+        listOf(300f, 419.9f, 420f, 500f).forEach { w ->
+            val compact = resultsBadgeSpec(w).sizeDp == 56
+            assertEquals(compact, resultsTitleSizeSp(w) == 20, "titulo en $w dp")
+            assertEquals(compact, resultsCardPadding(w).horizontalDp == 24, "relleno en $w dp")
+        }
+    }
 }
