@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android >= 12: splash del sistema SOLO morado (icono transparente); la animacion del cerebro la hace EntryPending (13b2).
+<!-- Android >= 12: splash del sistema SOLO morado (icono transparente); la animacion del cerebro la hace EntryPending.
      ESTE ES EL UNICO RECURSO QUE HAY QUE BORRAR PARA REVERTIR (junto con SPLASH_ANIMATE_ON_COLD_START = false). -->
 <resources>
     <item name="splash_system_icon" type="drawable">@drawable/ic_splash_blank</item>

@@ -1,4 +1,4 @@
--- Bloque F (borrado de cuenta). Permite que un usuario autenticado borre su propia
+-- Borrado de cuenta. Permite que un usuario autenticado borre su propia
 -- cuenta de auth.users desde la app, via RPC (Postgrest: client.postgrest.rpc(...)).
 -- El ON DELETE CASCADE de sql/supabase_schema.sql se encarga de borrar en cascada
 -- sus filas en decks/topics/flashcards/reviewlog -- esta funcion solo borra el

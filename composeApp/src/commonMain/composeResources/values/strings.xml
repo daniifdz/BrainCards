@@ -173,7 +173,7 @@
         <item quantity="other">%1$d cambios sin sincronizar</item>
     </plurals>
 
-    <!-- Lista de mazos (handoff 5.1b) -->
+    <!-- Lista de mazos -->
     <string name="decks_title">Mis Mazos</string>
     <string name="decks_back">Volver a Home</string>
     <string name="decks_new">Nuevo mazo</string>
@@ -210,7 +210,7 @@
     <string name="decks_save_failed">No se pudo guardar el mazo. Inténtalo de nuevo.</string>
     <string name="decks_delete_failed">No se pudo eliminar. Inténtalo de nuevo.</string>
 
-    <!-- Contenido de un mazo (handoff 5.1c / 5.1d) -->
+    <!-- Contenido de un mazo -->
     <string name="deckcontent_back_to_decks">Volver a Mis Mazos</string>
     <string name="deckcontent_back_to_deck">Volver al mazo</string>
     <string name="deckcontent_new_topic">Nuevo tema</string>
@@ -271,7 +271,7 @@
     <string name="deckcontent_save_card_failed">No se pudo guardar la tarjeta. Inténtalo de nuevo.</string>
     <string name="deckcontent_delete_failed">No se pudo eliminar. Inténtalo de nuevo.</string>
 
-    <!-- Sesion de estudio (handoff 5.5, v4.18) -->
+    <!-- Sesion de estudio -->
     <string name="study_close">Cerrar sesión de estudio</string>
     <string name="study_progress">Quedan %1$d de %2$d</string>
     <string name="study_label_deck_topic">%1$s · %2$s</string>
@@ -290,7 +290,7 @@
     <string name="study_empty_text">No hay tarjetas pendientes ahora mismo. Vuelve más tarde o repasa un mazo concreto.</string>
     <string name="study_back_home">Volver al inicio</string>
     <string name="study_back_deck">Volver al mazo</string>
-    <!-- Resultados (handoff v4.18): total = pulsaciones, no tarjetas -->
+    <!-- Resultados: total = pulsaciones, no tarjetas -->
     <string name="study_results_all">Estudiar Todo</string>
     <string name="study_results_title">¡Sesión completada!</string>
     <plurals name="study_results_count">
@@ -298,13 +298,13 @@
         <item quantity="other">%1$d repasos</item>
     </plurals>
     <string name="study_results_stat_a11y">%1$s: %2$d</string>
-    <!-- Repaso libre (handoff v4.25, paso 14): chip, avisos y titulo de Resultados -->
+    <!-- Repaso libre: chip, avisos y titulo de Resultados -->
     <string name="free_review">Repaso libre</string>
     <string name="home_free_review_hint">Repasa todos tus mazos en orden aleatorio. No afecta a tu programación.</string>
     <string name="study_free_review_notice">No cambia tu programación.</string>
     <string name="study_results_title_free">¡Repaso completado!</string>
     <string name="study_results_free_notice">No afecta a tu programación de repaso.</string>
-    <!-- Estadisticas (handoff 5.7) -->
+    <!-- Estadisticas -->
     <string name="stats_title">Estadísticas</string>
     <string name="stats_back">Volver a Home</string>
     <string name="stats_tile_decks">Mazos</string>

@@ -1,4 +1,4 @@
--- Sprint 12 -- sync del progreso de estudio (card_scheduling). Espejo en Postgres de la
+-- Sync del progreso de estudio (card_scheduling). Espejo en Postgres de la
 -- tabla local card_scheduling (SM-2: easeFactor, interval, repetitions, nextReview).
 --
 -- Una fila por tarjeta REPASADA (se crea en el primer repaso, no al crear la tarjeta).
