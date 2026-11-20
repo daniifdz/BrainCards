@@ -92,6 +92,7 @@ import org.braincards.app.presentation.screens.auth.WelcomeViewModel
 import org.braincards.app.presentation.screens.decks.DecksViewModel
 import org.braincards.app.presentation.screens.flashcards.DeckContentViewModel
 import org.braincards.app.presentation.screens.home.HomeViewModel
+import org.braincards.app.presentation.screens.sample.SampleDeckViewModel
 import org.braincards.app.presentation.screens.navigation.AppEntryViewModel
 import org.braincards.app.presentation.screens.study.StudyViewModel
 import org.braincards.app.presentation.screens.settings.AutoSyncSettingViewModel
@@ -321,6 +322,7 @@ fun appModule(
     single<DueCardsObserver> { DueCardsObserverImpl(flashcardDao = get()) }
     factory { ObserveDueCountUseCase(observer = get()) }
     viewModel { HomeViewModel(observeDueCount = get(), observeDeckSummaries = get()) }
+    viewModel { SampleDeckViewModel(createSampleDeck = get()) }
     viewModel { WelcomeViewModel(getDecks = get()) }
 
     // Arranque: flag de "modo local elegido" (DataStore) y ruta de entrada / sesion perdida.
