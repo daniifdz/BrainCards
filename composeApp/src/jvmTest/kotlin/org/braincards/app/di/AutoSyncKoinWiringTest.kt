@@ -1,5 +1,6 @@
 package org.braincards.app.di
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -88,7 +89,8 @@ class AutoSyncKoinWiringTest {
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
                 auth, remote, decks, topics, flashcards, scheduling,
-                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

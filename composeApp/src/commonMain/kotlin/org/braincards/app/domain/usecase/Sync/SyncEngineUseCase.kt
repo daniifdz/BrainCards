@@ -1,9 +1,5 @@
 package org.braincards.app.domain.usecase.Sync
 
-import io.github.jan.supabase.exceptions.HttpRequestException
-import io.github.jan.supabase.exceptions.RestException
-import io.github.jan.supabase.postgrest.exception.PostgrestRestException
-import io.ktor.client.plugins.HttpRequestTimeoutException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -24,6 +20,8 @@ import org.braincards.app.domain.repository.NeverEmptyLocalTableInspector
 import org.braincards.app.domain.repository.NoOpPullWatermarkStore
 import org.braincards.app.domain.repository.PullWatermarkStore
 import org.braincards.app.domain.repository.RemoteDataSource
+import org.braincards.app.domain.repository.SyncFailureClassifier
+import org.braincards.app.domain.repository.SyncFailureKind
 import org.braincards.app.domain.repository.TopicsRepository
 import org.braincards.app.domain.usecase.Auth.BackfillLocalDataUseCase
 import kotlin.time.Duration
@@ -129,6 +127,8 @@ class SyncEngineUseCase(
     private val flashcardRepository: FlashcardRepository,
     private val cardSchedulingRepository: CardSchedulingRepository,
     private val backfillLocalDataUseCase: BackfillLocalDataUseCase,
+    // Decide si un fallo remoto cuenta como red, rechazo o sin clasificar. Obligatorio: sin él el motor no sabe qué es «red».
+    private val failureClassifier: SyncFailureClassifier,
     // Los tres con valor por defecto = comportamiento de siempre (pull completo en cada sync).
     private val watermarkStore: PullWatermarkStore = NoOpPullWatermarkStore,
     private val localTables: LocalTableInspector = NeverEmptyLocalTableInspector,
@@ -376,16 +376,17 @@ class SyncEngineUseCase(
      * Causa de un pull abortado (para que el mensaje al usuario no diga "sin conexion" cuando el
      * fallo fue local):
      * - cualquier excepcion al APLICAR las filas descargadas -> LOCAL;
-     * - al DESCARGAR: timeout, transporte o 5xx -> NETWORK; un 4xx de PostgREST o de Auth (sesion
-     *   o permisos, ambas son RestException) -> REJECTED;
+     * - al DESCARGAR: lo que diga el [failureClassifier]: red -> NETWORK, rechazo del servidor -> REJECTED;
      * - cualquier otra excepcion al descargar (p. ej. un error de decodificacion) -> null, sin
      *   clasificar: el mensaje la trata como red, igual que antes de existir esta clasificacion.
      */
     private fun classifyPullFailure(inApplyPhase: Boolean, e: Exception): PullFailure? = when {
         inApplyPhase -> PullFailure.LOCAL
-        e.isNetworkOrServerFailure() -> PullFailure.NETWORK
-        e is RestException && e.statusCode < 500 -> PullFailure.REJECTED
-        else -> null
+        else -> when (failureClassifier.classify(e)) {
+            SyncFailureKind.NETWORK -> PullFailure.NETWORK
+            SyncFailureKind.REJECTED -> PullFailure.REJECTED
+            SyncFailureKind.UNCLASSIFIED -> null
+        }
     }
 
     /**
@@ -422,7 +423,7 @@ class SyncEngineUseCase(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                return if (e.isNetworkOrServerFailure()) {
+                return if (failureClassifier.classify(e) == SyncFailureKind.NETWORK) {
                     consecutiveNetworkFailures++
                     PushAttempt.NETWORK_FAILURE
                 } else {
@@ -447,21 +448,6 @@ class SyncEngineUseCase(
     }
 
     private enum class PushAttempt { UPLOADED, REJECTED, NETWORK_FAILURE }
-
-    /**
-     * Clasificación según el código fuente de supabase-kt 3.1.4 y ktor-client-core 3.1.2:
-     * - HttpRequestTimeoutException / HttpRequestException: no hubo respuesta HTTP (timeout o fallo de transporte: DNS,
-     *   conexión rechazada, TLS...).
-     * - PostgrestRestException con statusCode >= 500: hubo respuesta, pero el fallo es del lado de Supabase, no un dato
-     *   inválido nuestro; mismo trato que un timeout.
-     * - PostgrestRestException con statusCode < 500 (400/401/404/409...): rechazo real del cliente; no cuenta como red.
-     */
-    private fun Exception.isNetworkOrServerFailure(): Boolean = when (this) {
-        is HttpRequestTimeoutException -> true
-        is HttpRequestException -> true
-        is PostgrestRestException -> statusCode >= 500
-        else -> false
-    }
 
     private companion object {
         const val CONSECUTIVE_NETWORK_FAILURE_LIMIT = 3

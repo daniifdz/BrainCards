@@ -1,5 +1,6 @@
 package org.braincards.app.domain
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeAuthRepository
@@ -87,7 +88,8 @@ class RemoteDataSourceDefaultsTest {
         val scheduling = FakeCardSchedulingRepository()
         val engine = SyncEngineUseCase(
             auth, recorder, decks, topics, flashcards, scheduling,
-            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+            failureClassifier = SupabaseFailureClassifier
         )
 
         val result = engine()

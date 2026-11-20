@@ -1,5 +1,6 @@
 package org.braincards.app.data.local.dao
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.room.Room
 import androidx.room.useWriterConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -118,7 +119,8 @@ class PullOrphanGuardRoomTest {
         val auth = FakeAuthRepository(AuthState.Authenticated(userId, "a@b.c", sessionConfirmed = true))
         val engine = SyncEngineUseCase(
             auth, remote, decks, topics, flashcards, scheduling,
-            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+            failureClassifier = SupabaseFailureClassifier
         )
 
         val result = engine()

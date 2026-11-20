@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.MemorySessionManager
 import io.github.jan.supabase.auth.auth
@@ -132,7 +133,8 @@ class SyncFailureCharacterizationTest {
         val scheduling = FakeCardSchedulingRepository()
         return SyncEngineUseCase(
             auth, remote, decks, topics, flashcards, scheduling,
-            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+            failureClassifier = SupabaseFailureClassifier
         )
     }
 

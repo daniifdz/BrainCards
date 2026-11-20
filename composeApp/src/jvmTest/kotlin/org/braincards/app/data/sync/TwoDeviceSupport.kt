@@ -1,5 +1,6 @@
 package org.braincards.app.data.sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.room.Room
 import androidx.room.useWriterConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -242,7 +243,8 @@ class Device(
         backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
         watermarkStore = store,
         localTables = localData,
-        clock = clock
+        clock = clock,
+        failureClassifier = SupabaseFailureClassifier
     )
 
     // Perezoso: solo se construye en los tests de cierre de sesion (el resto llama al motor directamente, en el

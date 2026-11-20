@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -52,7 +53,8 @@ class SyncCoordinatorPendingCountTest {
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
                 auth, remote, decks, topics, flashcards, scheduling,
-                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

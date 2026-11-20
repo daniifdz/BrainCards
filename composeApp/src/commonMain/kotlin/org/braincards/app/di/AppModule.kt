@@ -1,5 +1,7 @@
 package org.braincards.app.di
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
+import org.braincards.app.domain.repository.SyncFailureClassifier
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
@@ -167,6 +169,8 @@ fun appModule(
             cardSchedulingRepository = get()
         )
     }
+    // Clasifica los fallos remotos para el motor de sync (la implementación conoce Supabase/Ktor; el dominio no).
+    single<SyncFailureClassifier> { SupabaseFailureClassifier }
     factory {
         SyncEngineUseCase(
             authRepository = get(),
@@ -176,6 +180,7 @@ fun appModule(
             flashcardRepository = get(),
             cardSchedulingRepository = get(),
             backfillLocalDataUseCase = get(),
+            failureClassifier = get(),
             watermarkStore = get(),
             localTables = get()
         )

@@ -1,5 +1,6 @@
 package org.braincards.app.presentation.screens.auth
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,7 +47,8 @@ internal class AuthVmEnv(initial: AuthState = AuthState.NotAuthenticated) {
         authRepository = auth,
         syncEngineUseCase = SyncEngineUseCase(
             auth, remote, decks, topics, flashcards, scheduling,
-            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+            BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+            failureClassifier = SupabaseFailureClassifier
         ),
         decksRepository = decks,
         topicsRepository = topics,

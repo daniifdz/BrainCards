@@ -1,5 +1,6 @@
 package org.braincards.app.presentation.screens.auth
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
@@ -78,7 +79,8 @@ class AuthViewModelAutoSyncGateTest {
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
                 auth, remote, decks, topics, flashcards, scheduling,
-                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

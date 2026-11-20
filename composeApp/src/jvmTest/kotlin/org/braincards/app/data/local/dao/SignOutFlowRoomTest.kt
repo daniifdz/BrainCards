@@ -1,5 +1,6 @@
 package org.braincards.app.data.local.dao
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.room.Room
 import androidx.room.useWriterConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
@@ -90,7 +91,8 @@ class SignOutFlowRoomTest {
                 topicsRepository = topics,
                 flashcardRepository = flashcards,
                 cardSchedulingRepository = scheduling,
-                backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

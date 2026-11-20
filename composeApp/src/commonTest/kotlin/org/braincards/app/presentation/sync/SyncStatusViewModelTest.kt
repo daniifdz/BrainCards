@@ -1,5 +1,6 @@
 package org.braincards.app.presentation.sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.preferencesOf
@@ -102,7 +103,8 @@ class SyncStatusViewModelTest {
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
                 auth, remote, decks, topics, flashcards, scheduling,
-                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

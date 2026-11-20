@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import org.braincards.app.domain.fakes.FakeAuthRepository
@@ -149,7 +150,8 @@ class SyncEngineUseCaseTest {
         topicsRepository = topicsRepository,
         flashcardRepository = flashcardRepository,
         cardSchedulingRepository = cardSchedulingRepository,
-        backfillLocalDataUseCase = backfillLocalDataUseCase
+        backfillLocalDataUseCase = backfillLocalDataUseCase,
+        failureClassifier = SupabaseFailureClassifier
     )
 
     @Test

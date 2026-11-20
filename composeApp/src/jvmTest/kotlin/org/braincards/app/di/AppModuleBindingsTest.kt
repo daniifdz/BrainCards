@@ -1,5 +1,12 @@
 package org.braincards.app.di
 
+import io.github.jan.supabase.exceptions.HttpRequestException
+import io.ktor.client.request.HttpRequestBuilder
+import org.braincards.app.data.remote.SupabaseFailureClassifier
+import org.braincards.app.domain.repository.SyncFailureClassifier
+import org.braincards.app.domain.repository.SyncFailureKind
+import org.braincards.app.domain.usecase.Sync.SyncEngineUseCase
+import kotlin.test.assertEquals
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import io.github.jan.supabase.SupabaseClient
@@ -144,6 +151,18 @@ class AppModuleBindingsTest {
             assertTrue(preference is DataStoreLocalModePreference)
             assertSame(preference, koin.get<LocalModePreference>())
             assertNotNull(koin.get<AppEntryViewModel>())
+        }
+    }
+
+    @Test
+    fun el_clasificador_de_fallos_del_motor_es_el_de_Supabase_y_el_motor_se_resuelve() {
+        withRealModule { koin ->
+            val classifier = koin.get<SyncFailureClassifier>()
+
+            assertSame(SupabaseFailureClassifier, classifier)
+            assertEquals(SyncFailureKind.NETWORK, classifier.classify(HttpRequestException("sin red", HttpRequestBuilder())))
+            assertEquals(SyncFailureKind.UNCLASSIFIED, classifier.classify(IllegalStateException("fallo ordinario")))
+            assertNotNull(koin.get<SyncEngineUseCase>())
         }
     }
 }

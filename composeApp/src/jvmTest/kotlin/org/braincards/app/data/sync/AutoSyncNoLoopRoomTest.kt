@@ -1,5 +1,6 @@
 package org.braincards.app.data.sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.CoroutineScope
@@ -75,7 +76,8 @@ class AutoSyncNoLoopRoomTest {
             authRepository = auth,
             syncEngineUseCase = SyncEngineUseCase(
                 auth, remote, decks, topics, flashcards, scheduling,
-                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

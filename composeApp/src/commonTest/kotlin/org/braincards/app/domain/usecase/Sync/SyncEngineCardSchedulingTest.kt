@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import io.github.jan.supabase.exceptions.HttpRequestException
 import io.ktor.client.request.HttpRequestBuilder
 import kotlinx.coroutines.runBlocking
@@ -42,7 +43,8 @@ class SyncEngineCardSchedulingTest {
             topicsRepository = topics,
             flashcardRepository = flashcards,
             cardSchedulingRepository = scheduling,
-            backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+            backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+            failureClassifier = SupabaseFailureClassifier
         )
     }
 

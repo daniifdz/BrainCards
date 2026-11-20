@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -84,7 +85,8 @@ class SyncCoordinatorFullPullTest {
                 flashcardRepository = flashcards,
                 cardSchedulingRepository = scheduling,
                 backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
-                watermarkStore = store
+                watermarkStore = store,
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

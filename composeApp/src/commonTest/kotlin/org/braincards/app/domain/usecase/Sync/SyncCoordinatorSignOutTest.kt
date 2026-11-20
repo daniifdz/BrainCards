@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.preferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -79,7 +80,8 @@ class SyncCoordinatorSignOutTest {
                 topicsRepository = topics,
                 flashcardRepository = flashcards,
                 cardSchedulingRepository = scheduling,
-                backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling)
+                backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
+                failureClassifier = SupabaseFailureClassifier
             ),
             decksRepository = decks,
             topicsRepository = topics,

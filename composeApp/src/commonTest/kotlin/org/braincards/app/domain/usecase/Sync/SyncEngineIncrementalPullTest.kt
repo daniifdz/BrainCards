@@ -1,5 +1,6 @@
 package org.braincards.app.domain.usecase.Sync
 
+import org.braincards.app.data.remote.SupabaseFailureClassifier
 import io.github.jan.supabase.exceptions.HttpRequestException
 import io.ktor.client.request.HttpRequestBuilder
 import kotlinx.coroutines.runBlocking
@@ -172,7 +173,8 @@ class SyncEngineIncrementalPullTest {
             backfillLocalDataUseCase = BackfillLocalDataUseCase(decks, topics, flashcards, scheduling),
             watermarkStore = store,
             localTables = inspector,
-            clock = clock
+            clock = clock,
+            failureClassifier = SupabaseFailureClassifier
         )
 
         suspend fun sync(force: Boolean = false): SyncResult.Completed = engine(force) as SyncResult.Completed
