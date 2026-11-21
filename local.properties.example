@@ -1,0 +1,18 @@
+# Copia este fichero como local.properties (queda fuera de git) y descomenta lo que necesites.
+# Para compilar la app de escritorio y ejecutar los tests no hace falta nada de esto; la app de Android necesita sdk.dir.
+
+# Ruta del SDK de Android (Android Studio la escribe sola al abrir el proyecto).
+# sdk.dir=C\:\Users\<usuario>\AppData\Local\Android\Sdk
+
+# Supabase (opcional): cuenta de usuario y sincronizacion. Alternativa: las variables de entorno
+# BRAINCARDS_SUPABASE_URL y BRAINCARDS_SUPABASE_ANON_KEY. Usa siempre la clave ANONIMA (publica), nunca la service_role.
+# Sin estos valores la build funciona (avisa con un warning y genera constantes vacias) y la app arranca sin cuenta:
+# iniciar sesion o crear una cuenta muestra "No se pudo conectar. Revisa tu conexion." y no hay sincronizacion.
+# SUPABASE_URL=https://<tu-proyecto>.supabase.co
+# SUPABASE_ANON_KEY=<clave anonima>
+
+# Firma del build de release: solo se exige para assembleRelease y bundleRelease (los builds de debug, run y los tests no la necesitan).
+# Hace falta ademas el keystore en composeApp/keystore/braincards-key.jks (alias key0).
+# Alternativa: las variables de entorno BRAINCARDS_KEYSTORE_PASSWORD y BRAINCARDS_KEY_PASSWORD.
+# KEYSTORE_PASSWORD=
+# KEY_PASSWORD=
