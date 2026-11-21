@@ -9,9 +9,42 @@ val localProperties = Properties().apply {
     }
 }
 
-fun signingProperty(propertyName: String, envName: String): String =
-    (localProperties.getProperty(propertyName) ?: System.getenv(envName))
-        ?: error("Missing $propertyName in local.properties or $envName environment variable")
+// Firma de release: se lee de local.properties o de variables de entorno, pero NO se exige al configurar el proyecto. Asi `run`, los
+// builds de debug y los tests funcionan en un clon sin keystore ni contrasenas. Solo `checkReleaseSigning` (que cuelga de
+// validateSigningRelease y por tanto de assembleRelease y bundleRelease) falla, con un mensaje que dice que falta.
+fun optionalSigningProperty(propertyName: String, envName: String): String? =
+    (localProperties.getProperty(propertyName) ?: System.getenv(envName))?.takeIf { it.isNotBlank() }
+
+val releaseStorePassword: String? = optionalSigningProperty("KEYSTORE_PASSWORD", "BRAINCARDS_KEYSTORE_PASSWORD")
+val releaseKeyPassword: String? = optionalSigningProperty("KEY_PASSWORD", "BRAINCARDS_KEY_PASSWORD")
+val releaseKeystoreFile = file("keystore/braincards-key.jks")
+
+val checkReleaseSigning by tasks.registering {
+    group = "verification"
+    description = "Comprueba que hay keystore y contrasenas para firmar el build de release."
+    val hasStorePassword = releaseStorePassword != null
+    val hasKeyPassword = releaseKeyPassword != null
+    val keystoreFile = releaseKeystoreFile
+    doLast {
+        val missing = buildList {
+            if (!hasStorePassword) add("KEYSTORE_PASSWORD (local.properties) o la variable de entorno BRAINCARDS_KEYSTORE_PASSWORD")
+            if (!hasKeyPassword) add("KEY_PASSWORD (local.properties) o la variable de entorno BRAINCARDS_KEY_PASSWORD")
+            if (!keystoreFile.exists()) add("el keystore composeApp/keystore/braincards-key.jks (alias key0)")
+        }
+        if (missing.isNotEmpty()) {
+            throw GradleException(
+                "No se puede firmar el build de release: falta " + missing.joinToString("; ") + ". " +
+                    "Los builds de debug, run y los tests no necesitan firma."
+            )
+        }
+    }
+}
+
+// Todo lo que empaqueta o firma el release exige la comprobacion (AGP solo crea validateSigningRelease si la firma esta completa, asi
+// que no se puede colgar solo de ella) y esta corre antes que el resto del build: falla rapido, sin compilar nada.
+val releaseSigningTasks = setOf("assembleRelease", "bundleRelease", "packageRelease", "packageReleaseBundle", "signReleaseBundle", "validateSigningRelease")
+tasks.matching { it.name in releaseSigningTasks }.configureEach { dependsOn(checkReleaseSigning) }
+tasks.matching { it.name == "preBuild" }.configureEach { mustRunAfter(checkReleaseSigning) }
 
 // Version unica de la app: alimenta el versionName de Android, el packageVersion de Desktop y la constante
 // APP_VERSION que Ajustes muestra (se genera mas abajo). Formato MAJOR.MINOR.PATCH con numeros: el instalador MSI de
@@ -195,10 +228,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("keystore/braincards-key.jks")
-            storePassword = signingProperty("KEYSTORE_PASSWORD", "BRAINCARDS_KEYSTORE_PASSWORD")
+            storeFile = releaseKeystoreFile
+            storePassword = releaseStorePassword
             keyAlias = "key0"
-            keyPassword = signingProperty("KEY_PASSWORD", "BRAINCARDS_KEY_PASSWORD")
+            keyPassword = releaseKeyPassword
         }
     }
 
