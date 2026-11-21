@@ -1,0 +1,14 @@
+# Finales de linea: texto en LF en el repositorio y en el arbol de trabajo (en cualquier sistema); los scripts de Windows, en CRLF.
+* text=auto eol=lf
+*.bat text eol=crlf
+gradlew text eol=lf
+
+# Binarios: nunca se convierten ni se muestran como diff de texto.
+*.png binary
+*.ico binary
+*.ttf binary
+*.jar binary
+*.jks binary
+*.keystore binary
+*.apk binary
+*.aab binary
