@@ -286,6 +286,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            modules("jdk.unsupported", "java.sql")
             packageName = "BrainCards"
             packageVersion = appVersionName
 
