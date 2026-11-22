@@ -37,10 +37,10 @@ Todo está explicado, con sus alternativas descartadas y las mejoras pendientes,
 
 ## Cómo ejecutarla
 
-Requisitos: **JDK 17**. Para la app de Android, además, el SDK de Android (`sdk.dir` en `local.properties`, que Android Studio crea solo). Para compilar la versión de escritorio y ejecutar los tests no hace falta nada más: ni claves ni keystore.
+Requisitos: **JDK 17**. Para la app de Android, además, el SDK de Android (`sdk.dir` en `local.properties`, que Android Studio crea solo). Para compilar la versión de escritorio y ejecutar los tests en JVM (`:composeApp:jvmTest`) no hace falta nada más: ni SDK de Android, ni claves ni keystore.
 
 1. Clona el repositorio.
-2. (Opcional) Copia `local.properties.example` a `local.properties` y rellena los valores de tu proyecto de Supabase (`SUPABASE_URL` y `SUPABASE_ANON_KEY`) y la ruta de tu SDK. Ese fichero no se sube al repositorio.
+2. (Opcional) Copia `local.properties.example` a `local.properties`, descomenta lo que necesites y rellena los valores de tu proyecto de Supabase (`SUPABASE_URL` y `SUPABASE_ANON_KEY`) y la ruta de tu SDK. Ese fichero no se sube al repositorio.
 3. Ejecuta:
 
 ```bash
