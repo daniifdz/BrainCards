@@ -67,9 +67,7 @@ Es la primera versión y hay ganas de seguir añadiendo funcionalidades. Lo que 
 
 También quedan, de forma deliberada, fuera de esta versión: iOS, publicación en tiendas y un dominio propio para los correos de la app.
 
-## Cómo se ha hecho
-
-El diseño, las decisiones de arquitectura y la revisión son míos. He usado asistentes de IA como ayuda para la implementación, y cada cambio se ha validado con tests y comprobaciones propias (por ejemplo, mutando el código para comprobar que los tests fallan cuando deben).
+**Proceso de desarrollo.** El diseño, la arquitectura y las decisiones técnicas son mías. He empleado asistentes de IA como herramienta de apoyo en la implementación, y cada cambio pasa por mi revisión y por la validación de los tests.
 
 ## Contacto
 
