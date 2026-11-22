@@ -16,15 +16,15 @@ App de flashcards con repetición espaciada (SM-2) para **Android** y **Desktop*
 
 ## Tecnología
 
-| Área | Elección |
-| --- | --- |
-| Lenguaje y UI | Kotlin Multiplatform, Compose Multiplatform |
-| Arquitectura | Clean Architecture + MVVM, flujo de datos unidireccional |
-| Datos locales | Room KMP (migraciones con test) y DataStore |
-| Backend | Supabase (auth y Postgres con políticas RLS) |
-| Inyección de dependencias | Koin |
-| Navegación | Navigation Compose con rutas tipadas |
-| Pruebas | Más de 3.600 ejecuciones de test (JVM y Android), con Room real y sincronización entre dos dispositivos simulados |
+| Área                      | Elección                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Lenguaje y UI             | Kotlin Multiplatform, Compose Multiplatform                                                                       |
+| Arquitectura              | Clean Architecture + MVVM, flujo de datos unidireccional                                                          |
+| Datos locales             | Room KMP (migraciones con test) y DataStore                                                                       |
+| Backend                   | Supabase (auth y Postgres con políticas RLS)                                                                      |
+| Inyección de dependencias | Koin                                                                                                              |
+| Navegación                | Navigation Compose con rutas tipadas                                                                              |
+| Pruebas                   | Más de 3.600 ejecuciones de test (JVM y Android), con Room real y sincronización entre dos dispositivos simulados |
 
 ## Qué la hace interesante
 
@@ -32,8 +32,6 @@ App de flashcards con repetición espaciada (SM-2) para **Android** y **Desktop*
 - **El Repaso libre no puede escribir en la base de datos por construcción**, y un test lo comprueba comparando todas las tablas.
 - **Una sola definición de «tarjeta activa»** compartida por todas las pantallas e impuesta por un test.
 - **Tests guardián** que impiden que el dominio dependa de librerías de red.
-
-Todo está explicado, con sus alternativas descartadas y las mejoras pendientes, en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Cómo ejecutarla
 
