@@ -3,6 +3,14 @@
 App de flashcards con repetición espaciada (SM-2) para **Android** y **Desktop**, escrita en Kotlin Multiplatform con Compose Multiplatform. Funciona sin cuenta y sin conexión; con cuenta, sincroniza tus mazos entre dispositivos.
 
 <!-- CAPTURAS: añadir 3-4 imágenes (Home, estudio, estadísticas, Desktop) en docs/screenshots/ y enlazarlas aquí -->
+<p align="center">
+  <img src="docs/screenshots/login.png" width="49%" alt="Inicio de sesión">
+  <img src="docs/screenshots/resultados.png" width="49%" alt="Resumen de la sesión de estudio">
+</p>
+<p align="center">
+  <img src="docs/screenshots/estadisticas.png" width="49%" alt="Estadísticas de madurez de las tarjetas">
+  <img src="docs/screenshots/ajustes.png" width="49%" alt="Ajustes: tema claro, oscuro o del sistema">
+</p>
 
 ## Qué puedes hacer
 
@@ -32,6 +40,10 @@ App de flashcards con repetición espaciada (SM-2) para **Android** y **Desktop*
 - **El Repaso libre no puede escribir en la base de datos por construcción**, y un test lo comprueba comparando todas las tablas.
 - **Una sola definición de «tarjeta activa»** compartida por todas las pantallas e impuesta por un test.
 - **Tests guardián** que impiden que el dominio dependa de librerías de red.
+
+## Descargas
+
+Android (APK firmado) y Windows (instalador MSI) en [Releases](https://github.com/daniifdz/BrainCards/releases/latest). Para compilarla tú mismo, mira la sección siguiente.
 
 ## Cómo ejecutarla
 
