@@ -1,77 +1,82 @@
-# 🧠 BrainCards
+# BrainCards
 
-**BrainCards** es una aplicación moderna de tarjetas de memoria (Flashcards) multiplataforma, diseñada para optimizar el aprendizaje mediante el algoritmo de repetición espaciada (SM-2).
+App de flashcards con repetición espaciada (SM-2) para **Android** y **Desktop**, escrita en Kotlin Multiplatform con Compose Multiplatform. Funciona sin cuenta y sin conexión; con cuenta, sincroniza tus mazos entre dispositivos.
 
-Construida enteramente con **Kotlin Multiplatform (KMP)**, comparte una única base de código para ejecutarse de forma nativa en **Android** y **Escritorio (Windows)**.
+<!-- CAPTURAS: añadir 3-4 imágenes (Home, estudio, estadísticas, Desktop) en docs/screenshots/ y enlazarlas aquí -->
 
----
+## Qué puedes hacer
 
-##  Características Principales
+- Crear mazos, temas y tarjetas.
+- **Estudiar con SM-2:** la app calcula qué tarjetas te tocan hoy y reprograma cada una según cómo respondas.
+- **Repaso libre:** repasa todas las tarjetas de un mazo (o de todos), barajadas, sin alterar la programación.
+- Ver tus **estadísticas** y las tarjetas pendientes desde la pantalla de inicio.
+- Empezar con un **mazo de ejemplo** («Primeros pasos») para conocer la app.
+- **Sin cuenta:** todo funciona en local. **Con cuenta:** sincronización automática entre dispositivos (registro con código de 6 dígitos y recuperación de contraseña).
+- Tema claro y oscuro, y envío de comentarios desde Ajustes.
 
-### 🗂️ Organización Jerárquica
-*   **Mazos (Decks):** Crea colecciones principales de estudio (ej. "Idiomas", "Medicina").
-*   **Temas (Topics):** Organiza tus cartas en sub-categorías dentro de cada mazo.
-*   **Gestión Completa:** CRUD (Crear, Leer, Actualizar, Borrar) implementado para Mazos, Temas y Cartas.
+## Tecnología
 
-### 🎓 Sistema de Estudio Inteligente
-*   **Algoritmo SM-2:** Implementación del famoso algoritmo de repetición espaciada (similar a Anki) para calcular cuándo debes repasar cada carta.
-*   **Modo Cramming:** Opción de "Estudiar todo de todas formas" para repasos intensivos fuera de la programación.
-*   **UI Interactiva:** Animaciones 3D de volteo de cartas (**Flip Animation**) y feedback visual.
+| Área | Elección |
+| --- | --- |
+| Lenguaje y UI | Kotlin Multiplatform, Compose Multiplatform |
+| Arquitectura | Clean Architecture + MVVM, flujo de datos unidireccional |
+| Datos locales | Room KMP (migraciones con test) y DataStore |
+| Backend | Supabase (auth y Postgres con políticas RLS) |
+| Inyección de dependencias | Koin |
+| Navegación | Navigation Compose con rutas tipadas |
+| Pruebas | Más de 3.600 ejecuciones de test (JVM y Android), con Room real y sincronización entre dos dispositivos simulados |
 
-### 📊 Dashboard y Estadísticas
-*   **Home Moderno:** Diseño tipo "Bento Grid" responsive.
-*   **Gráficos Visuales:** Pantalla de estadísticas con **Pie Chart** (Canvas personalizado) que muestra el progreso: Nuevas, En Progreso y Dominadas.
+## Qué la hace interesante
 
-### 🛠️ Herramientas y Ajustes
-*   **Buscador en Tiempo Real:** Filtra cartas instantáneamente mientras escribes.
-*   **Personalización:** Soporte para **Tema Claro / Oscuro** y Automático del sistema.
-*   **Feedback:** Integración nativa para envío de correos (`expect/actual` para Android Intents y Java Desktop).
+- **Sincronización offline-first** con cursor incremental, última escritura gana por fila y borrados lógicos.
+- **El Repaso libre no puede escribir en la base de datos por construcción**, y un test lo comprueba comparando todas las tablas.
+- **Una sola definición de «tarjeta activa»** compartida por todas las pantallas e impuesta por un test.
+- **Tests guardián** que impiden que el dominio dependa de librerías de red.
 
----
+Todo está explicado, con sus alternativas descartadas y las mejoras pendientes, en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## 🚀 Stack Tecnológico
+## Cómo ejecutarla
 
-El proyecto utiliza las últimas tecnologías del ecosistema Kotlin:
+Requisitos: **JDK 17**. Para la app de Android, además, el SDK de Android (`sdk.dir` en `local.properties`, que Android Studio crea solo). Para compilar la versión de escritorio y ejecutar los tests no hace falta nada más: ni claves ni keystore.
 
-*   **Lenguaje:** [Kotlin](https://kotlinlang.org/) (100% del código).
-*   **Plataforma:** Kotlin Multiplatform (Android & JVM Desktop).
-*   **UI:** [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) (Material Design 3).
-*   **Inyección de Dependencias:** [Koin](https://insert-koin.io/) (Gestión de módulos y ViewModels).
-*   **Base de Datos Local:** [Room](https://developer.android.com/training/data-storage/room) (con soporte SQLite Bundled para KMP).
-*   **Concurrencia:** Kotlin Coroutines & Flows.
-*   **Manejo de Fechas:** `kotlinx-datetime`.
+1. Clona el repositorio.
+2. (Opcional) Copia `local.properties.example` a `local.properties` y rellena los valores de tu proyecto de Supabase (`SUPABASE_URL` y `SUPABASE_ANON_KEY`) y la ruta de tu SDK. Ese fichero no se sube al repositorio.
+3. Ejecuta:
 
----
+```bash
+# Desktop
+./gradlew :composeApp:run
 
-##  Arquitectura
+# Android (con un dispositivo o emulador conectado)
+./gradlew :composeApp:installDebug
 
-El proyecto sigue una arquitectura **MVVM (Model-View-ViewModel)** estricta basada en los principios de **Clean Architecture**, separando el código en tres capas claras:
+# Tests en JVM
+./gradlew :composeApp:jvmTest
+```
 
-### 1. Capa de Presentación (`presentation`)
-*   **Screens:** Componentes Composable (UI) que observan el estado.
-*   **ViewModels:** Gestionan la lógica de UI y exponen el estado mediante `StateFlow`.
-*   **Components:** Elementos de UI reutilizables (`FlipCard`, `EmptyState`, `PieChart`).
+> **Supabase es opcional.** Sin `SUPABASE_URL` y `SUPABASE_ANON_KEY` el proyecto compila (con un aviso de Gradle) y la app funciona sin cuenta: iniciar sesión o crear una muestra «No se pudo conectar» y no hay sincronización.
+>
+> **Build de release.** Solo `assembleRelease` y `bundleRelease` necesitan firma: `KEYSTORE_PASSWORD` y `KEY_PASSWORD` en `local.properties` (o `BRAINCARDS_KEYSTORE_PASSWORD` y `BRAINCARDS_KEY_PASSWORD` como variables de entorno) y el keystore en `composeApp/keystore/braincards-key.jks`, con alias `key0`. Sin ellos falla enseguida con un mensaje que lo explica. Ejecutar y probar no necesita firma.
 
-### 2. Capa de Dominio (`domain`)
-*   **Models:** Data classes puras (`Deck`, `Topic`, `Flashcard`, `StudyStats`).
-*   **Repository Interfaces:** Contratos que definen qué datos son necesarios.
-*   **Use Cases:** Lógica de negocio encapsulada y reutilizable (ej: `GetDueFlashcardsUseCase`, `ReviewFlashcardUseCase`).
+El esquema de la base de datos remota está en [`sql/`](sql/).
 
-### 3. Capa de Datos (`data`)
-*   **Entities:** Modelos de base de datos de Room (`DeckEntity`, etc.).
-*   **DAOs:** Data Access Objects con consultas SQL.
-*   **Repositories Impl:** Implementación de las interfaces del dominio, conectando con la BD.
-*   **Mappers:** Funciones de extensión para transformar entre Entidades y Modelos de Dominio.
+## Estado y próximos pasos
 
-## 🛠️ Cómo Construir y Ejecutar
+Es la primera versión y hay ganas de seguir añadiendo funcionalidades. Lo que viene:
 
-### Requisitos Previos
-*   **JDK 17** (Recomendado Eclipse Adoptium / Temurin).
-*   **Android Studio** (Ladybug o superior recomendado).
+- **Racha de días** de estudio, sincronizada entre dispositivos.
+- **Tarjetas generadas con IA** a partir de tus apuntes.
 
-### Comandos de Gradle
+También quedan, de forma deliberada, fuera de esta versión: iOS, publicación en tiendas y un dominio propio para los correos de la app.
 
-**Ejecutar en Android:** 
-bash ./gradlew composeApp:installDebug
-**Ejecutar en Escritorio (Dev):**
-bash ./gradlew composeApp:run
+## Cómo se ha hecho
+
+El diseño, las decisiones de arquitectura y la revisión son míos. He usado asistentes de IA como ayuda para la implementación, y cada cambio se ha validado con tests y comprobaciones propias (por ejemplo, mutando el código para comprobar que los tests fallan cuando deben).
+
+## Contacto
+
+**Daniel Fernández-Muñiz Arribas** · [LinkedIn](https://www.linkedin.com/in/daniel-fern%C3%A1ndez-mu%C3%B1iz-arribas) · braincards.soporte@proton.me
+
+## Licencia
+
+[MIT](LICENSE). Las fuentes incluidas llevan su propia licencia (OFL).
